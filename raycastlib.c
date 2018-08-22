@@ -30,6 +30,16 @@ typedef struct
   Vector2D direction;
 } Ray;
 
+typedef struct
+{
+  Vector2D square;     ///< Collided square coordinates.
+  Vector2D position;   ///< Exact collision position in Units.
+  Unit     distance;   /**< Euclidean distance to the hit position, or -1 if
+                            no collision happened. */
+} HitResult;
+
+HitResult castRay(Ray ray, int (*collisionFunc)(int, int),
+  unsigned int maxSteps);
 
 //=============================================================================
 // privates
@@ -49,65 +59,62 @@ int8_t pointIsLeftOfRay(Vector2D point, Ray ray)
 }
 
 /**
-  
+  Casts a ray within a single square, to collide with the square borders.  
  */
-void castRaySquare(Ray globalRay, Vector2D *nextCellOffset,
+void castRaySquare(Ray localRay, Vector2D *nextCellOffset,
   Vector2D *collisionPointOffset)
 {
-  globalRay.start.x %= UNITS_PER_SQUARE;
-  globalRay.start.y %= UNITS_PER_SQUARE;
-
   nextCellOffset->x = 0;
   nextCellOffset->y = 0;
 
-  Ray criticalLine = globalRay;
+  Ray criticalLine = localRay;
 
   #define helper(c1,c2,n)\
     {\
       nextCellOffset->c1 = n;\
-      collisionPointOffset->c1 = criticalLine.start.c1 - globalRay.start.c1;\
+      collisionPointOffset->c1 = criticalLine.start.c1 - localRay.start.c1;\
       collisionPointOffset->c2 =\
-        (collisionPointOffset->c1 * globalRay.direction.c2) /\
-        (globalRay.direction.c1 == 0 ? 1 : globalRay.direction.c1);\
+        (collisionPointOffset->c1 * localRay.direction.c2) /\
+        (localRay.direction.c1 == 0 ? 1 : localRay.direction.c1);\
     }
 
   #define helper2(n1,n2,c)\
-    if (pointIsLeftOfRay(globalRay.start,criticalLine) == c)\
+    if (pointIsLeftOfRay(localRay.start,criticalLine) == c)\
       helper(y,x,n1)\
     else\
       helper(x,y,n2)
       
-  if (globalRay.direction.x > 0)
+  if (localRay.direction.x > 0)
   {
-    criticalLine.start.x = UNITS_PER_SQUARE - 1;
+    criticalLine.start.x = UNITS_PER_SQUARE;
 
-    if (globalRay.direction.y > 0)
+    if (localRay.direction.y > 0)
     {
       // top right
-      criticalLine.start.y = UNITS_PER_SQUARE - 1;
+      criticalLine.start.y = UNITS_PER_SQUARE;
       helper2(1,1,1)
     }
     else
     {
       // bottom right
-      criticalLine.start.y = 0;
+      criticalLine.start.y = -1;
       helper2(-1,1,0)
     }
   }
   else
   {
-    criticalLine.start.x = 0;
+    criticalLine.start.x = -1;
 
-    if (globalRay.direction.y > 0)
+    if (localRay.direction.y > 0)
     {
       // top left
-      criticalLine.start.y = UNITS_PER_SQUARE - 1;
+      criticalLine.start.y = UNITS_PER_SQUARE;
       helper2(1,-1,0)
     }
     else
     {
       // bottom left
-      criticalLine.start.y = 0;
+      criticalLine.start.y = -1;
       helper2(-1,-1,1)
     }
   }
@@ -116,23 +123,52 @@ void castRaySquare(Ray globalRay, Vector2D *nextCellOffset,
   #undef helper
 }
 
+HitResult castRay(Ray ray, int (*collisionFunc)(int, int),
+  unsigned int maxSteps)
+{
+  HitResult result;
+
+  result.distance = -1;
+  result.square.x = ray.start.x / UNITS_PER_SQUARE;
+  result.square.y = ray.start.y / UNITS_PER_SQUARE;
+  result.position = ray.start;
+
+  for (uint16_t i = 0; i < maxSteps; ++i)
+  {
+    ray.start.x = result.position.x % UNITS_PER_SQUARE;
+    ray.start.y = result.position.y % UNITS_PER_SQUARE;
+
+    Vector2D no, co;
+
+    castRaySquare(ray,&no,&co);
+
+    result.square.x += no.x;
+    result.square.y += no.y;
+
+    result.position.x += co.x;
+    result.position.y += co.y;
+  }
+
+  return result;
+}
+
+int aaa(int x, int y)
+{
+  return (x < 0 || y < 0 || x > 10 || y > 10) ? 1 : 0;
+}
+
 int main()
 {
   Ray r;
-  Vector2D no;
-  Vector2D co; 
 
-  r.start.x     = 10;
-  r.start.y     = 10;
-  r.direction.x = -200;
-  r.direction.y = -200;
+  r.start.x     = 4 * UNITS_PER_SQUARE + UNITS_PER_SQUARE / 2;
+  r.start.y     = 4 * UNITS_PER_SQUARE + UNITS_PER_SQUARE / 2;
+  r.direction.x = 100;
+  r.direction.y = 50;
  
   logRay(r);
  
-  castRaySquare(r,&no,&co);
-
-  logVector2D(no);
-  logVector2D(co);
+  castRay(r,aaa,10);
 
   return 0;
 }
