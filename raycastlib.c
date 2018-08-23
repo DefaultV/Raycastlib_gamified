@@ -40,7 +40,6 @@ typedef struct
                                  coordinate. */
 } HitResult;
 
-
 /**
  Casts a single ray and returns the first collision result.
 
@@ -55,6 +54,14 @@ typedef struct
 
 HitResult castRay(Ray ray, int16_t (*arrayFunc)(int16_t, int16_t),
   uint16_t maxSteps);
+
+/**
+ Casts a single ray and returns a list of collisions.
+ */
+
+void castRayMultiHit(Ray ray, int16_t (*arrayFunc)(int16_t, int16_t),
+  uint16_t maxSteps, HitResult *hitResults, uint16_t *hitResultsLen,
+  uint16_t maxHits);
 
 //=============================================================================
 // privates
@@ -174,43 +181,71 @@ void castRaySquare(Ray localRay, Vector2D *nextCellOffset,
   #undef helper
 }
 
-HitResult castRay(Ray ray, int16_t (*arrayFunc)(int16_t, int16_t),
-  uint16_t maxSteps)
+void castRayMultiHit(Ray ray, int16_t (*arrayFunc)(int16_t, int16_t),
+  uint16_t maxSteps, HitResult *hitResults, uint16_t *hitResultsLen,
+  uint16_t maxHits)
 {
-  HitResult result;
-
   Vector2D initialPos = ray.start;
+  Vector2D currentPos = ray.start;
 
-  result.distance = -1;
-  result.square.x = ray.start.x / UNITS_PER_SQUARE;
-  result.square.y = ray.start.y / UNITS_PER_SQUARE;
-  result.position = ray.start;
+  Vector2D currentSquare;
 
-  int16_t squareType = arrayFunc(result.square.x,result.square.y);
+  currentSquare.x = ray.start.x / UNITS_PER_SQUARE;
+  currentSquare.y = ray.start.y / UNITS_PER_SQUARE;
+
+  *hitResultsLen = 0;
+
+  int16_t squareType = arrayFunc(currentSquare.x,currentSquare.y);
 
   for (uint16_t i = 0; i < maxSteps; ++i)
   {
-    if (arrayFunc(result.square.x,result.square.y) != squareType)
-    {
-      result.distance = dist(initialPos,result.position);      
-      //result.textureCoord = 
+    int16_t currentType = arrayFunc(currentSquare.x,currentSquare.y);
 
-      break;
+    if (currentType != squareType)
+    {
+      // collision
+
+      HitResult h;
+
+      h.position = currentPos;
+      h.square   = currentSquare;
+      h.distance = dist(initialPos,currentPos);
+
+      hitResults[*hitResultsLen] = h;
+
+      *hitResultsLen += 1;
+
+      squareType = currentType;
+
+      if (*hitResultsLen >= maxHits)
+        break;
     }
 
-    ray.start.x = result.position.x % UNITS_PER_SQUARE;
-    ray.start.y = result.position.y % UNITS_PER_SQUARE;
+    ray.start.x = currentPos.x % UNITS_PER_SQUARE;
+    ray.start.y = currentPos.y % UNITS_PER_SQUARE;
 
     Vector2D no, co;
 
     castRaySquare(ray,&no,&co);
 
-    result.square.x += no.x;
-    result.square.y += no.y;
+    currentSquare.x += no.x;
+    currentSquare.y += no.y;
 
-    result.position.x += co.x;
-    result.position.y += co.y;
+    currentPos.x += co.x;
+    currentPos.y += co.y;
   }
+}
+
+HitResult castRay(Ray ray, int16_t (*arrayFunc)(int16_t, int16_t),
+  uint16_t maxSteps)
+{
+  HitResult result;
+  uint16_t  len;
+
+  castRayMultiHit(ray,arrayFunc,maxSteps,&result,&len,1);
+
+  if (len == 0)
+    result.distance = -1;
 
   return result;
 }
