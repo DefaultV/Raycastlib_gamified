@@ -1,33 +1,11 @@
-#include "raycastlib.h"
 #include <stdio.h>
-
-void logVector2D(Vector2D v)
-{
-  printf("[%d,%d]\n",v.x,v.y);
-}
-
-void logRay(Ray r)
-{
-  printf("ray:\n");
-  printf("  start: ");
-  logVector2D(r.start);
-  printf("  dir: ");
-  logVector2D(r.direction);
-}
-
-void logHitResult(HitResult h)
-{
-  printf("hit:\n");\
-  printf("  sqaure: ");
-  logVector2D(h.square);
-  printf("  pos: ");
-  logVector2D(h.position);
-  printf("  dist: %d", h.distance);
-  printf("  texcoord: %d", h.textureCoord);
-}
+#include "raycastlib.h"
 
 int16_t testArrayFunc(int16_t x, int16_t y)
 {
+  if (x > 12 || y > 12)
+    return x * y;
+
   return (x < 0 || y < 0 || x > 9 || y > 9) ? 1 : 0;
 }
 
@@ -63,9 +41,9 @@ int testSingleRay(Unit startX, Unit startY, Unit dirX, Unit dirY,
     h.position.y >= expectPointY - tolerateError;
 
   if (result)
-    printf("\nOK\n");
+    printf("\nOK\n\n");
   else
-    printf("\nFAIL\n");
+    printf("\nFAIL\n\n");
 
   return result;
 }
@@ -80,6 +58,15 @@ int main()
     100, 50,
     10, 7,
     10240, 7936,
+    16))
+    return 1; 
+
+  if (!testSingleRay(
+    0,
+    0,
+    100, 100,
+    10, 9,
+    10240, 10239,
     16))
     return 1; 
 

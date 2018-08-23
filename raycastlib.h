@@ -19,6 +19,25 @@
 typedef int32_t Unit;   /**< Smallest spatial unit, there is UNITS_PER_SQUARE
                              units in a square's length. */
 
+#define logVector2D(v)\
+  printf("[%d,%d]\n",v.x,v.y);
+
+#define logRay(r)\
+  printf("ray:\n");\
+  printf("  start: ");\
+  logVector2D(r.start);\
+  printf("  dir: ");\
+  logVector2D(r.direction);\
+
+#define logHitResult(h)\
+  printf("hit:\n");\
+  printf("  sqaure: ");\
+  logVector2D(h.square);\
+  printf("  pos: ");\
+  logVector2D(h.position);\
+  printf("  dist: %d", h.distance);\
+  printf("  texcoord: %d", h.textureCoord);\
+
 /// Position in 2D space.
 typedef struct
 {
@@ -67,6 +86,17 @@ void castRayMultiHit(Ray ray, int16_t (*arrayFunc)(int16_t, int16_t),
 
 //=============================================================================
 // privates
+
+Unit clamp(Unit value, Unit valueMin, Unit valueMax)
+{
+  if (value < valueMin)
+    return valueMin;
+
+  if (value > valueMax)
+    return valueMax;
+
+  return value;
+}
 
 uint16_t sqrtInt(uint32_t value)
 {
@@ -123,9 +153,10 @@ void castRaySquare(Ray localRay, Vector2D *nextCellOffset,
     {\
       nextCellOffset->c1 = n;\
       collisionPointOffset->c1 = criticalLine.start.c1 - localRay.start.c1;\
-      collisionPointOffset->c2 =\
+      collisionPointOffset->c2 = clamp(\
         (collisionPointOffset->c1 * localRay.direction.c2) /\
-        (localRay.direction.c1 == 0 ? 1 : localRay.direction.c1);\
+        (localRay.direction.c1 == 0 ? 1 : localRay.direction.c1),\
+        0,UNITS_PER_SQUARE - 1);\
     }
 
   #define helper2(n1,n2,c)\
