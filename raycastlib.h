@@ -11,6 +11,8 @@
   - X axis goes right.
   - Y axis goes up.
   - Each game square is UNITS_PER_SQUARE * UNITS_PER_SQUARE.
+  - Angles are in Units, 0 means pointing right (x+) and positively rotates
+    clockwise, a full angle has UNITS_PER_SQUARE Units.
   */
 
 #define UNITS_PER_SQUARE 1024
@@ -21,21 +23,21 @@ typedef int32_t Unit;   /**< Smallest spatial unit, there is UNITS_PER_SQUARE
 #define logVector2D(v)\
   printf("[%d,%d]\n",v.x,v.y);
 
-#define logRay(r)\
+#define logRay(r){\
   printf("ray:\n");\
   printf("  start: ");\
   logVector2D(r.start);\
   printf("  dir: ");\
-  logVector2D(r.direction);\
+  logVector2D(r.direction);}\
 
-#define logHitResult(h)\
+#define logHitResult(h){\
   printf("hit:\n");\
   printf("  sqaure: ");\
   logVector2D(h.square);\
   printf("  pos: ");\
   logVector2D(h.position);\
   printf("  dist: %d", h.distance);\
-  printf("  texcoord: %d", h.textureCoord);\
+  printf("  texcoord: %d", h.textureCoord);}\
 
 /// Position in 2D space.
 typedef struct
@@ -83,6 +85,7 @@ void castRayMultiHit(Ray ray, int16_t (*arrayFunc)(int16_t, int16_t),
   uint16_t maxSteps, HitResult *hitResults, uint16_t *hitResultsLen,
   uint16_t maxHits);
 
+Vector2D angleToDirection(Unit angle);
 Unit cosInt(Unit input);
 Unit sinInt(Unit input);
 uint16_t sqrtInt(uint32_t value);
@@ -128,7 +131,17 @@ Unit cosInt(Unit input)
 
 Unit sinInt(Unit input)
 {
-  return cosInt(input - UNITS_PER_SQUARE / 2);
+  return cosInt(input - UNITS_PER_SQUARE / 4);
+}
+
+Vector2D angleToDirection(Unit angle)
+{
+  Vector2D result;
+
+  result.x = cosInt(angle);
+  result.y = -1 * sinInt(angle);
+
+  return result;
 }
 
 uint16_t sqrtInt(uint32_t value)

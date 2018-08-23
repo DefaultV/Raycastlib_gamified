@@ -80,10 +80,12 @@ int main()
   {
     Unit v = sinInt(i);
 
-    for (int j = 0; j < (v + UNITS_PER_SQUARE) / 64; ++j)
-      printf(".");
+    logVector2D(angleToDirection(i));
 
-    printf("\n");
+    //for (int j = 0; j < (v + UNITS_PER_SQUARE) / 64; ++j)
+    //  printf(".");
+
+    //printf("\n");
   }
 
   return 0;
