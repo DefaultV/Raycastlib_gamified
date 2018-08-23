@@ -1,3 +1,9 @@
+/**
+  Tests for raycastlib.
+
+  license: CC0
+*/
+
 #include <stdio.h>
 #include "raycastlib.h"
 
@@ -69,6 +75,16 @@ int main()
     10240, 10239,
     16))
     return 1; 
+
+  for (Unit i = -UNITS_PER_SQUARE; i <= UNITS_PER_SQUARE; i += 64)
+  {
+    Unit v = sinInt(i);
+
+    for (int j = 0; j < (v + UNITS_PER_SQUARE) / 64; ++j)
+      printf(".");
+
+    printf("\n");
+  }
 
   return 0;
 }

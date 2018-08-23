@@ -11,7 +11,6 @@
   - X axis goes right.
   - Y axis goes up.
   - Each game square is UNITS_PER_SQUARE * UNITS_PER_SQUARE.
-
   */
 
 #define UNITS_PER_SQUARE 1024
@@ -84,6 +83,11 @@ void castRayMultiHit(Ray ray, int16_t (*arrayFunc)(int16_t, int16_t),
   uint16_t maxSteps, HitResult *hitResults, uint16_t *hitResultsLen,
   uint16_t maxHits);
 
+Unit cosInt(Unit input);
+Unit sinInt(Unit input);
+uint16_t sqrtInt(uint32_t value);
+Unit dist(Vector2D p1, Vector2D p2);
+
 //=============================================================================
 // privates
 
@@ -96,6 +100,35 @@ Unit clamp(Unit value, Unit valueMin, Unit valueMax)
     return valueMax;
 
   return value;
+}
+
+// Bhaskara's cosine approximation formula
+#define trigHelper(x) (UNITS_PER_SQUARE *\
+  (UNITS_PER_SQUARE / 2 * UNITS_PER_SQUARE / 2 - 4 * (x) * (x)) /\
+  (UNITS_PER_SQUARE / 2 * UNITS_PER_SQUARE / 2 + (x) * (x)))
+
+Unit cosInt(Unit input)
+{
+  input = input % UNITS_PER_SQUARE;
+
+  if (input < 0)
+    input = UNITS_PER_SQUARE + input;
+
+  if (input < UNITS_PER_SQUARE / 4)
+    return trigHelper(input);
+  else if (input < UNITS_PER_SQUARE / 2)
+    return -1 * trigHelper(UNITS_PER_SQUARE / 2 - input);
+  else if (input < 3 * UNITS_PER_SQUARE / 4)
+    return -1 * trigHelper(input - UNITS_PER_SQUARE / 2);
+  else
+    return trigHelper(UNITS_PER_SQUARE - input);
+}
+
+#undef trigHelper
+
+Unit sinInt(Unit input)
+{
+  return cosInt(input - UNITS_PER_SQUARE / 2);
 }
 
 uint16_t sqrtInt(uint32_t value)
