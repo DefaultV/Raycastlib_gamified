@@ -225,10 +225,9 @@ void castRaySquare(Ray localRay, Vector2D *nextCellOffset,
     {\
       nextCellOffset->c1 = n;\
       collisionPointOffset->c1 = criticalLine.start.c1 - localRay.start.c1;\
-      collisionPointOffset->c2 = clamp(\
-        (collisionPointOffset->c1 * localRay.direction.c2) /\
-        (localRay.direction.c1 == 0 ? 1 : localRay.direction.c1),\
-        0,UNITS_PER_SQUARE - 1);\
+      collisionPointOffset->c2 = \
+        (((int32_t) collisionPointOffset->c1) * localRay.direction.c2) /\
+        ((localRay.direction.c1 == 0) ? 1 : localRay.direction.c1);\
     }
 
   #define helper2(n1,n2,c)\
