@@ -92,6 +92,13 @@ void castRayMultiHit(Ray ray, int16_t (*arrayFunc)(int16_t x, int16_t y),
 Vector2D angleToDirection(Unit angle);
 Unit cosInt(Unit input);
 Unit sinInt(Unit input);
+
+/// Normalizes given vector to have UNITS_PER_SQUARE length.
+Vector2D normalize(Vector2D v);
+
+/// Computes a cos of an angle between two vectors.
+Unit vectorsAngleCos(Vector2D v1, Vector2D v2);
+
 uint16_t sqrtInt(uint32_t value);
 Unit dist(Vector2D p1, Vector2D p2);
 Unit len(Vector2D v);
@@ -393,6 +400,26 @@ void castRaysMultiHit(
     for (uint8_t j = 0; j < hitCount; ++j)
       hitFunc(i,hits[j],j,r);
   }
+}
+
+Vector2D normalize(Vector2D v)
+{
+  Vector2D result;
+
+  Unit l = len(v);
+
+  result.x = (v.x * UNITS_PER_SQUARE) / l;
+  result.y = (v.y * UNITS_PER_SQUARE) / l;
+
+  return result;
+}
+
+Unit vectorsAngleCos(Vector2D v1, Vector2D v2)
+{
+  v1 = normalize(v1);
+  v2 = normalize(v2);
+
+  return (v1.x * v2.x + v1.y * v2.y) / UNITS_PER_SQUARE;
 }
 
 Unit degreesToUnitsAngle(int16_t degrees)
