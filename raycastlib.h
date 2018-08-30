@@ -195,7 +195,7 @@ Unit dist(Vector2D p1, Vector2D p2)
 {
   Unit dx = p2.x - p1.x;
   Unit dy = p2.y - p1.y;
-  return sqrtInt(((uint16_t) dx * dx) + ((uint16_t) dy * dy));
+  return sqrtInt((dx * dx) + (dy * dy));
 }
 
 int8_t pointIsLeftOfRay(Vector2D point, Ray ray)
