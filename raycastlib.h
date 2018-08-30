@@ -60,6 +60,7 @@ typedef struct
                             no collision happened. */
   Unit     textureCoord;    /**< Normalized (0 to UNITS_PER_SQUARE - 1) texture
                                  coordinate. */
+  uint8_t  direction;       ///< Direction of hit.
 } HitResult;
 
 /**
@@ -93,6 +94,7 @@ Unit cosInt(Unit input);
 Unit sinInt(Unit input);
 uint16_t sqrtInt(uint32_t value);
 Unit dist(Vector2D p1, Vector2D p2);
+Unit len(Vector2D v);
 
 /**
  Converts an angle in whole degrees to an angle in Units that this library
@@ -202,6 +204,14 @@ Unit dist(Vector2D p1, Vector2D p2)
   return sqrtInt(((uint32_t) dx) + ((uint32_t) dy));
 }
 
+Unit len(Vector2D v)
+{
+  v.x *= v.x;
+  v.y *= v.y;
+
+  return sqrtInt(((uint32_t) v.x) + ((uint32_t) v.y));
+}
+
 int8_t pointIsLeftOfRay(Vector2D point, Ray ray)
 {
   int dX    = point.x - ray.start.x;
@@ -291,6 +301,8 @@ void castRayMultiHit(Ray ray, int16_t (*arrayFunc)(int16_t, int16_t),
 
   int16_t squareType = arrayFunc(currentSquare.x,currentSquare.y);
 
+  Vector2D no, co; // next cell offset, collision offset
+
   for (uint16_t i = 0; i < maxSteps; ++i)
   {
     int16_t currentType = arrayFunc(currentSquare.x,currentSquare.y);
@@ -305,6 +317,15 @@ void castRayMultiHit(Ray ray, int16_t (*arrayFunc)(int16_t, int16_t),
       h.square   = currentSquare;
       h.distance = dist(initialPos,currentPos);
 
+      if (no.y > 0)
+        h.direction = 0;
+      else if (no.x > 0)
+        h.direction = 1;
+      else if (no.y < 0)
+        h.direction = 2;
+      else
+        h.direction = 3;
+
       hitResults[*hitResultsLen] = h;
 
       *hitResultsLen += 1;
@@ -317,8 +338,6 @@ void castRayMultiHit(Ray ray, int16_t (*arrayFunc)(int16_t, int16_t),
 
     ray.start.x = currentPos.x % UNITS_PER_SQUARE;
     ray.start.y = currentPos.y % UNITS_PER_SQUARE;
-
-    Vector2D no, co;
 
     castRaySquare(ray,&no,&co);
 
