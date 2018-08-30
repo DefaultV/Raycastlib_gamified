@@ -36,8 +36,8 @@ typedef int32_t Unit;   /**< Smallest spatial unit, there is UNITS_PER_SQUARE
   logVector2D(h.square);\
   printf("  pos: ");\
   logVector2D(h.position);\
-  printf("  dist: %d", h.distance);\
-  printf("  texcoord: %d", h.textureCoord);}\
+  printf("  dist: %d\n", h.distance);\
+  printf("  texcoord: %d\n", h.textureCoord);}\
 
 /// Position in 2D space.
 typedef struct
@@ -74,14 +74,17 @@ typedef struct
  @return          The first collision result.
  */
 
+/**
+ Like castRaysMultiHit but only returns the first hit.
+ */
+
 HitResult castRay(Ray ray, int16_t (*arrayFunc)(int16_t, int16_t),
   uint16_t maxSteps);
 
 /**
  Casts a single ray and returns a list of collisions.
  */
-
-void castRayMultiHit(Ray ray, int16_t (*arrayFunc)(int16_t, int16_t),
+void castRayMultiHit(Ray ray, int16_t (*arrayFunc)(int16_t x, int16_t y),
   uint16_t maxSteps, HitResult *hitResults, uint16_t *hitResultsLen,
   uint16_t maxHits);
 
@@ -90,6 +93,25 @@ Unit cosInt(Unit input);
 Unit sinInt(Unit input);
 uint16_t sqrtInt(uint32_t value);
 Unit dist(Vector2D p1, Vector2D p2);
+
+/**
+ Converts an angle in whole degrees to an angle in Units that this library
+ uses.
+ */   
+Unit degreesToUnitsAngle(int16_t degrees);
+
+///< Computes the change in size of an object due to perspective.
+Unit perspectiveScale(Unit originalSize, Unit distance, Unit fov);
+
+/**
+ Casts rays for given camera view and for each hit calls a user provided
+ function.
+ */
+void castRaysMultiHit(
+  Vector2D position, Unit directionAngle, Unit fovAngle, uint16_t resolution,
+  int16_t (*arrayFunc)(int16_t x, int16_t y),
+  void (*hitFunc)(uint16_t pos, HitResult hit, uint16_t hitNo, Ray r),
+  uint16_t maxHits, uint16_t maxSteps);
 
 //=============================================================================
 // privates
@@ -317,6 +339,51 @@ HitResult castRay(Ray ray, int16_t (*arrayFunc)(int16_t, int16_t),
     result.distance = -1;
 
   return result;
+}
+
+void castRaysMultiHit(
+  Vector2D position, Unit directionAngle, Unit fovAngle, uint16_t resolution,
+  int16_t (*arrayFunc)(int16_t x, int16_t y),
+  void (*hitFunc)(uint16_t pos, HitResult hit, uint16_t hitNo, Ray r),
+  uint16_t maxHits, uint16_t maxSteps)
+{
+  uint16_t fovHalf = fovAngle / 2;
+
+  Vector2D dir1 = angleToDirection(directionAngle - fovHalf);
+  Vector2D dir2 = angleToDirection(directionAngle + fovHalf);
+
+  Unit dX = dir2.x - dir1.x;
+  Unit dY = dir2.y - dir1.y;
+
+  HitResult hits[maxHits];
+  uint16_t hitCount;
+
+  Ray r;
+  r.start = position;
+
+  for (uint8_t i = 0; i < resolution; ++i)
+  {
+    r.direction.x = dir1.x + (dX * i) / resolution;
+    r.direction.y = dir1.y + (dY * i) / resolution;
+
+    castRayMultiHit(r,arrayFunc,maxSteps,hits,&hitCount,maxHits);
+
+    for (uint8_t j = 0; j < hitCount; ++j)
+      hitFunc(i,hits[j],j,r);
+  }
+}
+
+Unit degreesToUnitsAngle(int16_t degrees)
+{
+  return (degrees * UNITS_PER_SQUARE) / 360;
+}
+
+Unit perspectiveScale(Unit originalSize, Unit distance, Unit fov)
+{
+  distance *= fov;
+  distance = distance == 0 ? 1 : distance; // prevent division by zero
+
+  return originalSize / distance; 
 }
 
 #endif
