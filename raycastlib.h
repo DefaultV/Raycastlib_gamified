@@ -193,9 +193,13 @@ uint16_t sqrtInt(uint32_t value)
 
 Unit dist(Vector2D p1, Vector2D p2)
 {
-  Unit dx = p2.x - p1.x;
-  Unit dy = p2.y - p1.y;
-  return sqrtInt((dx * dx) + (dy * dy));
+  int32_t dx = p2.x - p1.x;
+  int32_t dy = p2.y - p1.y;
+
+  dx = dx * dx;
+  dy = dy * dy;
+
+  return sqrtInt(((uint32_t) dx) + ((uint32_t) dy));
 }
 
 int8_t pointIsLeftOfRay(Vector2D point, Ray ray)
