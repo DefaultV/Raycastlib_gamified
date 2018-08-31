@@ -63,6 +63,16 @@ typedef struct
   uint8_t  direction;       ///< Direction of hit.
 } HitResult;
 
+typedef struct
+{
+  int8_t type;    ///< Type of pixel: 0 - wall, 1 - floor, 2 - ceiling.
+  Unit depth;     ///< Corrected depth.
+  HitResult hit;  ///< Corresponding ray hit.
+} PixelInfo;
+
+typedef int16_t (*ArrayFunction)(int16_t x, int16_t y);
+typedef void (*HitFunction)(uint16_t pos, HitResult h, uint16_t hitNo, Ray r);
+
 /**
  Casts a single ray and returns the first collision result.
 
@@ -75,19 +85,13 @@ typedef struct
  @return          The first collision result.
  */
 
-/**
- Like castRaysMultiHit but only returns the first hit.
- */
-
-HitResult castRay(Ray ray, int16_t (*arrayFunc)(int16_t, int16_t),
-  uint16_t maxSteps);
+HitResult castRay(Ray ray, ArrayFunction arrayFunc, uint16_t maxSteps);
 
 /**
  Casts a single ray and returns a list of collisions.
  */
-void castRayMultiHit(Ray ray, int16_t (*arrayFunc)(int16_t x, int16_t y),
-  uint16_t maxSteps, HitResult *hitResults, uint16_t *hitResultsLen,
-  uint16_t maxHits);
+void castRayMultiHit(Ray ray, ArrayFunction arrayFunc, uint16_t maxSteps,
+  HitResult *hitResults, uint16_t *hitResultsLen, uint16_t maxHits);
 
 Vector2D angleToDirection(Unit angle);
 Unit cosInt(Unit input);
@@ -118,9 +122,8 @@ Unit perspectiveScale(Unit originalSize, Unit distance, Unit fov);
  */
 void castRaysMultiHit(
   Vector2D position, Unit directionAngle, Unit fovAngle, uint16_t resolution,
-  int16_t (*arrayFunc)(int16_t x, int16_t y),
-  void (*hitFunc)(uint16_t pos, HitResult hit, uint16_t hitNo, Ray r),
-  uint16_t maxHits, uint16_t maxSteps);
+  ArrayFunction arrayFunc, HitFunction hitFunc, uint16_t maxHits,
+  uint16_t maxSteps);
 
 //=============================================================================
 // privates
@@ -295,7 +298,7 @@ void castRaySquare(Ray localRay, Vector2D *nextCellOffset,
   collisionPointOffset->y += nextCellOffset->y;
 }
 
-void castRayMultiHit(Ray ray, int16_t (*arrayFunc)(int16_t, int16_t),
+void castRayMultiHit(Ray ray, ArrayFunction arrayFunc,
   uint16_t maxSteps, HitResult *hitResults, uint16_t *hitResultsLen,
   uint16_t maxHits)
 {
@@ -360,8 +363,7 @@ void castRayMultiHit(Ray ray, int16_t (*arrayFunc)(int16_t, int16_t),
   }
 }
 
-HitResult castRay(Ray ray, int16_t (*arrayFunc)(int16_t, int16_t),
-  uint16_t maxSteps)
+HitResult castRay(Ray ray, ArrayFunction arrayFunc, uint16_t maxSteps)
 {
   HitResult result;
   uint16_t  len;
@@ -376,9 +378,8 @@ HitResult castRay(Ray ray, int16_t (*arrayFunc)(int16_t, int16_t),
 
 void castRaysMultiHit(
   Vector2D position, Unit directionAngle, Unit fovAngle, uint16_t resolution,
-  int16_t (*arrayFunc)(int16_t x, int16_t y),
-  void (*hitFunc)(uint16_t pos, HitResult hit, uint16_t hitNo, Ray r),
-  uint16_t maxHits, uint16_t maxSteps)
+  ArrayFunction arrayFunc, HitFunction hitFunc , uint16_t maxHits,
+  uint16_t maxSteps)
 {
   uint_fast16_t fovHalf = fovAngle / 2;
 
@@ -389,7 +390,7 @@ void castRaysMultiHit(
   Unit dY = dir2.y - dir1.y;
 
   HitResult hits[maxHits];
-  uint_fast16_t hitCount;
+  uint16_t hitCount;
 
   Ray r;
   r.start = position;
