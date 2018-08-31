@@ -500,8 +500,11 @@ void _columnFunction(HitResult *hits, uint16_t hitCount, uint16_t x, Ray ray)
 
   dist = dist == 0 ? 1 : dist; // prevent division by zero
 
-  int32_t height = (UNITS_PER_SQUARE * 50) / dist;
-  uint32_t start = _camera.resolution.y / 2 - height / 2;
+  int32_t height = perspectiveScale(50,dist,1);
+
+  Unit offset = perspectiveScale(_camera.height,dist,1);
+
+  uint32_t start = _camera.resolution.y / 2 - height / 2 + offset;
 
   for (uint32_t i = start; i < start + height; ++i)
   {
@@ -510,6 +513,7 @@ void _columnFunction(HitResult *hits, uint16_t hitCount, uint16_t x, Ray ray)
     p.position.x = x;
     p.position.y = i;
     p.isWall = 1;
+    p.hit = hit;
 
     _pixelFunction(p);
   }
@@ -554,6 +558,8 @@ Unit degreesToUnitsAngle(int16_t degrees)
 
 Unit perspectiveScale(Unit originalSize, Unit distance, Unit fov)
 {
+return (originalSize * UNITS_PER_SQUARE) / distance;
+
   distance *= fov;
   distance = distance == 0 ? 1 : distance; // prevent division by zero
 
