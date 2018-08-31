@@ -245,6 +245,7 @@ void castRaySquare(Ray localRay, Vector2D *nextCellOffset,
       collisionPointOffset->c2 = \
         (((int32_t) collisionPointOffset->c1) * localRay.direction.c2) /\
         ((localRay.direction.c1 == 0) ? 1 : localRay.direction.c1);\
+      Unit nextC2 = localRay.start.c2 + collisionPointOffset->c2;\
     }
 
   #define helper2(n1,n2,c)\
@@ -255,41 +256,44 @@ void castRaySquare(Ray localRay, Vector2D *nextCellOffset,
       
   if (localRay.direction.x > 0)
   {
-    criticalLine.start.x = UNITS_PER_SQUARE;
+    criticalLine.start.x = UNITS_PER_SQUARE - 1;
 
     if (localRay.direction.y > 0)
     {
       // top right
-      criticalLine.start.y = UNITS_PER_SQUARE;
+      criticalLine.start.y = UNITS_PER_SQUARE - 1;
       helper2(1,1,1)
     }
     else
     {
       // bottom right
-      criticalLine.start.y = -1;
+      criticalLine.start.y = 0;
       helper2(-1,1,0)
     }
   }
   else
   {
-    criticalLine.start.x = -1;
+    criticalLine.start.x = 0;
 
     if (localRay.direction.y > 0)
     {
       // top left
-      criticalLine.start.y = UNITS_PER_SQUARE;
+      criticalLine.start.y = UNITS_PER_SQUARE - 1;
       helper2(1,-1,0)
     }
     else
     {
       // bottom left
-      criticalLine.start.y = -1;
+      criticalLine.start.y = 0;
       helper2(-1,-1,1)
     }
   }
 
   #undef helper2
   #undef helper
+
+  collisionPointOffset->x += nextCellOffset->x;
+  collisionPointOffset->y += nextCellOffset->y;
 }
 
 void castRayMultiHit(Ray ray, int16_t (*arrayFunc)(int16_t, int16_t),

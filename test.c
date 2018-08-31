@@ -6,6 +6,7 @@
 
 #include <stdio.h>
 #include "raycastlib.h"
+#include <time.h>
 
 int16_t testArrayFunc(int16_t x, int16_t y)
 {
@@ -72,9 +73,18 @@ int main()
     0,
     100, 100,
     10, 9,
-    10240, 10239,
+    10240, 10240,
     16))
     return 1; 
+
+  if (!testSingleRay(
+    400,
+    6811,
+    -629,805,
+    -1, 7,
+    -1, 7325,
+    16))
+    return 1;
 
   for (Unit i = -UNITS_PER_SQUARE; i <= UNITS_PER_SQUARE; i += 64)
   {
@@ -87,6 +97,21 @@ int main()
 
     //printf("\n");
   }
+
+  printf("benchmark:\n");
+
+time_t start,end;
+double dif;
+
+  time (&start);
+
+for (int i = 0; i < 1000; ++i)
+  printf("*");
+
+  time (&end);
+  dif = difftime (end,start);
+  printf ("Your calculations took %.2lf seconds to run.\n", dif );
+
 
   return 0;
 }
