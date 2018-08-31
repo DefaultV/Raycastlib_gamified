@@ -245,7 +245,6 @@ void castRaySquare(Ray localRay, Vector2D *nextCellOffset,
       collisionPointOffset->c2 = \
         (((int32_t) collisionPointOffset->c1) * localRay.direction.c2) /\
         ((localRay.direction.c1 == 0) ? 1 : localRay.direction.c1);\
-      Unit nextC2 = localRay.start.c2 + collisionPointOffset->c2;\
     }
 
   #define helper2(n1,n2,c)\
@@ -355,6 +354,7 @@ void castRayMultiHit(Ray ray, int16_t (*arrayFunc)(int16_t, int16_t),
     currentSquare.x += no.x;
     currentSquare.y += no.y;
 
+    // offset into the next cell
     currentPos.x += co.x;
     currentPos.y += co.y;
   }

@@ -6,7 +6,7 @@
 
 #include <stdio.h>
 #include "raycastlib.h"
-#include <time.h>
+#include <sys/time.h>
 
 int16_t testArrayFunc(int16_t x, int16_t y)
 {
@@ -55,6 +55,42 @@ int testSingleRay(Unit startX, Unit startY, Unit dirX, Unit dirY,
   return result;
 }
 
+// returns milliseconds
+long measureTime(void (*func)(void))
+{
+  long start, end;
+  struct timeval timecheck;
+
+  gettimeofday(&timecheck, NULL);
+  start = (long) timecheck.tv_sec * 1000 + (long) timecheck.tv_usec / 1000;
+
+  func();
+
+  gettimeofday(&timecheck, NULL);
+  end = (long) timecheck.tv_sec * 1000 + (long) timecheck.tv_usec / 1000;
+
+  return end - start;
+}
+
+void benchCastRays()
+{
+  Ray r;
+
+  r.start.x = UNITS_PER_SQUARE + UNITS_PER_SQUARE / 2;
+  r.start.y = 2 * UNITS_PER_SQUARE + UNITS_PER_SQUARE / 4;
+
+  Vector2D directions[8];
+
+  for (int i = 0; i < 8; ++i)
+    directions[i] = angleToDirection(UNITS_PER_SQUARE / 8 * i);
+
+  for (int i = 0; i < 1000000; ++i)
+  {
+    r.direction = directions[i % 8];
+    castRay(r,testArrayFunc,30);
+  }
+}
+
 int main()
 {
   printf("Testing raycastlib.\n"); 
@@ -100,18 +136,9 @@ int main()
 
   printf("benchmark:\n");
 
-time_t start,end;
-double dif;
-
-  time (&start);
-
-for (int i = 0; i < 1000; ++i)
-  printf("*");
-
-  time (&end);
-  dif = difftime (end,start);
-  printf ("Your calculations took %.2lf seconds to run.\n", dif );
-
-
+  long t;
+  t = measureTime(benchCastRays);
+  printf("cast 1000000 rays: %ld ms\n",t);
+  
   return 0;
 }
