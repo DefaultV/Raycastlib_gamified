@@ -141,6 +141,9 @@ Unit perspectiveScale(Unit originalSize, Unit distance, Unit fov);
 void castRaysMultiHit(Camera cam, ArrayFunction arrayFunc,
   ColumnFunction columnFunc, RayConstraints constraints);
 
+void render(Camera cam, ArrayFunction arrayFunc, PixelFunction pixelFunc,
+  RayConstraints constraints);
+
 //=============================================================================
 // privates
 
@@ -479,6 +482,45 @@ void castRaysMultiHit(Camera cam, ArrayFunction arrayFunc,
 
     columnFunc(hits,hitCount,i,r);
   }
+}
+
+PixelFunction _pixelFunction = 0;
+Camera _camera;
+
+void _columnFunction(HitResult *hits, uint16_t hitCount, uint16_t x, Ray ray)
+{
+  if (hitCount == 0)
+    return;
+
+  HitResult hit = hits[0];
+
+  Unit dist = // adjusted distance
+    (hit.distance * vectorsAngleCos(angleToDirection(_camera.direction),
+    ray.direction)) / UNITS_PER_SQUARE;
+
+  dist = dist == 0 ? 1 : dist; // prevent division by zero
+
+  int32_t height = (UNITS_PER_SQUARE * 50) / dist;
+  uint32_t start = _camera.resolution.y / 2 - height / 2;
+
+  for (uint32_t i = start; i < start + height; ++i)
+  {
+    PixelInfo p;
+
+    p.position.x = x;
+    p.position.y = i;
+    p.isWall = 1;
+
+    _pixelFunction(p);
+  }
+}
+
+void render(Camera cam, ArrayFunction arrayFunc, PixelFunction pixelFunc,
+  RayConstraints constraints)
+{
+  _pixelFunction = pixelFunc;
+  _camera = cam;
+  castRaysMultiHit(cam,arrayFunc,_columnFunction,constraints);
 }
 
 Vector2D normalize(Vector2D v)
