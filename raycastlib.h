@@ -309,13 +309,13 @@ void castRayMultiHit(Ray ray, int16_t (*arrayFunc)(int16_t, int16_t),
 
   *hitResultsLen = 0;
 
-  int16_t squareType = arrayFunc(currentSquare.x,currentSquare.y);
+  int_fast16_t squareType = arrayFunc(currentSquare.x,currentSquare.y);
 
   Vector2D no, co; // next cell offset, collision offset
 
-  for (uint16_t i = 0; i < maxSteps; ++i)
+  for (uint_fast16_t i = 0; i < maxSteps; ++i)
   {
-    int16_t currentType = arrayFunc(currentSquare.x,currentSquare.y);
+    int_fast16_t currentType = arrayFunc(currentSquare.x,currentSquare.y);
 
     if (currentType != squareType)
     {
@@ -380,7 +380,7 @@ void castRaysMultiHit(
   void (*hitFunc)(uint16_t pos, HitResult hit, uint16_t hitNo, Ray r),
   uint16_t maxHits, uint16_t maxSteps)
 {
-  uint16_t fovHalf = fovAngle / 2;
+  uint_fast16_t fovHalf = fovAngle / 2;
 
   Vector2D dir1 = angleToDirection(directionAngle - fovHalf);
   Vector2D dir2 = angleToDirection(directionAngle + fovHalf);
@@ -389,19 +389,19 @@ void castRaysMultiHit(
   Unit dY = dir2.y - dir1.y;
 
   HitResult hits[maxHits];
-  uint16_t hitCount;
+  uint_fast16_t hitCount;
 
   Ray r;
   r.start = position;
 
-  for (uint8_t i = 0; i < resolution; ++i)
+  for (uint_fast8_t i = 0; i < resolution; ++i)
   {
     r.direction.x = dir1.x + (dX * i) / resolution;
     r.direction.y = dir1.y + (dY * i) / resolution;
 
     castRayMultiHit(r,arrayFunc,maxSteps,hits,&hitCount,maxHits);
 
-    for (uint8_t j = 0; j < hitCount; ++j)
+    for (uint_fast8_t j = 0; j < hitCount; ++j)
       hitFunc(i,hits[j],j,r);
   }
 }
