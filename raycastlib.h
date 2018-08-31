@@ -485,37 +485,40 @@ void castRaysMultiHit(Camera cam, ArrayFunction arrayFunc,
 }
 
 PixelFunction _pixelFunction = 0;
+ArrayFunction _arrayFunction = 0;
 Camera _camera;
 
 void _columnFunction(HitResult *hits, uint16_t hitCount, uint16_t x, Ray ray)
 {
-  if (hitCount == 0)
-    return;
-
-  HitResult hit = hits[0];
-
-  Unit dist = // adjusted distance
-    (hit.distance * vectorsAngleCos(angleToDirection(_camera.direction),
-    ray.direction)) / UNITS_PER_SQUARE;
-
-  dist = dist == 0 ? 1 : dist; // prevent division by zero
-
-  int32_t height = perspectiveScale(50,dist,1);
-
-  Unit offset = perspectiveScale(_camera.height,dist,1);
-
-  uint32_t start = _camera.resolution.y / 2 - height / 2 + offset;
-
-  for (uint32_t i = start; i < start + height; ++i)
+  for (uint32_t j = 0; j < hitCount; ++j)
   {
-    PixelInfo p;
+    HitResult hit = hits[j];
 
-    p.position.x = x;
-    p.position.y = i;
-    p.isWall = 1;
-    p.hit = hit;
+    Unit dist = // adjusted distance
+      (hit.distance * vectorsAngleCos(angleToDirection(_camera.direction),
+      ray.direction)) / UNITS_PER_SQUARE;
 
-    _pixelFunction(p);
+    dist = dist == 0 ? 1 : dist; // prevent division by zero
+
+    int32_t height = perspectiveScale(50,dist,1);
+
+    int16_t z = _arrayFunction(hit.square.x,hit.square.y) * 50;
+
+    Unit offset = perspectiveScale(_camera.height - z,dist,1);
+
+    uint32_t start = _camera.resolution.y / 2 - height / 2 + offset;
+
+    for (uint32_t i = start; i < start + height; ++i)
+    {
+      PixelInfo p;
+
+      p.position.x = x;
+      p.position.y = i;
+      p.isWall = 1;
+      p.hit = hit;
+
+      _pixelFunction(p);
+    }
   }
 }
 
@@ -523,6 +526,7 @@ void render(Camera cam, ArrayFunction arrayFunc, PixelFunction pixelFunc,
   RayConstraints constraints)
 {
   _pixelFunction = pixelFunc;
+  _arrayFunction = arrayFunc;
   _camera = cam;
   castRaysMultiHit(cam,arrayFunc,_columnFunction,constraints);
 }
