@@ -75,7 +75,7 @@ typedef struct
 typedef struct
 {
   Vector2D position; ///< On-screen position.
-  int8_t type;       ///< Type of pixel: 0 - wall, 1 - floor, 2 - ceiling.
+  int8_t isWall;     ///< Whether the pixel is a wall or a floor(/ceiling).
   Unit depth;        ///< Corrected depth.
   HitResult hit;     ///< Corresponding ray hit.
 } PixelInfo;
@@ -87,8 +87,9 @@ typedef struct
 } RayConstraints;
 
 typedef int16_t (*ArrayFunction)(int16_t x, int16_t y);
-typedef void (*HitFunction)(uint16_t pos, HitResult h, uint16_t hitNo, Ray r);
-typedef void (*PixelFunc)(PixelInfo info);
+typedef void (*ColumnFunction)(HitResult *hits, uint16_t hitCount, uint16_t x,
+  Ray ray);
+typedef void (*PixelFunction)(PixelInfo info);
 
 /**
  Casts a single ray and returns the first collision result.
@@ -137,11 +138,8 @@ Unit perspectiveScale(Unit originalSize, Unit distance, Unit fov);
  Casts rays for given camera view and for each hit calls a user provided
  function.
  */
-void castRaysMultiHit(Camera cam, ArrayFunction arrayFunc, HitFunction hitFunc,
-  RayConstraints constraints);
-
-void render(Camera cam, ArrayFunction arrayFunc, PixelFunc pixelFunc,
-  RayConstraints constraints);
+void castRaysMultiHit(Camera cam, ArrayFunction arrayFunc,
+  ColumnFunction columnFunc, RayConstraints constraints);
 
 //=============================================================================
 // privates
@@ -454,8 +452,8 @@ HitResult castRay(Ray ray, ArrayFunction arrayFunc)
   return result;
 }
 
-void castRaysMultiHit(Camera cam, ArrayFunction arrayFunc, HitFunction hitFunc,
-  RayConstraints constraints)
+void castRaysMultiHit(Camera cam, ArrayFunction arrayFunc,
+  ColumnFunction columnFunc, RayConstraints constraints)
 {
   uint16_t fovHalf = cam.fovAngle / 2;
 
@@ -466,20 +464,20 @@ void castRaysMultiHit(Camera cam, ArrayFunction arrayFunc, HitFunction hitFunc,
   Unit dY = dir2.y - dir1.y;
 
   HitResult hits[constraints.maxHits];
+  Ray rays[constraints.maxHits];
   uint16_t hitCount;
 
   Ray r;
   r.start = cam.position;
 
-  for (uint8_t i = 0; i < cam.resolution.x; ++i)
+  for (uint16_t i = 0; i < cam.resolution.x; ++i)
   {
     r.direction.x = dir1.x + (dX * i) / cam.resolution.x;
     r.direction.y = dir1.y + (dY * i) / cam.resolution.x;
 
     castRayMultiHit(r,arrayFunc,hits,&hitCount,constraints);
 
-    for (uint8_t j = 0; j < hitCount; ++j)
-      hitFunc(i,hits[j],j,r);
+    columnFunc(hits,hitCount,i,r);
   }
 }
 
