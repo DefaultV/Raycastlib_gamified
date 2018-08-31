@@ -65,13 +65,30 @@ typedef struct
 
 typedef struct
 {
-  int8_t type;    ///< Type of pixel: 0 - wall, 1 - floor, 2 - ceiling.
-  Unit depth;     ///< Corrected depth.
-  HitResult hit;  ///< Corresponding ray hit.
+  Vector2D position;
+  Unit direction;
+  Vector2D resolution;
+  Unit fovAngle;
+  Unit height;
+} Camera;
+
+typedef struct
+{
+  Vector2D position; ///< On-screen position.
+  int8_t type;       ///< Type of pixel: 0 - wall, 1 - floor, 2 - ceiling.
+  Unit depth;        ///< Corrected depth.
+  HitResult hit;     ///< Corresponding ray hit.
 } PixelInfo;
+
+typedef struct
+{
+  uint16_t maxHits;
+  uint16_t maxSteps;
+} RayConstraints;
 
 typedef int16_t (*ArrayFunction)(int16_t x, int16_t y);
 typedef void (*HitFunction)(uint16_t pos, HitResult h, uint16_t hitNo, Ray r);
+typedef void (*PixelFunc)(PixelInfo info);
 
 /**
  Casts a single ray and returns the first collision result.
@@ -81,17 +98,17 @@ typedef void (*HitFunction)(uint16_t pos, HitResult h, uint16_t hitNo, Ray r);
                   Units) returns a type of square (just a number) - transition
                   between two squares of different types (values) is considered
                   a collision).
- @param maxSteps  Maximum number of steps (in squares) to trace the ray.
+ @param constraints.maxSteps  Maximum number of steps (in squares) to trace the ray.
  @return          The first collision result.
  */
 
-HitResult castRay(Ray ray, ArrayFunction arrayFunc, uint16_t maxSteps);
+HitResult castRay(Ray ray, ArrayFunction arrayFunc);
 
 /**
  Casts a single ray and returns a list of collisions.
  */
-void castRayMultiHit(Ray ray, ArrayFunction arrayFunc, uint16_t maxSteps,
-  HitResult *hitResults, uint16_t *hitResultsLen, uint16_t maxHits);
+void castRayMultiHit(Ray ray, ArrayFunction arrayFunc, HitResult *hitResults,
+  uint16_t *hitResultsLen, RayConstraints constraints);
 
 Vector2D angleToDirection(Unit angle);
 Unit cosInt(Unit input);
@@ -120,10 +137,11 @@ Unit perspectiveScale(Unit originalSize, Unit distance, Unit fov);
  Casts rays for given camera view and for each hit calls a user provided
  function.
  */
-void castRaysMultiHit(
-  Vector2D position, Unit directionAngle, Unit fovAngle, uint16_t resolution,
-  ArrayFunction arrayFunc, HitFunction hitFunc, uint16_t maxHits,
-  uint16_t maxSteps);
+void castRaysMultiHit(Camera cam, ArrayFunction arrayFunc, HitFunction hitFunc,
+  RayConstraints constraints);
+
+void render(Camera cam, ArrayFunction arrayFunc, PixelFunc pixelFunc,
+  RayConstraints constraints);
 
 //=============================================================================
 // privates
@@ -233,20 +251,19 @@ int8_t pointIsLeftOfRay(Vector2D point, Ray ray)
 /**
   Casts a ray within a single square, to collide with the square borders.  
  */
-void castRaySquare(Ray localRay, Vector2D *nextCellOffset,
-  Vector2D *collisionPointOffset)
+void castRaySquare(Ray localRay, Vector2D *nextCellOff, Vector2D *collOff)
 {
-  nextCellOffset->x = 0;
-  nextCellOffset->y = 0;
+  nextCellOff->x = 0;
+  nextCellOff->y = 0;
 
   Ray criticalLine = localRay;
 
   #define helper(c1,c2,n)\
     {\
-      nextCellOffset->c1 = n;\
-      collisionPointOffset->c1 = criticalLine.start.c1 - localRay.start.c1;\
-      collisionPointOffset->c2 = \
-        (((int32_t) collisionPointOffset->c1) * localRay.direction.c2) /\
+      nextCellOff->c1 = n;\
+      collOff->c1 = criticalLine.start.c1 - localRay.start.c1;\
+      collOff->c2 = \
+        (((int32_t) collOff->c1) * localRay.direction.c2) /\
         ((localRay.direction.c1 == 0) ? 1 : localRay.direction.c1);\
     }
 
@@ -294,13 +311,12 @@ void castRaySquare(Ray localRay, Vector2D *nextCellOffset,
   #undef helper2
   #undef helper
 
-  collisionPointOffset->x += nextCellOffset->x;
-  collisionPointOffset->y += nextCellOffset->y;
+  collOff->x += nextCellOff->x;
+  collOff->y += nextCellOff->y;
 }
 
-void castRayMultiHit(Ray ray, ArrayFunction arrayFunc,
-  uint16_t maxSteps, HitResult *hitResults, uint16_t *hitResultsLen,
-  uint16_t maxHits)
+void castRayMultiHit(Ray ray, ArrayFunction arrayFunc, HitResult *hitResults,
+  uint16_t *hitResultsLen, RayConstraints constraints)
 {
   Vector2D initialPos = ray.start;
   Vector2D currentPos = ray.start;
@@ -316,7 +332,10 @@ void castRayMultiHit(Ray ray, ArrayFunction arrayFunc,
 
   Vector2D no, co; // next cell offset, collision offset
 
-  for (uint_fast16_t i = 0; i < maxSteps; ++i)
+  no.x = 0;        // just to supress a warning
+  no.y = 0;
+
+  for (uint_fast16_t i = 0; i < constraints.maxSteps; ++i)
   {
     int_fast16_t currentType = arrayFunc(currentSquare.x,currentSquare.y);
 
@@ -345,7 +364,7 @@ void castRayMultiHit(Ray ray, ArrayFunction arrayFunc,
 
       squareType = currentType;
 
-      if (*hitResultsLen >= maxHits)
+      if (*hitResultsLen >= constraints.maxHits)
         break;
     }
 
@@ -363,12 +382,16 @@ void castRayMultiHit(Ray ray, ArrayFunction arrayFunc,
   }
 }
 
-HitResult castRay(Ray ray, ArrayFunction arrayFunc, uint16_t maxSteps)
+HitResult castRay(Ray ray, ArrayFunction arrayFunc)
 {
   HitResult result;
   uint16_t  len;
+  RayConstraints c;
 
-  castRayMultiHit(ray,arrayFunc,maxSteps,&result,&len,1);
+  c.maxSteps = 1000;
+  c.maxHits = 1;
+
+  castRayMultiHit(ray,arrayFunc,&result,&len,c);
 
   if (len == 0)
     result.distance = -1;
@@ -376,31 +399,29 @@ HitResult castRay(Ray ray, ArrayFunction arrayFunc, uint16_t maxSteps)
   return result;
 }
 
-void castRaysMultiHit(
-  Vector2D position, Unit directionAngle, Unit fovAngle, uint16_t resolution,
-  ArrayFunction arrayFunc, HitFunction hitFunc , uint16_t maxHits,
-  uint16_t maxSteps)
+void castRaysMultiHit(Camera cam, ArrayFunction arrayFunc, HitFunction hitFunc,
+  RayConstraints constraints)
 {
-  uint_fast16_t fovHalf = fovAngle / 2;
+  uint_fast16_t fovHalf = cam.fovAngle / 2;
 
-  Vector2D dir1 = angleToDirection(directionAngle - fovHalf);
-  Vector2D dir2 = angleToDirection(directionAngle + fovHalf);
+  Vector2D dir1 = angleToDirection(cam.direction - fovHalf);
+  Vector2D dir2 = angleToDirection(cam.direction + fovHalf);
 
   Unit dX = dir2.x - dir1.x;
   Unit dY = dir2.y - dir1.y;
 
-  HitResult hits[maxHits];
+  HitResult hits[constraints.maxHits];
   uint16_t hitCount;
 
   Ray r;
-  r.start = position;
+  r.start = cam.position;
 
-  for (uint_fast8_t i = 0; i < resolution; ++i)
+  for (uint_fast8_t i = 0; i < cam.resolution.x; ++i)
   {
-    r.direction.x = dir1.x + (dX * i) / resolution;
-    r.direction.y = dir1.y + (dY * i) / resolution;
+    r.direction.x = dir1.x + (dX * i) / cam.resolution.x;
+    r.direction.y = dir1.y + (dY * i) / cam.resolution.x;
 
-    castRayMultiHit(r,arrayFunc,maxSteps,hits,&hitCount,maxHits);
+    castRayMultiHit(r,arrayFunc,hits,&hitCount,constraints);
 
     for (uint_fast8_t j = 0; j < hitCount; ++j)
       hitFunc(i,hits[j],j,r);

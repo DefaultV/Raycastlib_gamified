@@ -34,7 +34,7 @@ int testSingleRay(Unit startX, Unit startY, Unit dirX, Unit dirY,
   printf("- casting ray:\n");
   logRay(r);
 
-  HitResult h = castRay(r,testArrayFunc,20);
+  HitResult h = castRay(r,testArrayFunc);
   
   printf("- result:\n");
   logHitResult(h);
@@ -87,7 +87,7 @@ void benchCastRays()
   for (int i = 0; i < 1000000; ++i)
   {
     r.direction = directions[i % 8];
-    castRay(r,testArrayFunc,30);
+    castRay(r,testArrayFunc);
   }
 }
 
