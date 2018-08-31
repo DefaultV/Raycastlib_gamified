@@ -4,6 +4,8 @@
   license: CC0
 */
 
+#define RAYCASTLIB_PROFILE
+
 #include <stdio.h>
 #include "raycastlib.h"
 #include <sys/time.h>
@@ -139,6 +141,9 @@ int main()
   long t;
   t = measureTime(benchCastRays);
   printf("cast 1000000 rays: %ld ms\n",t);
-  
+ 
+  printf("\n"); 
+  printProfile();
+
   return 0;
 }

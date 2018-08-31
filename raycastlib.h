@@ -146,8 +146,45 @@ void render(Camera cam, ArrayFunction arrayFunc, PixelFunc pixelFunc,
 //=============================================================================
 // privates
 
+#ifdef RAYCASTLIB_PROFILE
+  // function call counters for profiling
+  uint32_t profile_sqrtInt = 0;
+  uint32_t profile_clamp = 0;
+  uint32_t profile_cosInt = 0;
+  uint32_t profile_angleToDirection = 0;
+  uint32_t profile_dist = 0;
+  uint32_t profile_len = 0;
+  uint32_t profile_pointIsLeftOfRay = 0;
+  uint32_t profile_castRaySquare = 0;
+  uint32_t profile_castRayMultiHit = 0; 
+  uint32_t profile_castRay = 0;
+  uint16_t profile_normalize = 0;
+  uint16_t profile_vectorsAngleCos = 0;
+
+  #define profileCall(c) profile_##c += 1
+
+  #define printProfile() {\
+    printf("profile:\n");\
+    printf("  profile_sqrtInt: %d\n",profile_sqrtInt);\
+    printf("  profile_clamp: %d\n",profile_clamp);\
+    printf("  profile_cosInt: %d\n",profile_cosInt);\
+    printf("  profile_angleToDirection: %d\n",profile_angleToDirection);\
+    printf("  profile_dist: %d\n",profile_dist);\
+    printf("  profile_len: %d\n",profile_len);\
+    printf("  profile_pointIsLeftOfRay: %d\n",profile_pointIsLeftOfRay);\
+    printf("  profile_castRaySquare: %d\n",profile_castRaySquare);\
+    printf("  profile_castRayMultiHit : %d\n",profile_castRayMultiHit);\
+    printf("  profile_castRay: %d\n",profile_castRay);\
+    printf("  profile_normalize: %d\n",profile_normalize);\
+    printf("  profile_vectorsAngleCos: %d\n",profile_vectorsAngleCos); }
+#else
+  #define profileCall(c)
+#endif
+
 Unit clamp(Unit value, Unit valueMin, Unit valueMax)
 {
+  profileCall(clamp);
+
   if (value < valueMin)
     return valueMin;
 
@@ -164,6 +201,8 @@ Unit clamp(Unit value, Unit valueMin, Unit valueMax)
 
 Unit cosInt(Unit input)
 {
+  profileCall(cosInt);
+
   input = input % UNITS_PER_SQUARE;
 
   if (input < 0)
@@ -188,6 +227,8 @@ Unit sinInt(Unit input)
 
 Vector2D angleToDirection(Unit angle)
 {
+  profileCall(angleToDirection);
+
   Vector2D result;
 
   result.x = cosInt(angle);
@@ -198,6 +239,8 @@ Vector2D angleToDirection(Unit angle)
 
 uint16_t sqrtInt(uint32_t value)
 {
+  profileCall(sqrtInt);
+
   uint32_t result = 0;
 
   uint32_t a  = value;
@@ -223,6 +266,8 @@ uint16_t sqrtInt(uint32_t value)
 
 Unit dist(Vector2D p1, Vector2D p2)
 {
+  profileCall(dist);
+
   int32_t dx = p2.x - p1.x;
   int32_t dy = p2.y - p1.y;
 
@@ -234,6 +279,8 @@ Unit dist(Vector2D p1, Vector2D p2)
 
 Unit len(Vector2D v)
 {
+  profileCall(len);
+
   v.x *= v.x;
   v.y *= v.y;
 
@@ -242,6 +289,8 @@ Unit len(Vector2D v)
 
 int8_t pointIsLeftOfRay(Vector2D point, Ray ray)
 {
+  profileCall(pointIsLeftOfRay);
+
   int dX    = point.x - ray.start.x;
   int dY    = point.y - ray.start.y;
   return (ray.direction.x * dY - ray.direction.y * dX) > 0;
@@ -253,6 +302,8 @@ int8_t pointIsLeftOfRay(Vector2D point, Ray ray)
  */
 void castRaySquare(Ray localRay, Vector2D *nextCellOff, Vector2D *collOff)
 {
+  profileCall(castRaySquare);
+
   nextCellOff->x = 0;
   nextCellOff->y = 0;
 
@@ -318,6 +369,8 @@ void castRaySquare(Ray localRay, Vector2D *nextCellOff, Vector2D *collOff)
 void castRayMultiHit(Ray ray, ArrayFunction arrayFunc, HitResult *hitResults,
   uint16_t *hitResultsLen, RayConstraints constraints)
 {
+  profileCall(castRayMultiHit);
+
   Vector2D initialPos = ray.start;
   Vector2D currentPos = ray.start;
 
@@ -384,6 +437,8 @@ void castRayMultiHit(Ray ray, ArrayFunction arrayFunc, HitResult *hitResults,
 
 HitResult castRay(Ray ray, ArrayFunction arrayFunc)
 {
+  profileCall(castRay);
+
   HitResult result;
   uint16_t  len;
   RayConstraints c;
@@ -430,6 +485,8 @@ void castRaysMultiHit(Camera cam, ArrayFunction arrayFunc, HitFunction hitFunc,
 
 Vector2D normalize(Vector2D v)
 {
+  profileCall(normalize);
+
   Vector2D result;
 
   Unit l = len(v);
@@ -442,6 +499,8 @@ Vector2D normalize(Vector2D v)
 
 Unit vectorsAngleCos(Vector2D v1, Vector2D v2)
 {
+  profileCall(vectorsAngleCos);
+
   v1 = normalize(v1);
   v2 = normalize(v2);
 
