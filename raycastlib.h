@@ -1,9 +1,11 @@
 #ifndef RAYCASTLIB_H
 #define RAYCASTLIB_H
 
-#include <stdint.h>
-
 /**
+  raycastlib - Small C header-only raycasting library for embedded and low
+  performance computers, such as Arduino. Only uses integer math and stdint
+  standard library.
+
   author: Miloslav "drummyfish" Ciz
   license: CC0
 
@@ -15,10 +17,13 @@
     clockwise, a full angle has UNITS_PER_SQUARE Units.
   */
 
-#define UNITS_PER_SQUARE 1024
+#include <stdint.h>
+
+#define UNITS_PER_SQUARE 1024 ///< No. of Units in a side of a spatial square.
 
 typedef int32_t Unit;   /**< Smallest spatial unit, there is UNITS_PER_SQUARE
-                             units in a square's length. */
+                             units in a square's length. This effectively
+                             serves the purpose of a fixed-point arithmetic. */
 
 #define logVector2D(v)\
   printf("[%d,%d]\n",v.x,v.y);
@@ -86,23 +91,23 @@ typedef struct
   uint16_t maxSteps;
 } RayConstraints;
 
+/**
+ Function used to retrieve the cells of the rendered scene. It should return
+ a "type" of given square as an integer (e.g. square height) - between squares
+ that return different numbers there is considered to be a collision.
+*/ 
 typedef int16_t (*ArrayFunction)(int16_t x, int16_t y);
-typedef void (*ColumnFunction)(HitResult *hits, uint16_t hitCount, uint16_t x,
-  Ray ray);
+
 typedef void (*PixelFunction)(PixelInfo info);
 
-/**
- Casts a single ray and returns the first collision result.
+typedef void
+  (*ColumnFunction)(HitResult *hits, uint16_t hitCount, uint16_t x, Ray ray);
 
- @param Ray       Ray to be cast.
- @param arrayFunc Function that for x and y array coordinates (in squares, NOT
-                  Units) returns a type of square (just a number) - transition
-                  between two squares of different types (values) is considered
-                  a collision).
- @param constraints.maxSteps  Maximum number of steps (in squares) to trace the ray.
+/**
+ Simple-interface function to cast a single ray.
+
  @return          The first collision result.
  */
-
 HitResult castRay(Ray ray, ArrayFunction arrayFunc);
 
 /**
@@ -493,6 +498,11 @@ void _columnFunction(HitResult *hits, uint16_t hitCount, uint16_t x, Ray ray)
   for (uint32_t j = 0; j < hitCount; ++j)
   {
     HitResult hit = hits[j];
+
+    /* FIXME/TODO: The adjusted (=orthogonal, camera-space) distance could
+       possibly be computed more efficiently by not computing Euclidean
+       distance at all, but rather compute the distance of the collision
+       point from the projection plane (line). */
 
     Unit dist = // adjusted distance
       (hit.distance * vectorsAngleCos(angleToDirection(_camera.direction),
