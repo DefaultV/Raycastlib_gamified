@@ -495,18 +495,17 @@ PixelFunction _pixelFunction = 0;
 ArrayFunction _arrayFunction = 0;
 Camera _camera;
 Unit _floorDepthStep = 0; 
-
 Unit _startHeight = 0;
+int32_t _camResYLimit = 0;
+uint16_t _middleRow = 0;
 
 void _columnFunction(HitResult *hits, uint16_t hitCount, uint16_t x, Ray ray)
 {
-  int32_t y = _camera.resolution.y - 1; // on screen y, will only go upwards
+  int32_t y = _camResYLimit; // on screen y, will only go upwards
 
   Unit worldZPrev = _startHeight;
 
   Unit previousDepth = 1;
-
-  uint16_t middleRow = _camera.resolution.y / 2;
 
   PixelInfo p;
   p.position.x = x;
@@ -530,19 +529,19 @@ void _columnFunction(HitResult *hits, uint16_t hitCount, uint16_t x, Ray ray)
 
     Unit worldZ2 = -1 * _camera.height + wallHeight;
 
-    int16_t z1Screen = middleRow -
+    int16_t z1Screen = _middleRow -
       perspectiveScale(
         (worldZPrev * _camera.resolution.y) / UNITS_PER_SQUARE,
         dist,1);
 
-    z1Screen = clamp(z1Screen,0,_camera.resolution.y - 1);
+    z1Screen = clamp(z1Screen,0,_camResYLimit);
 
-    int16_t z2Screen = middleRow -
+    int16_t z2Screen = _middleRow -
       perspectiveScale(
         (worldZ2 * _camera.resolution.y) / UNITS_PER_SQUARE,
         dist,1);
 
-    z2Screen = clamp(z2Screen,0,_camera.resolution.y - 1);
+    z2Screen = clamp(z2Screen,0,_camResYLimit);
 
     Unit zTop = z1Screen < z2Screen ? z1Screen : z2Screen;
 
@@ -583,7 +582,7 @@ void _columnFunction(HitResult *hits, uint16_t hitCount, uint16_t x, Ray ray)
 
   Unit floorCameraDiff = _camera.height - worldZPrev;
 
-  for (int32_t i = y; i >= middleRow; --i)
+  for (int32_t i = y; i >= _middleRow; --i)
   {
     p.position.y = i;
     p.depth = (_camera.resolution.y - i) * _floorDepthStep + floorCameraDiff;
@@ -597,6 +596,8 @@ void render(Camera cam, ArrayFunction arrayFunc, PixelFunction pixelFunc,
   _pixelFunction = pixelFunc;
   _arrayFunction = arrayFunc;
   _camera = cam;
+  _camResYLimit = cam.resolution.y - 1;
+  _middleRow = cam.resolution.y / 2;
 
   _startHeight = arrayFunc(
     cam.position.x / UNITS_PER_SQUARE,
