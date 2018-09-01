@@ -586,8 +586,8 @@ void _columnFunction(HitResult *hits, uint16_t hitCount, uint16_t x, Ray ray)
   for (int32_t i = y; i >= middleRow; --i)
   {
     p.position.y = i;
-    _pixelFunction(p);
     p.depth = (_camera.resolution.y - i) * _floorDepthStep + floorCameraDiff;
+    _pixelFunction(p);
   }
 }
 
@@ -603,7 +603,7 @@ void render(Camera cam, ArrayFunction arrayFunc, PixelFunction pixelFunc,
     cam.position.y / UNITS_PER_SQUARE) -1 * cam.height;
 
   // TODO
-  _floorDepthStep = (10 * UNITS_PER_SQUARE) / cam.resolution.y; 
+  _floorDepthStep = (16 * UNITS_PER_SQUARE) / cam.resolution.y; 
 
   castRaysMultiHit(cam,arrayFunc,_columnFunction,constraints);
 }
