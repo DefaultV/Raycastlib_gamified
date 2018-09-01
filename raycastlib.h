@@ -537,10 +537,13 @@ void _columnFunction(HitResult *hits, uint16_t hitCount, uint16_t x, Ray ray)
     PixelInfo p;
     p.position.x = x;
 
+    // draw floor until the wall
+
     p.isWall = 0;
 
-    // draw floor until the wall
-    for (int32_t i = y; i > z1Screen; --i)
+    Unit zTop = z1Screen < z2Screen ? z1Screen : z2Screen;
+
+    for (int32_t i = y; i > zTop; --i)
     {
       p.position.y = i;
       _pixelFunction(p);  
@@ -557,7 +560,7 @@ void _columnFunction(HitResult *hits, uint16_t hitCount, uint16_t x, Ray ray)
       _pixelFunction(p);
     }
 
-    y = z2Screen;
+    y = y > zTop ? zTop : y;
     worldZPrev = worldZ2;
   }
 }
