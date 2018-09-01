@@ -17,6 +17,8 @@
     clockwise, a full angle has UNITS_PER_SQUARE Units.
   */
 
+#include <stdio.h>
+
 #include <stdint.h>
 
 #define UNITS_PER_SQUARE 1024 ///< No. of Units in a side of a spatial square.
@@ -495,7 +497,11 @@ Camera _camera;
 
 void _columnFunction(HitResult *hits, uint16_t hitCount, uint16_t x, Ray ray)
 {
-  int32_t y = _camera.resolution.y - 1;
+  int32_t y = _camera.resolution.y - 1; // on screen y, will only go upwards
+
+  Unit worldZPrev = -1 * _camera.height;
+
+  uint16_t middleRow = _camera.resolution.y / 2;
 
   for (uint32_t j = 0; j < hitCount; ++j)
   {
@@ -512,16 +518,21 @@ void _columnFunction(HitResult *hits, uint16_t hitCount, uint16_t x, Ray ray)
 
     dist = dist == 0 ? 1 : dist; // prevent division by zero
 
-    Unit z =
-      (_camera.resolution.y *
-        (_arrayFunction(hit.square.x,hit.square.y) - _camera.height)
-      ) / UNITS_PER_SQUARE;
+    Unit wallHeight = _arrayFunction(hit.square.x,hit.square.y);
 
-    int32_t height = perspectiveScale(z,dist,1);
+    Unit worldZ2 = -1 * _camera.height + wallHeight;
 
-    Unit offset = perspectiveScale(_camera.height,dist,1);
+    Unit z1Screen = middleRow -
+      perspectiveScale(
+        (worldZPrev * _camera.resolution.y) / UNITS_PER_SQUARE,
+        dist,
+        1);
 
-    int32_t start = _camera.resolution.y / 2 + height / 2 + offset;
+    Unit z2Screen = middleRow -
+      perspectiveScale(
+        (worldZ2 * _camera.resolution.y) / UNITS_PER_SQUARE,
+        dist,
+        1);
 
     PixelInfo p;
     p.position.x = x;
@@ -529,30 +540,25 @@ void _columnFunction(HitResult *hits, uint16_t hitCount, uint16_t x, Ray ray)
     p.isWall = 0;
 
     // draw floor until the wall
-    for (int32_t i = y; i > start; --i)
+    for (int32_t i = y; i > z1Screen; --i)
     {
       p.position.y = i;
       _pixelFunction(p);  
     }
 
-    int32_t yPrev = y;
-
-    y = start - height;
-
-    if (y > yPrev) // don't overwrite the previous - y can only get smaller
-      y = yPrev;
-
-    start = start > yPrev ? yPrev : start;
+    // draw the wall
 
     p.isWall = 1;
 
-    // draw the wall
-    for (int32_t i = start; i > (y < 0 ? 0 : y); --i)
+    for (int32_t i = z1Screen < y ? z1Screen : y; i > z2Screen; --i)
     {
       p.position.y = i;
       p.hit = hit;
       _pixelFunction(p);
     }
+
+    y = z2Screen;
+    worldZPrev = worldZ2;
   }
 }
 
