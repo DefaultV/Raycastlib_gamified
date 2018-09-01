@@ -495,6 +495,8 @@ Camera _camera;
 
 void _columnFunction(HitResult *hits, uint16_t hitCount, uint16_t x, Ray ray)
 {
+  int32_t y = _camera.resolution.y - 1;
+
   for (uint32_t j = 0; j < hitCount; ++j)
   {
     HitResult hit = hits[j];
@@ -516,17 +518,36 @@ void _columnFunction(HitResult *hits, uint16_t hitCount, uint16_t x, Ray ray)
 
     Unit offset = perspectiveScale(_camera.height - z,dist,1);
 
-    uint32_t start = _camera.resolution.y / 2 - height / 2 + offset;
+    int32_t start = _camera.resolution.y / 2 + height / 2 + offset;
 
-    for (uint32_t i = start; i < start + height; ++i)
+    PixelInfo p;
+    p.position.x = x;
+
+    p.isWall = 0;
+
+    // draw floor until the wall
+    for (int32_t i = y; i > start; --i)
     {
-      PixelInfo p;
-
-      p.position.x = x;
       p.position.y = i;
-      p.isWall = 1;
-      p.hit = hit;
+      _pixelFunction(p);  
+    }
 
+    int32_t yPrev = y;
+
+    y = start - height;
+
+    if (y > yPrev) // don't overwrite the previous - y can only get smaller
+      y = yPrev;
+
+    start = start > yPrev ? yPrev : start;
+
+    p.isWall = 1;
+
+    // draw the wall
+    for (int32_t i = start; i > (y < 0 ? 0 : y); --i)
+    {
+      p.position.y = i;
+      p.hit = hit;
       _pixelFunction(p);
     }
   }
