@@ -494,14 +494,22 @@ void castRaysMultiHit(Camera cam, ArrayFunction arrayFunc,
 PixelFunction _pixelFunction = 0;
 ArrayFunction _arrayFunction = 0;
 Camera _camera;
+Unit _floorDepthStep = 0; 
+
+Unit _startHeight = 0;
 
 void _columnFunction(HitResult *hits, uint16_t hitCount, uint16_t x, Ray ray)
 {
   int32_t y = _camera.resolution.y - 1; // on screen y, will only go upwards
 
-  Unit worldZPrev = -1 * _camera.height;
+  Unit worldZPrev = _startHeight;
+
+  Unit previousDepth = 1;
 
   uint16_t middleRow = _camera.resolution.y / 2;
+
+  PixelInfo p;
+  p.position.x = x;
 
   for (uint32_t j = 0; j < hitCount; ++j)
   {
@@ -522,36 +530,40 @@ void _columnFunction(HitResult *hits, uint16_t hitCount, uint16_t x, Ray ray)
 
     Unit worldZ2 = -1 * _camera.height + wallHeight;
 
-    Unit z1Screen = middleRow -
+    int16_t z1Screen = middleRow -
       perspectiveScale(
         (worldZPrev * _camera.resolution.y) / UNITS_PER_SQUARE,
-        dist,
-        1);
+        dist,1);
 
-    Unit z2Screen = middleRow -
+    z1Screen = clamp(z1Screen,0,_camera.resolution.y - 1);
+
+    int16_t z2Screen = middleRow -
       perspectiveScale(
         (worldZ2 * _camera.resolution.y) / UNITS_PER_SQUARE,
-        dist,
-        1);
+        dist,1);
 
-    PixelInfo p;
-    p.position.x = x;
+    z2Screen = clamp(z2Screen,0,_camera.resolution.y - 1);
+
+    Unit zTop = z1Screen < z2Screen ? z1Screen : z2Screen;
 
     // draw floor until the wall
 
     p.isWall = 0;
+    Unit depthDiff = dist - previousDepth;
 
-    Unit zTop = z1Screen < z2Screen ? z1Screen : z2Screen;
+    Unit floorCameraDiff = _camera.height - worldZPrev;
 
     for (int32_t i = y; i > zTop; --i)
     {
       p.position.y = i;
+      p.depth = (_camera.resolution.y - i) * _floorDepthStep + floorCameraDiff;
       _pixelFunction(p);  
     }
 
     // draw the wall
 
     p.isWall = 1;
+    p.depth = dist;
 
     for (int32_t i = z1Screen < y ? z1Screen : y; i > z2Screen; --i)
     {
@@ -562,6 +574,20 @@ void _columnFunction(HitResult *hits, uint16_t hitCount, uint16_t x, Ray ray)
 
     y = y > zTop ? zTop : y;
     worldZPrev = worldZ2;
+    previousDepth = dist;
+  }
+
+  // draw floor until horizon
+
+  p.isWall = 0;
+
+  Unit floorCameraDiff = _camera.height - worldZPrev;
+
+  for (int32_t i = y; i >= middleRow; --i)
+  {
+    p.position.y = i;
+    _pixelFunction(p);
+    p.depth = (_camera.resolution.y - i) * _floorDepthStep + floorCameraDiff;
   }
 }
 
@@ -571,6 +597,14 @@ void render(Camera cam, ArrayFunction arrayFunc, PixelFunction pixelFunc,
   _pixelFunction = pixelFunc;
   _arrayFunction = arrayFunc;
   _camera = cam;
+
+  _startHeight = arrayFunc(
+    cam.position.x / UNITS_PER_SQUARE,
+    cam.position.y / UNITS_PER_SQUARE) -1 * cam.height;
+
+  // TODO
+  _floorDepthStep = (10 * UNITS_PER_SQUARE) / cam.resolution.y; 
+
   castRaysMultiHit(cam,arrayFunc,_columnFunction,constraints);
 }
 
