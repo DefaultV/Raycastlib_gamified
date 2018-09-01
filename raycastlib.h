@@ -96,7 +96,7 @@ typedef struct
  a "type" of given square as an integer (e.g. square height) - between squares
  that return different numbers there is considered to be a collision.
 */ 
-typedef int16_t (*ArrayFunction)(int16_t x, int16_t y);
+typedef Unit (*ArrayFunction)(int16_t x, int16_t y);
 
 typedef void (*PixelFunction)(PixelInfo info);
 
@@ -512,11 +512,14 @@ void _columnFunction(HitResult *hits, uint16_t hitCount, uint16_t x, Ray ray)
 
     dist = dist == 0 ? 1 : dist; // prevent division by zero
 
-    int32_t height = perspectiveScale(50,dist,1);
+    Unit z =
+      (_camera.resolution.y *
+        (_arrayFunction(hit.square.x,hit.square.y) - _camera.height)
+      ) / UNITS_PER_SQUARE;
 
-    int16_t z = _arrayFunction(hit.square.x,hit.square.y) * 50;
+    int32_t height = perspectiveScale(z,dist,1);
 
-    Unit offset = perspectiveScale(_camera.height - z,dist,1);
+    Unit offset = perspectiveScale(_camera.height,dist,1);
 
     int32_t start = _camera.resolution.y / 2 + height / 2 + offset;
 
