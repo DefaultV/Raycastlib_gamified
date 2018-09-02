@@ -531,9 +531,11 @@ void _columnFunction(HitResult *hits, uint16_t hitCount, uint16_t x, Ray ray)
 {
   int_maybe32_t y = _camResYLimit; // on screen y, will only go upwards
 
+int_maybe32_t y2 = 0;
+
   Unit worldZPrev = _startHeight;
 
-  Unit previousDepth = 1;
+Unit worldZPrevCeil = UNITS_PER_SQUARE * 5 + _startHeight;
 
   PixelInfo p;
   p.position.x = x;
@@ -555,7 +557,9 @@ void _columnFunction(HitResult *hits, uint16_t hitCount, uint16_t x, Ray ray)
 
     Unit wallHeight = _arrayFunction(hit.square.x,hit.square.y);
 
-    Unit worldZ2 = -1 * _camera.height + wallHeight;
+    Unit worldZ2 = wallHeight - _camera.height;
+
+Unit worldZ2Ceil = (UNITS_PER_SQUARE * 5 - wallHeight) - _camera.height;
 
     int16_t z1Screen = _middleRow -
       perspectiveScale(
@@ -564,6 +568,13 @@ void _columnFunction(HitResult *hits, uint16_t hitCount, uint16_t x, Ray ray)
 
     z1Screen = clamp(z1Screen,0,_camResYLimit);
 
+int16_t z1ScreenCeil = _middleRow -
+      perspectiveScale(
+        (worldZPrevCeil * _camera.resolution.y) / UNITS_PER_SQUARE,
+        dist,1);
+
+z1ScreenCeil = clamp(z1ScreenCeil,0,_camResYLimit);
+
     int16_t z2Screen = _middleRow -
       perspectiveScale(
         (worldZ2 * _camera.resolution.y) / UNITS_PER_SQUARE,
@@ -571,16 +582,32 @@ void _columnFunction(HitResult *hits, uint16_t hitCount, uint16_t x, Ray ray)
 
     z2Screen = clamp(z2Screen,0,_camResYLimit);
 
+int16_t z2ScreenCeil = _middleRow -
+  perspectiveScale(
+    (worldZ2Ceil * _camera.resolution.y) / UNITS_PER_SQUARE,
+    dist,1);
+
+z2ScreenCeil = clamp(z2ScreenCeil,0,_camResYLimit);
+
+
+
     Unit zTop = z1Screen < z2Screen ? z1Screen : z2Screen;
+
+
+Unit zBottomCeil = z1ScreenCeil > z2ScreenCeil ? z1ScreenCeil : z2ScreenCeil;
+
+
+if (zTop <= zBottomCeil)
+  zBottomCeil = zTop;
+
 
     // draw floor until the wall
 
     p.isWall = 0;
-    Unit depthDiff = dist - previousDepth;
 
     Unit floorCameraDiff = _camera.height - worldZPrev;
 
-    for (int_maybe32_t i = y; i > zTop; --i)
+    for (int_maybe32_t i = y; i > z1Screen; --i)
     {
       p.position.y = i;
       p.depth = (_camera.resolution.y - i) * _floorDepthStep +
@@ -589,9 +616,25 @@ void _columnFunction(HitResult *hits, uint16_t hitCount, uint16_t x, Ray ray)
       _pixelFunction(p);  
     }
 
+
+Unit ceilCameraDiff = worldZPrevCeil - _camera.height;
+
+for (int_maybe32_t i = y2; i < z1ScreenCeil; ++i)
+{
+  p.position.y = i;
+
+  p.depth = i * _floorDepthStep + ceilCameraDiff * 2;
+
+  _pixelFunction(p);  
+}
+
+
+
     // draw the wall
 
     p.isWall = 1;
+
+p.depth = 1;
     p.depth = dist;
 
     for (int_maybe32_t i = z1Screen < y ? z1Screen : y; i > z2Screen; --i)
@@ -601,10 +644,24 @@ void _columnFunction(HitResult *hits, uint16_t hitCount, uint16_t x, Ray ray)
       _pixelFunction(p);
     }
 
+for (int_maybe32_t i = z1ScreenCeil > y2 ? z1ScreenCeil : y2; i < z2ScreenCeil; ++i)
+{
+  p.position.y = i;
+  p.hit = hit;
+  _pixelFunction(p);
+}
+
     y = y > zTop ? zTop : y;
     worldZPrev = worldZ2;
-    previousDepth = dist;
+
+y2 = y2 < zBottomCeil ? zBottomCeil : y2;
+worldZPrevCeil = worldZ2Ceil;
+
+if (y <= y2)
+  break;
+
   }
+
 
   // draw floor until horizon
 
@@ -612,7 +669,9 @@ void _columnFunction(HitResult *hits, uint16_t hitCount, uint16_t x, Ray ray)
 
   Unit floorCameraDiff = _camera.height - worldZPrev;
 
-  for (int_maybe32_t i = y; i >= _middleRow; --i)
+uint16_t horizon = y <= y2 ? y : _middleRow;
+
+  for (int_maybe32_t i = y; i >= horizon; --i)
   {
     p.position.y = i;
     p.depth = (_camera.resolution.y - i) * _floorDepthStep +
@@ -620,6 +679,19 @@ void _columnFunction(HitResult *hits, uint16_t hitCount, uint16_t x, Ray ray)
 
     _pixelFunction(p);
   }
+
+/*
+Unit ceilCameraDiff = worldZPrevCeil - _camera.height;
+
+for (int_maybe32_t i = y2; i < horizon; ++i)
+{
+  p.position.y = i;
+  p.depth = (_camera.resolution.y - i) * _floorDepthStep +
+    floorCameraDiff * 2;
+
+  _pixelFunction(p);
+}
+*/
 }
 
 void render(Camera cam, ArrayFunction arrayFunc, PixelFunction pixelFunc,
