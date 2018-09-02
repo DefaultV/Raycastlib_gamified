@@ -21,11 +21,23 @@
 
 #include <stdint.h>
 
-#define UNITS_PER_SQUARE 1024 ///< No. of Units in a side of a spatial square.
+#ifndef RAYCAST_TINY
 
+#define UNITS_PER_SQUARE 1024 ///< No. of Units in a side of a spatial square.
 typedef int32_t Unit;   /**< Smallest spatial unit, there is UNITS_PER_SQUARE
                              units in a square's length. This effectively
                              serves the purpose of a fixed-point arithmetic. */
+typedef int32_t int_maybe32_t;
+typedef uint32_t uint_maybe32_t;
+
+#else
+
+#define UNITS_PER_SQUARE 64
+typedef int16_t Unit;
+typedef int16_t int_maybe32_t;
+typedef uint16_t uint_maybe32_t;
+
+#endif
 
 #define logVector2D(v)\
   printf("[%d,%d]\n",v.x,v.y);
@@ -49,8 +61,8 @@ typedef int32_t Unit;   /**< Smallest spatial unit, there is UNITS_PER_SQUARE
 /// Position in 2D space.
 typedef struct
 {
-  int32_t y;
-  int32_t x;
+  int_maybe32_t y;
+  int_maybe32_t x;
 } Vector2D;
 
 typedef struct
@@ -128,7 +140,7 @@ Vector2D normalize(Vector2D v);
 /// Computes a cos of an angle between two vectors.
 Unit vectorsAngleCos(Vector2D v1, Vector2D v2);
 
-uint16_t sqrtInt(uint32_t value);
+uint16_t sqrtInt(uint_maybe32_t value);
 Unit dist(Vector2D p1, Vector2D p2);
 Unit len(Vector2D v);
 
@@ -156,16 +168,16 @@ void render(Camera cam, ArrayFunction arrayFunc, PixelFunction pixelFunc,
 
 #ifdef RAYCASTLIB_PROFILE
   // function call counters for profiling
-  uint32_t profile_sqrtInt = 0;
-  uint32_t profile_clamp = 0;
-  uint32_t profile_cosInt = 0;
-  uint32_t profile_angleToDirection = 0;
-  uint32_t profile_dist = 0;
-  uint32_t profile_len = 0;
-  uint32_t profile_pointIsLeftOfRay = 0;
-  uint32_t profile_castRaySquare = 0;
-  uint32_t profile_castRayMultiHit = 0; 
-  uint32_t profile_castRay = 0;
+  uint_maybe32_t profile_sqrtInt = 0;
+  uint_maybe32_t profile_clamp = 0;
+  uint_maybe32_t profile_cosInt = 0;
+  uint_maybe32_t profile_angleToDirection = 0;
+  uint_maybe32_t profile_dist = 0;
+  uint_maybe32_t profile_len = 0;
+  uint_maybe32_t profile_pointIsLeftOfRay = 0;
+  uint_maybe32_t profile_castRaySquare = 0;
+  uint_maybe32_t profile_castRayMultiHit = 0; 
+  uint_maybe32_t profile_castRay = 0;
   uint16_t profile_normalize = 0;
   uint16_t profile_vectorsAngleCos = 0;
 
@@ -203,7 +215,7 @@ Unit clamp(Unit value, Unit valueMin, Unit valueMax)
 }
 
 // Bhaskara's cosine approximation formula
-#define trigHelper(x) (UNITS_PER_SQUARE *\
+#define trigHelper(x) (((Unit) UNITS_PER_SQUARE) *\
   (UNITS_PER_SQUARE / 2 * UNITS_PER_SQUARE / 2 - 4 * (x) * (x)) /\
   (UNITS_PER_SQUARE / 2 * UNITS_PER_SQUARE / 2 + (x) * (x)))
 
@@ -245,14 +257,19 @@ Vector2D angleToDirection(Unit angle)
   return result;
 }
 
-uint16_t sqrtInt(uint32_t value)
+uint16_t sqrtInt(uint_maybe32_t value)
 {
   profileCall(sqrtInt);
 
-  uint32_t result = 0;
+  uint_maybe32_t result = 0;
 
-  uint32_t a  = value;
-  uint32_t b = 1u << 30;
+  uint_maybe32_t a  = value;
+
+#ifdef RAYCAST_TINY
+  uint_maybe32_t b = 1u << 14;
+#else
+  uint_maybe32_t b = 1u << 30;
+#endif
 
   while (b > a)
     b >>= 2;
@@ -276,13 +293,13 @@ Unit dist(Vector2D p1, Vector2D p2)
 {
   profileCall(dist);
 
-  int32_t dx = p2.x - p1.x;
-  int32_t dy = p2.y - p1.y;
+  int_maybe32_t dx = p2.x - p1.x;
+  int_maybe32_t dy = p2.y - p1.y;
 
   dx = dx * dx;
   dy = dy * dy;
 
-  return sqrtInt((uint32_t) (dx + dy));
+  return sqrtInt((uint_maybe32_t) (dx + dy));
 }
 
 Unit len(Vector2D v)
@@ -292,7 +309,7 @@ Unit len(Vector2D v)
   v.x *= v.x;
   v.y *= v.y;
 
-  return sqrtInt(((uint32_t) v.x) + ((uint32_t) v.y));
+  return sqrtInt(((uint_maybe32_t) v.x) + ((uint_maybe32_t) v.y));
 }
 
 int8_t pointIsLeftOfRay(Vector2D point, Ray ray)
@@ -322,7 +339,7 @@ void castRaySquare(Ray localRay, Vector2D *nextCellOff, Vector2D *collOff)
       nextCellOff->c1 = n;\
       collOff->c1 = criticalLine.start.c1 - localRay.start.c1;\
       collOff->c2 = \
-        (((int32_t) collOff->c1) * localRay.direction.c2) /\
+        (((int_maybe32_t) collOff->c1) * localRay.direction.c2) /\
         ((localRay.direction.c1 == 0) ? 1 : localRay.direction.c1);\
     }
 
@@ -496,12 +513,12 @@ ArrayFunction _arrayFunction = 0;
 Camera _camera;
 Unit _floorDepthStep = 0; 
 Unit _startHeight = 0;
-int32_t _camResYLimit = 0;
+int_maybe32_t _camResYLimit = 0;
 uint16_t _middleRow = 0;
 
 void _columnFunction(HitResult *hits, uint16_t hitCount, uint16_t x, Ray ray)
 {
-  int32_t y = _camResYLimit; // on screen y, will only go upwards
+  int_maybe32_t y = _camResYLimit; // on screen y, will only go upwards
 
   Unit worldZPrev = _startHeight;
 
@@ -510,7 +527,7 @@ void _columnFunction(HitResult *hits, uint16_t hitCount, uint16_t x, Ray ray)
   PixelInfo p;
   p.position.x = x;
 
-  for (uint32_t j = 0; j < hitCount; ++j)
+  for (uint_maybe32_t j = 0; j < hitCount; ++j)
   {
     HitResult hit = hits[j];
 
@@ -552,10 +569,12 @@ void _columnFunction(HitResult *hits, uint16_t hitCount, uint16_t x, Ray ray)
 
     Unit floorCameraDiff = _camera.height - worldZPrev;
 
-    for (int32_t i = y; i > zTop; --i)
+    for (int_maybe32_t i = y; i > zTop; --i)
     {
       p.position.y = i;
-      p.depth = (_camera.resolution.y - i) * _floorDepthStep + floorCameraDiff;
+      p.depth = (_camera.resolution.y - i) * _floorDepthStep +
+        floorCameraDiff * 2;
+
       _pixelFunction(p);  
     }
 
@@ -564,7 +583,7 @@ void _columnFunction(HitResult *hits, uint16_t hitCount, uint16_t x, Ray ray)
     p.isWall = 1;
     p.depth = dist;
 
-    for (int32_t i = z1Screen < y ? z1Screen : y; i > z2Screen; --i)
+    for (int_maybe32_t i = z1Screen < y ? z1Screen : y; i > z2Screen; --i)
     {
       p.position.y = i;
       p.hit = hit;
@@ -582,10 +601,12 @@ void _columnFunction(HitResult *hits, uint16_t hitCount, uint16_t x, Ray ray)
 
   Unit floorCameraDiff = _camera.height - worldZPrev;
 
-  for (int32_t i = y; i >= _middleRow; --i)
+  for (int_maybe32_t i = y; i >= _middleRow; --i)
   {
     p.position.y = i;
-    p.depth = (_camera.resolution.y - i) * _floorDepthStep + floorCameraDiff;
+    p.depth = (_camera.resolution.y - i) * _floorDepthStep +
+      floorCameraDiff * 2;
+
     _pixelFunction(p);
   }
 }
@@ -604,7 +625,7 @@ void render(Camera cam, ArrayFunction arrayFunc, PixelFunction pixelFunc,
     cam.position.y / UNITS_PER_SQUARE) -1 * cam.height;
 
   // TODO
-  _floorDepthStep = (16 * UNITS_PER_SQUARE) / cam.resolution.y; 
+  _floorDepthStep = (12 * UNITS_PER_SQUARE) / cam.resolution.y; 
 
   castRaysMultiHit(cam,arrayFunc,_columnFunction,constraints);
 }
@@ -616,6 +637,8 @@ Vector2D normalize(Vector2D v)
   Vector2D result;
 
   Unit l = len(v);
+
+  l = l == 0 ? 1 : l;
 
   result.x = (v.x * UNITS_PER_SQUARE) / l;
   result.y = (v.y * UNITS_PER_SQUARE) / l;
