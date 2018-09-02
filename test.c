@@ -124,6 +124,15 @@ int main()
     16))
     return 1;
 
+  if (!testSingleRay(
+    -4 * UNITS_PER_SQUARE - UNITS_PER_SQUARE / 2,
+    7 * UNITS_PER_SQUARE + UNITS_PER_SQUARE / 3,
+    100,-100,
+    0, 2,
+    1, 2900,
+    16))
+    return 1;
+
   for (Unit i = -UNITS_PER_SQUARE; i <= UNITS_PER_SQUARE; i += 64)
   {
     Unit v = sinInt(i);

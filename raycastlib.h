@@ -404,6 +404,12 @@ void castRayMultiHit(Ray ray, ArrayFunction arrayFunc, HitResult *hitResults,
   currentSquare.x = ray.start.x / UNITS_PER_SQUARE;
   currentSquare.y = ray.start.y / UNITS_PER_SQUARE;
 
+  if (ray.start.x < 0) // round down, not toward zero
+    currentSquare.x--;
+
+  if (ray.start.y < 0)
+    currentSquare.y--;
+
   *hitResultsLen = 0;
 
   int16_t squareType = arrayFunc(currentSquare.x,currentSquare.y);
@@ -446,8 +452,13 @@ void castRayMultiHit(Ray ray, ArrayFunction arrayFunc, HitResult *hitResults,
         break;
     }
 
-    ray.start.x = currentPos.x % UNITS_PER_SQUARE;
-    ray.start.y = currentPos.y % UNITS_PER_SQUARE;
+    ray.start.x = currentPos.x < 0 ?
+      (UNITS_PER_SQUARE + currentPos.x % UNITS_PER_SQUARE - 1) :
+      (currentPos.x % UNITS_PER_SQUARE);
+
+    ray.start.y = currentPos.y < 0 ?
+      (UNITS_PER_SQUARE + currentPos.y % UNITS_PER_SQUARE - 1) :
+      (currentPos.y % UNITS_PER_SQUARE);
 
     castRaySquare(ray,&no,&co);
 
