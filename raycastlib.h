@@ -17,8 +17,6 @@
     clockwise, a full angle has UNITS_PER_SQUARE Units.
   */
 
-#include <stdio.h>
-
 #include <stdint.h>
 
 #ifndef RAYCAST_TINY
@@ -38,6 +36,8 @@ typedef int16_t int_maybe32_t;
 typedef uint16_t uint_maybe32_t;
 
 #endif
+
+#define VERTICAL_FOV (UNITS_PER_SQUARE / 2)
 
 #define logVector2D(v)\
   printf("[%d,%d]\n",v.x,v.y);
@@ -80,6 +80,8 @@ typedef struct
   Unit     textureCoord; /// Normalized (0 to UNITS_PER_SQUARE - 1) tex coord.
   uint8_t  direction;    ///< Direction of hit.
 } HitResult;
+
+// TODO: things like FOV could be constants to make them precomp. and faster?
 
 typedef struct
 {
@@ -151,7 +153,7 @@ Unit len(Vector2D v);
 Unit degreesToUnitsAngle(int16_t degrees);
 
 ///< Computes the change in size of an object due to perspective.
-Unit perspectiveScale(Unit originalSize, Unit distance, Unit fov);
+Unit perspectiveScale(Unit originalSize, Unit distance);
 
 /**
  Casts rays for given camera view and for each hit calls a user provided
@@ -582,28 +584,28 @@ void _columnFunction(HitResult *hits, uint16_t hitCount, uint16_t x, Ray ray)
     Unit worldZ2Ceil = (UNITS_PER_SQUARE * 5 - wallHeight) - _camera.height;
 
     int_maybe32_t z1Screen = _middleRow - perspectiveScale(
-      (worldZPrev * _camera.resolution.y) / UNITS_PER_SQUARE,dist,1);
+      (worldZPrev * _camera.resolution.y) / UNITS_PER_SQUARE,dist);
 
     int_maybe32_t z1ScreenNoClamp = z1Screen;
 
     z1Screen = clamp(z1Screen,0,_camResYLimit);
 
     int_maybe32_t z1ScreenCeil = _middleRow - perspectiveScale(
-      (worldZPrevCeil * _camera.resolution.y) / UNITS_PER_SQUARE,dist,1);
+      (worldZPrevCeil * _camera.resolution.y) / UNITS_PER_SQUARE,dist);
 
     int_maybe32_t z1ScreenCeilNoClamp = z1ScreenCeil;
 
     z1ScreenCeil = clamp(z1ScreenCeil,0,_camResYLimit);
 
     int_maybe32_t z2Screen = _middleRow - perspectiveScale(
-      (worldZ2 * _camera.resolution.y) / UNITS_PER_SQUARE,dist,1);
+      (worldZ2 * _camera.resolution.y) / UNITS_PER_SQUARE,dist);
 
     int_maybe32_t wallScreenHeightNoClamp = z2Screen - z1ScreenNoClamp;
 
     z2Screen = clamp(z2Screen,0,_camResYLimit);
 
     int_maybe32_t z2ScreenCeil = _middleRow - perspectiveScale(
-      (worldZ2Ceil * _camera.resolution.y) / UNITS_PER_SQUARE,dist,1);
+      (worldZ2Ceil * _camera.resolution.y) / UNITS_PER_SQUARE,dist);
 
     int_maybe32_t wallScreenHeightCeilNoClamp = z2ScreenCeil - z1ScreenCeilNoClamp;
 
@@ -757,14 +759,11 @@ Unit degreesToUnitsAngle(int16_t degrees)
   return (degrees * UNITS_PER_SQUARE) / 360;
 }
 
-Unit perspectiveScale(Unit originalSize, Unit distance, Unit fov)
+Unit perspectiveScale(Unit originalSize, Unit distance)
 {
-return (originalSize * UNITS_PER_SQUARE) / distance;
-
-  distance *= fov;
-  distance = distance == 0 ? 1 : distance; // prevent division by zero
-
-  return originalSize / distance; 
+  return (originalSize * UNITS_PER_SQUARE) /
+    ((VERTICAL_FOV * 2 * distance) / UNITS_PER_SQUARE);
+    // ^ approximation of tan function
 }
 
 #endif
