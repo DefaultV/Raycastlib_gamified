@@ -77,9 +77,8 @@ typedef struct
   Vector2D position;   ///< Exact collision position in Units.
   Unit     distance;   /**< Euclidean distance to the hit position, or -1 if
                             no collision happened. */
-  Unit     textureCoord;    /**< Normalized (0 to UNITS_PER_SQUARE - 1) texture
-                                 coordinate. */
-  uint8_t  direction;       ///< Direction of hit.
+  Unit     textureCoord; /// Normalized (0 to UNITS_PER_SQUARE - 1) tex coord.
+  uint8_t  direction;    ///< Direction of hit.
 } HitResult;
 
 typedef struct
@@ -93,10 +92,11 @@ typedef struct
 
 typedef struct
 {
-  Vector2D position; ///< On-screen position.
-  int8_t isWall;     ///< Whether the pixel is a wall or a floor(/ceiling).
-  Unit depth;        ///< Corrected depth.
-  HitResult hit;     ///< Corresponding ray hit.
+  Vector2D position;  ///< On-screen position.
+  int8_t isWall;      ///< Whether the pixel is a wall or a floor(/ceiling).
+  Unit depth;         ///< Corrected depth.
+  HitResult hit;      ///< Corresponding ray hit.
+  Unit textureCoordY; ///< Normalized (0 to UNITS_PER_SQUARE - 1) tex coord.
 } PixelInfo;
 
 typedef struct
@@ -441,13 +441,25 @@ void castRayMultiHit(Ray ray, ArrayFunction arrayFunc, HitResult *hitResults,
       h.distance = dist(initialPos,currentPos);
 
       if (no.y > 0)
+      {
         h.direction = 0;
+        h.textureCoord = co.x;
+      }
       else if (no.x > 0)
+      {
         h.direction = 1;
+        h.textureCoord = co.y;
+      }
       else if (no.y < 0)
+      {
         h.direction = 2;
+        h.textureCoord = co.x;
+      }
       else
+      {
         h.direction = 3;
+        h.textureCoord = co.y;
+      }
 
       hitResults[*hitResultsLen] = h;
 
@@ -569,29 +581,37 @@ void _columnFunction(HitResult *hits, uint16_t hitCount, uint16_t x, Ray ray)
 
     Unit worldZ2Ceil = (UNITS_PER_SQUARE * 5 - wallHeight) - _camera.height;
 
-    Unit z1Screen = _middleRow - perspectiveScale(
+    int_maybe32_t z1Screen = _middleRow - perspectiveScale(
       (worldZPrev * _camera.resolution.y) / UNITS_PER_SQUARE,dist,1);
+
+    int_maybe32_t z1ScreenNoClamp = z1Screen;
 
     z1Screen = clamp(z1Screen,0,_camResYLimit);
 
-    Unit z1ScreenCeil = _middleRow - perspectiveScale(
+    int_maybe32_t z1ScreenCeil = _middleRow - perspectiveScale(
       (worldZPrevCeil * _camera.resolution.y) / UNITS_PER_SQUARE,dist,1);
+
+    int_maybe32_t z1ScreenCeilNoClamp = z1ScreenCeil;
 
     z1ScreenCeil = clamp(z1ScreenCeil,0,_camResYLimit);
 
-    Unit z2Screen = _middleRow - perspectiveScale(
+    int_maybe32_t z2Screen = _middleRow - perspectiveScale(
       (worldZ2 * _camera.resolution.y) / UNITS_PER_SQUARE,dist,1);
+
+    int_maybe32_t wallScreenHeightNoClamp = z2Screen - z1ScreenNoClamp;
 
     z2Screen = clamp(z2Screen,0,_camResYLimit);
 
-    Unit z2ScreenCeil = _middleRow - perspectiveScale(
+    int_maybe32_t z2ScreenCeil = _middleRow - perspectiveScale(
       (worldZ2Ceil * _camera.resolution.y) / UNITS_PER_SQUARE,dist,1);
+
+    int_maybe32_t wallScreenHeightCeilNoClamp = z2ScreenCeil - z1ScreenCeilNoClamp;
 
     z2ScreenCeil = clamp(z2ScreenCeil,0,_camResYLimit);
 
-    Unit zTop = z1Screen < z2Screen ? z1Screen : z2Screen;
+    int_maybe32_t zTop = z1Screen < z2Screen ? z1Screen : z2Screen;
 
-    Unit zBottomCeil = z1ScreenCeil > z2ScreenCeil ?
+    int_maybe32_t zBottomCeil = z1ScreenCeil > z2ScreenCeil ?
       z1ScreenCeil : z2ScreenCeil;
 
     if (zTop <= zBottomCeil)
@@ -630,6 +650,7 @@ void _columnFunction(HitResult *hits, uint16_t hitCount, uint16_t x, Ray ray)
     {
       p.position.y = i;
       p.hit = hit;
+      p.textureCoordY = ((i - z1ScreenNoClamp) * UNITS_PER_SQUARE) / wallScreenHeightNoClamp;
       _pixelFunction(p);
     }
 
@@ -640,6 +661,7 @@ void _columnFunction(HitResult *hits, uint16_t hitCount, uint16_t x, Ray ray)
     {
       p.position.y = i;
       p.hit = hit;
+      p.textureCoordY = ((i - z1ScreenCeilNoClamp) * UNITS_PER_SQUARE) / wallScreenHeightCeilNoClamp;
       _pixelFunction(p);
     }
 
