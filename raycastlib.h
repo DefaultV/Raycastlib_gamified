@@ -214,6 +214,11 @@ Unit clamp(Unit value, Unit valueMin, Unit valueMax)
   return value;
 }
 
+inline Unit absVal(Unit value)
+{
+  return value < 0 ? -1 * value : value;
+}
+
 // Bhaskara's cosine approximation formula
 #define trigHelper(x) (((Unit) UNITS_PER_SQUARE) *\
   (UNITS_PER_SQUARE / 2 * UNITS_PER_SQUARE / 2 - 4 * (x) * (x)) /\
@@ -529,17 +534,17 @@ uint16_t _middleRow = 0;
 
 void _columnFunction(HitResult *hits, uint16_t hitCount, uint16_t x, Ray ray)
 {
-  int_maybe32_t y = _camResYLimit; // on screen y, will only go upwards
-
-int_maybe32_t y2 = 0;
+  int_maybe32_t y = _camResYLimit; // screen y (for floor), will only go up
+  int_maybe32_t y2 = 0;            // screen y (for ceil), will only fo down
 
   Unit worldZPrev = _startHeight;
 
-Unit worldZPrevCeil = UNITS_PER_SQUARE * 5 + _startHeight;
+  Unit worldZPrevCeil = UNITS_PER_SQUARE * 5 + _startHeight;
 
   PixelInfo p;
   p.position.x = x;
 
+  //  we'll be simulatenously drawing the floor and the ceiling now  
   for (uint_maybe32_t j = 0; j < hitCount; ++j)
   {
     HitResult hit = hits[j];
@@ -559,82 +564,63 @@ Unit worldZPrevCeil = UNITS_PER_SQUARE * 5 + _startHeight;
 
     Unit worldZ2 = wallHeight - _camera.height;
 
-Unit worldZ2Ceil = (UNITS_PER_SQUARE * 5 - wallHeight) - _camera.height;
+    Unit worldZ2Ceil = (UNITS_PER_SQUARE * 5 - wallHeight) - _camera.height;
 
-    int16_t z1Screen = _middleRow -
-      perspectiveScale(
-        (worldZPrev * _camera.resolution.y) / UNITS_PER_SQUARE,
-        dist,1);
+    int16_t z1Screen = _middleRow - perspectiveScale(
+      (worldZPrev * _camera.resolution.y) / UNITS_PER_SQUARE,dist,1);
 
     z1Screen = clamp(z1Screen,0,_camResYLimit);
 
-int16_t z1ScreenCeil = _middleRow -
-      perspectiveScale(
-        (worldZPrevCeil * _camera.resolution.y) / UNITS_PER_SQUARE,
-        dist,1);
+    int16_t z1ScreenCeil = _middleRow - perspectiveScale(
+      (worldZPrevCeil * _camera.resolution.y) / UNITS_PER_SQUARE,dist,1);
 
-z1ScreenCeil = clamp(z1ScreenCeil,0,_camResYLimit);
+    z1ScreenCeil = clamp(z1ScreenCeil,0,_camResYLimit);
 
-    int16_t z2Screen = _middleRow -
-      perspectiveScale(
-        (worldZ2 * _camera.resolution.y) / UNITS_PER_SQUARE,
-        dist,1);
+    int16_t z2Screen = _middleRow - perspectiveScale(
+      (worldZ2 * _camera.resolution.y) / UNITS_PER_SQUARE,dist,1);
 
     z2Screen = clamp(z2Screen,0,_camResYLimit);
 
-int16_t z2ScreenCeil = _middleRow -
-  perspectiveScale(
-    (worldZ2Ceil * _camera.resolution.y) / UNITS_PER_SQUARE,
-    dist,1);
+    int16_t z2ScreenCeil = _middleRow - perspectiveScale(
+      (worldZ2Ceil * _camera.resolution.y) / UNITS_PER_SQUARE,dist,1);
 
-z2ScreenCeil = clamp(z2ScreenCeil,0,_camResYLimit);
-
-
+    z2ScreenCeil = clamp(z2ScreenCeil,0,_camResYLimit);
 
     Unit zTop = z1Screen < z2Screen ? z1Screen : z2Screen;
 
+    Unit zBottomCeil = z1ScreenCeil > z2ScreenCeil ?
+      z1ScreenCeil : z2ScreenCeil;
 
-Unit zBottomCeil = z1ScreenCeil > z2ScreenCeil ? z1ScreenCeil : z2ScreenCeil;
+    if (zTop <= zBottomCeil)
+      zBottomCeil = zTop; // walls on ceiling and floor met
 
-
-if (zTop <= zBottomCeil)
-  zBottomCeil = zTop;
-
-
-    // draw floor until the wall
+    // draw floor until wall
 
     p.isWall = 0;
 
-    Unit floorCameraDiff = _camera.height - worldZPrev;
+    Unit floorCameraDiff = absVal(worldZPrev) * 4;
 
     for (int_maybe32_t i = y; i > z1Screen; --i)
     {
       p.position.y = i;
-      p.depth = (_camera.resolution.y - i) * _floorDepthStep +
-        floorCameraDiff * 2;
-
+      p.depth = (_camera.resolution.y - i) * _floorDepthStep + floorCameraDiff;
       _pixelFunction(p);  
     }
 
+    // draw ceiling until wall
 
-Unit ceilCameraDiff = worldZPrevCeil - _camera.height;
+    Unit ceilCameraDiff = absVal(worldZPrevCeil) * 4;
 
-for (int_maybe32_t i = y2; i < z1ScreenCeil; ++i)
-{
-  p.position.y = i;
+    for (int_maybe32_t i = y2; i < z1ScreenCeil; ++i)
+    {
+      p.position.y = i;
+      p.depth = i * _floorDepthStep + ceilCameraDiff;
+      _pixelFunction(p);  
+    }
 
-  p.depth = i * _floorDepthStep + ceilCameraDiff * 2;
-
-  _pixelFunction(p);  
-}
-
-
-
-    // draw the wall
+    // draw wall
 
     p.isWall = 1;
-
-p.depth = 1;
     p.depth = dist;
 
     for (int_maybe32_t i = z1Screen < y ? z1Screen : y; i > z2Screen; --i)
@@ -644,54 +630,55 @@ p.depth = 1;
       _pixelFunction(p);
     }
 
-for (int_maybe32_t i = z1ScreenCeil > y2 ? z1ScreenCeil : y2; i < z2ScreenCeil; ++i)
-{
-  p.position.y = i;
-  p.hit = hit;
-  _pixelFunction(p);
-}
+    // draw ceiling wall
+
+    for (int_maybe32_t i = z1ScreenCeil > y2 ? z1ScreenCeil : y2;
+      i < z2ScreenCeil; ++i)
+    {
+      p.position.y = i;
+      p.hit = hit;
+      _pixelFunction(p);
+    }
 
     y = y > zTop ? zTop : y;
     worldZPrev = worldZ2;
 
-y2 = y2 < zBottomCeil ? zBottomCeil : y2;
-worldZPrevCeil = worldZ2Ceil;
+    y2 = y2 < zBottomCeil ? zBottomCeil : y2;
 
-if (y <= y2)
-  break;
+    worldZPrevCeil = worldZ2Ceil;
 
+    if (y <= y2)
+      break; // walls on ceiling and floor met
   }
-
 
   // draw floor until horizon
 
   p.isWall = 0;
 
-  Unit floorCameraDiff = _camera.height - worldZPrev;
+  Unit floorCameraDiff = absVal(worldZPrev) * 4;
 
-uint16_t horizon = y <= y2 ? y : _middleRow;
+  uint16_t horizon = y <= y2 ? y : _middleRow;
 
   for (int_maybe32_t i = y; i >= horizon; --i)
   {
     p.position.y = i;
-    p.depth = (_camera.resolution.y - i) * _floorDepthStep +
-      floorCameraDiff * 2;
+    p.depth = (_camera.resolution.y - i) * _floorDepthStep + floorCameraDiff;
 
     _pixelFunction(p);
   }
 
-/*
-Unit ceilCameraDiff = worldZPrevCeil - _camera.height;
+  // draw ceiling until horizon
 
-for (int_maybe32_t i = y2; i < horizon; ++i)
-{
-  p.position.y = i;
-  p.depth = (_camera.resolution.y - i) * _floorDepthStep +
-    floorCameraDiff * 2;
+  Unit ceilCameraDiff = absVal(worldZPrevCeil) * 4;
 
-  _pixelFunction(p);
-}
-*/
+  for (int_maybe32_t i = y2; i < horizon; ++i)
+  {
+    p.position.y = i;
+    p.depth = i * _floorDepthStep + ceilCameraDiff;
+
+    _pixelFunction(p);
+  }
+
 }
 
 void render(Camera cam, ArrayFunction arrayFunc, PixelFunction pixelFunc,
