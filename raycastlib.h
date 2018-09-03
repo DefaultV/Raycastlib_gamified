@@ -222,7 +222,7 @@ inline Unit absVal(Unit value)
 /// Performs division, rounding down, NOT towards zero.
 inline Unit divRoundDown(Unit value, Unit divisor)
 {
-  return value / divisor - (value < 0 ? 1 : 0);
+  return value / divisor - ( (value < 0) ? 1 : 0);
 }
 
 // Bhaskara's cosine approximation formula
@@ -540,8 +540,7 @@ void _columnFunction(HitResult *hits, uint16_t hitCount, uint16_t x, Ray ray)
   int_maybe32_t y2 = 0;            // screen y (for ceil), will only fo down
 
   Unit worldZPrev = _startHeight;
-
-  Unit worldZPrevCeil = UNITS_PER_SQUARE * 5 + _startHeight;
+  Unit worldZPrevCeil = UNITS_PER_SQUARE * 5 - _startHeight - 2 * _camera.height;
 
   PixelInfo p;
   p.position.x = x;
