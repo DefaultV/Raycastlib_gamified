@@ -532,7 +532,7 @@ Camera _camera;
 Unit _floorDepthStep = 0; 
 Unit _startHeight = 0;
 int_maybe32_t _camResYLimit = 0;
-uint16_t _middleRow = 0;
+Unit _middleRow = 0;
 
 void _columnFunction(HitResult *hits, uint16_t hitCount, uint16_t x, Ray ray)
 {
@@ -569,22 +569,22 @@ void _columnFunction(HitResult *hits, uint16_t hitCount, uint16_t x, Ray ray)
 
     Unit worldZ2Ceil = (UNITS_PER_SQUARE * 5 - wallHeight) - _camera.height;
 
-    int16_t z1Screen = _middleRow - perspectiveScale(
+    Unit z1Screen = _middleRow - perspectiveScale(
       (worldZPrev * _camera.resolution.y) / UNITS_PER_SQUARE,dist,1);
 
     z1Screen = clamp(z1Screen,0,_camResYLimit);
 
-    int16_t z1ScreenCeil = _middleRow - perspectiveScale(
+    Unit z1ScreenCeil = _middleRow - perspectiveScale(
       (worldZPrevCeil * _camera.resolution.y) / UNITS_PER_SQUARE,dist,1);
 
     z1ScreenCeil = clamp(z1ScreenCeil,0,_camResYLimit);
 
-    int16_t z2Screen = _middleRow - perspectiveScale(
+    Unit z2Screen = _middleRow - perspectiveScale(
       (worldZ2 * _camera.resolution.y) / UNITS_PER_SQUARE,dist,1);
 
     z2Screen = clamp(z2Screen,0,_camResYLimit);
 
-    int16_t z2ScreenCeil = _middleRow - perspectiveScale(
+    Unit z2ScreenCeil = _middleRow - perspectiveScale(
       (worldZ2Ceil * _camera.resolution.y) / UNITS_PER_SQUARE,dist,1);
 
     z2ScreenCeil = clamp(z2ScreenCeil,0,_camResYLimit);
@@ -659,7 +659,7 @@ void _columnFunction(HitResult *hits, uint16_t hitCount, uint16_t x, Ray ray)
   p.isWall = 0;
 
   Unit floorCameraDiff = absVal(worldZPrev) * VERTICAL_DEPTH_MULTIPLY;
-  uint16_t horizon = y2 < _middleRow ? _middleRow : y2;
+  Unit horizon = y2 < _middleRow ? _middleRow : y2;
 
   for (int_maybe32_t i = y; i >= horizon; --i)
   {
