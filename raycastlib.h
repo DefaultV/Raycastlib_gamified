@@ -219,6 +219,12 @@ inline Unit absVal(Unit value)
   return value < 0 ? -1 * value : value;
 }
 
+/// Performs division, rounding down, NOT towards zero.
+inline Unit divRoundDown(Unit value, Unit divisor)
+{
+  return value / divisor - (value < 0 ? 1 : 0);
+}
+
 // Bhaskara's cosine approximation formula
 #define trigHelper(x) (((Unit) UNITS_PER_SQUARE) *\
   (UNITS_PER_SQUARE / 2 * UNITS_PER_SQUARE / 2 - 4 * (x) * (x)) /\
@@ -227,6 +233,8 @@ inline Unit absVal(Unit value)
 Unit cosInt(Unit input)
 {
   profileCall(cosInt);
+
+  // TODO: could be optimized with LUT
 
   input = input % UNITS_PER_SQUARE;
 
@@ -406,14 +414,8 @@ void castRayMultiHit(Ray ray, ArrayFunction arrayFunc, HitResult *hitResults,
 
   Vector2D currentSquare;
 
-  currentSquare.x = ray.start.x / UNITS_PER_SQUARE;
-  currentSquare.y = ray.start.y / UNITS_PER_SQUARE;
-
-  if (ray.start.x < 0) // round down, not toward zero
-    currentSquare.x--;
-
-  if (ray.start.y < 0)
-    currentSquare.y--;
+  currentSquare.x = divRoundDown(ray.start.x, UNITS_PER_SQUARE);
+  currentSquare.y = divRoundDown(ray.start.y,UNITS_PER_SQUARE);
 
   *hitResultsLen = 0;
 
@@ -694,8 +696,8 @@ void render(Camera cam, ArrayFunction arrayFunc, PixelFunction pixelFunc,
   _middleRow = cam.resolution.y / 2;
 
   _startHeight = arrayFunc(
-    cam.position.x / UNITS_PER_SQUARE,
-    cam.position.y / UNITS_PER_SQUARE) -1 * cam.height;
+    divRoundDown(cam.position.x,UNITS_PER_SQUARE),
+    divRoundDown(cam.position.y,UNITS_PER_SQUARE)) -1 * cam.height;
 
   // TODO
   _floorDepthStep = (12 * UNITS_PER_SQUARE) / cam.resolution.y; 
