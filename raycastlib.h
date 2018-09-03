@@ -221,6 +221,12 @@ inline Unit absVal(Unit value)
   return value < 0 ? -1 * value : value;
 }
 
+/// Like mod, but behaves differently for negative values.
+inline Unit wrap(Unit value, Unit mod)
+{
+  return value < 0 ? (mod + (value % mod) - 1) : (value % mod);
+}
+
 /// Performs division, rounding down, NOT towards zero.
 inline Unit divRoundDown(Unit value, Unit divisor)
 {
@@ -238,10 +244,7 @@ Unit cosInt(Unit input)
 
   // TODO: could be optimized with LUT
 
-  input = input % UNITS_PER_SQUARE;
-
-  if (input < 0)
-    input = UNITS_PER_SQUARE + input;
+  input = wrap(input,UNITS_PER_SQUARE);
 
   if (input < UNITS_PER_SQUARE / 4)
     return trigHelper(input);
@@ -473,13 +476,8 @@ void castRayMultiHit(Ray ray, ArrayFunction arrayFunc, HitResult *hitResults,
         break;
     }
 
-    ray.start.x = currentPos.x < 0 ?
-      (UNITS_PER_SQUARE + currentPos.x % UNITS_PER_SQUARE - 1) :
-      (currentPos.x % UNITS_PER_SQUARE);
-
-    ray.start.y = currentPos.y < 0 ?
-      (UNITS_PER_SQUARE + currentPos.y % UNITS_PER_SQUARE - 1) :
-      (currentPos.y % UNITS_PER_SQUARE);
+    ray.start.x = wrap(currentPos.x,UNITS_PER_SQUARE);
+    ray.start.y = wrap(currentPos.y,UNITS_PER_SQUARE);
 
     castRaySquare(ray,&no,&co);
 
@@ -554,7 +552,8 @@ void _columnFunction(HitResult *hits, uint16_t hitCount, uint16_t x, Ray ray)
   int_maybe32_t y2 = 0;            // screen y (for ceil), will only fo down
 
   Unit worldZPrev = _startHeight;
-  Unit worldZPrevCeil = UNITS_PER_SQUARE * 5 - _startHeight - 2 * _camera.height;
+  Unit worldZPrevCeil =
+    UNITS_PER_SQUARE * 5 - _startHeight - 2 * _camera.height;
 
   PixelInfo p;
   p.position.x = x;
