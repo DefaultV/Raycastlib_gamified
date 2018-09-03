@@ -544,6 +544,8 @@ void _columnFunction(HitResult *hits, uint16_t hitCount, uint16_t x, Ray ray)
   PixelInfo p;
   p.position.x = x;
 
+  #define VERTICAL_DEPTH_MULTIPLY 2
+
   //  we'll be simulatenously drawing the floor and the ceiling now  
   for (uint_maybe32_t j = 0; j < hitCount; ++j)
   {
@@ -598,7 +600,7 @@ void _columnFunction(HitResult *hits, uint16_t hitCount, uint16_t x, Ray ray)
 
     p.isWall = 0;
 
-    Unit floorCameraDiff = absVal(worldZPrev) * 4;
+    Unit floorCameraDiff = absVal(worldZPrev) * VERTICAL_DEPTH_MULTIPLY;
 
     for (int_maybe32_t i = y; i > z1Screen; --i)
     {
@@ -609,7 +611,7 @@ void _columnFunction(HitResult *hits, uint16_t hitCount, uint16_t x, Ray ray)
 
     // draw ceiling until wall
 
-    Unit ceilCameraDiff = absVal(worldZPrevCeil) * 4;
+    Unit ceilCameraDiff = absVal(worldZPrevCeil) * VERTICAL_DEPTH_MULTIPLY;
 
     for (int_maybe32_t i = y2; i < z1ScreenCeil; ++i)
     {
@@ -655,9 +657,8 @@ void _columnFunction(HitResult *hits, uint16_t hitCount, uint16_t x, Ray ray)
 
   p.isWall = 0;
 
-  Unit floorCameraDiff = absVal(worldZPrev) * 4;
-
-  uint16_t horizon = y <= y2 ? y : _middleRow;
+  Unit floorCameraDiff = absVal(worldZPrev) * VERTICAL_DEPTH_MULTIPLY;
+  uint16_t horizon = y2 < _middleRow ? _middleRow : y2;
 
   for (int_maybe32_t i = y; i >= horizon; --i)
   {
@@ -669,7 +670,8 @@ void _columnFunction(HitResult *hits, uint16_t hitCount, uint16_t x, Ray ray)
 
   // draw ceiling until horizon
 
-  Unit ceilCameraDiff = absVal(worldZPrevCeil) * 4;
+  Unit ceilCameraDiff = absVal(worldZPrevCeil) * VERTICAL_DEPTH_MULTIPLY;
+  horizon = y > _middleRow ? _middleRow : y;
 
   for (int_maybe32_t i = y2; i < horizon; ++i)
   {
@@ -679,6 +681,7 @@ void _columnFunction(HitResult *hits, uint16_t hitCount, uint16_t x, Ray ray)
     _pixelFunction(p);
   }
 
+  #undef VERTICAL_DEPTH_MULTIPLY
 }
 
 void render(Camera cam, ArrayFunction arrayFunc, PixelFunction pixelFunc,
