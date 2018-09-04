@@ -167,6 +167,31 @@ void benchmarkMapping()
   }
 }
 
+void pixelFunc(PixelInfo p)
+{
+} 
+
+void benchmarkRender()
+{
+  Camera c;
+
+  c.resolution.x = 640;
+  c.resolution.y = 300;
+  c.position.x = 10;
+  c.position.y = 12;
+  c.direction = 100;
+  c.height = 200;
+  c.fovAngle = UNITS_PER_SQUARE / 3;
+
+  RayConstraints constraints;
+
+  constraints.maxHits = 10;
+  constraints.maxSteps = 12;
+
+  for (int i = 0; i < 100; ++i)
+    render(c,testArrayFunc,pixelFunc,constraints);
+}
+
 int main()
 {
   printf("Testing raycastlib.\n"); 
@@ -232,7 +257,10 @@ int main()
 
   t = measureTime(benchmarkMapping);
   printf("map point to screen 1000000 times: %ld ms\n",t);
- 
+
+  t = measureTime(benchmarkRender);
+  printf("render 100 times: %ld ms\n",t);
+
   printf("\n"); 
   printProfile();
 

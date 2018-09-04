@@ -200,6 +200,8 @@ void render(Camera cam, ArrayFunction arrayFunc, PixelFunction pixelFunc,
   uint32_t profile_normalize = 0;
   uint32_t profile_vectorsAngleCos = 0;
   uint32_t profile_perspectiveScale = 0;
+  uint32_t profile_wrap = 0;
+  uint32_t profile_divRoundDown = 0;
   #define profileCall(c) profile_##c += 1
 
   #define printProfile() {\
@@ -217,7 +219,9 @@ void render(Camera cam, ArrayFunction arrayFunc, PixelFunction pixelFunc,
     printf("  normalize: %d\n",profile_normalize);\
     printf("  vectorsAngleCos: %d\n",profile_vectorsAngleCos);\
     printf("  absVal: %d\n",profile_absVal);\
-    printf("  perspectiveScale: %d\n",profile_perspectiveScale); }
+    printf("  perspectiveScale: %d\n",profile_perspectiveScale);\
+    printf("  wrap: %d\n",profile_wrap);\
+    printf("  divRoundDown: %d\n",profile_divRoundDown); }
 #else
   #define profileCall(c)
 #endif
@@ -226,32 +230,38 @@ Unit clamp(Unit value, Unit valueMin, Unit valueMax)
 {
   profileCall(clamp);
 
-  if (value < valueMin)
+  if (value >= valueMin)
+  {
+    if (value <= valueMax)
+      return value;
+    else
+      return valueMax;
+  }
+  else
     return valueMin;
-
-  if (value > valueMax)
-    return valueMax;
-
-  return value;
 }
 
 inline Unit absVal(Unit value)
 {
   profileCall(absVal);
 
-  return value < 0 ? -1 * value : value;
+  return value >= 0 ? value: -1 * value;
 }
 
 /// Like mod, but behaves differently for negative values.
 inline Unit wrap(Unit value, Unit mod)
 {
-  return value < 0 ? (mod + (value % mod) - 1) : (value % mod);
+  profileCall(wrap);
+
+  return value >= 0 ? (value % mod) : (mod + (value % mod) - 1);
 }
 
 /// Performs division, rounding down, NOT towards zero.
 inline Unit divRoundDown(Unit value, Unit divisor)
 {
-  return value / divisor - ( (value < 0) ? 1 : 0);
+  profileCall(divRoundDown);
+
+  return value / divisor - ((value >= 0) ? 0 : 1);
 }
 
 // Bhaskara's cosine approximation formula
@@ -830,12 +840,10 @@ Unit perspectiveScale(Unit originalSize, Unit distance)
 {
   profileCall(perspectiveScale);
 
-  if (distance == 0)
-    return 0;
-
-  return (originalSize * UNITS_PER_SQUARE) /
-    ((VERTICAL_FOV * 2 * distance) / UNITS_PER_SQUARE);
-    // ^ approximation of tan function
+  return distance != 0 ?
+   (originalSize * UNITS_PER_SQUARE) /
+      ((VERTICAL_FOV * 2 * distance) / UNITS_PER_SQUARE)
+   : 0;
 }
 
 #endif
