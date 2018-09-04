@@ -10,7 +10,7 @@
 #include "raycastlib.h"
 #include <sys/time.h>
 
-int16_t testArrayFunc(int16_t x, int16_t y)
+Unit testArrayFunc(int16_t x, int16_t y)
 {
   if (x > 12 || y > 12)
     return x * y;
@@ -67,10 +67,10 @@ int testSingleMapping(Unit posX, Unit posY, Unit posZ, uint32_t resX,
 
   c.resolution.x = resX;
   c.resolution.y = resY;
-  c.position.x = camY;
+  c.position.x = camX;
   c.position.y = camY;
   c.direction = camDir;
-  c.height = posZ;
+  c.height = camZ;
   c.fovAngle = fov;
 
   Vector2D pos;
@@ -218,23 +218,11 @@ int main()
     0,
     UNITS_PER_SQUARE / 2,
     UNITS_PER_SQUARE / 4,
-    1280, // shouldn't be half?
-    320,
+    640,
+    0,
     1024
     ))
     return -1;
-
-  for (Unit i = -UNITS_PER_SQUARE; i <= UNITS_PER_SQUARE; i += 64)
-  {
-    Unit v = sinInt(i);
-
-    logVector2D(angleToDirection(i));
-
-    //for (int j = 0; j < (v + UNITS_PER_SQUARE) / 64; ++j)
-    //  printf(".");
-
-    //printf("\n");
-  }
 
   printf("benchmark:\n");
 

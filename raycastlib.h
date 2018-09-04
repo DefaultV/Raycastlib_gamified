@@ -72,8 +72,8 @@ typedef uint16_t uint_maybe32_t;
 /// Position in 2D space.
 typedef struct
 {
-  int_maybe32_t y;
-  int_maybe32_t x;
+  Unit y;
+  Unit x;
 } Vector2D;
 
 typedef struct
@@ -186,19 +186,20 @@ void render(Camera cam, ArrayFunction arrayFunc, PixelFunction pixelFunc,
 
 #ifdef RAYCASTLIB_PROFILE
   // function call counters for profiling
-  uint_maybe32_t profile_sqrtInt = 0;
-  uint_maybe32_t profile_clamp = 0;
-  uint_maybe32_t profile_cosInt = 0;
-  uint_maybe32_t profile_angleToDirection = 0;
-  uint_maybe32_t profile_dist = 0;
-  uint_maybe32_t profile_len = 0;
-  uint_maybe32_t profile_pointIsLeftOfRay = 0;
-  uint_maybe32_t profile_castRaySquare = 0;
-  uint_maybe32_t profile_castRayMultiHit = 0; 
-  uint_maybe32_t profile_castRay = 0;
-  uint16_t profile_normalize = 0;
-  uint16_t profile_vectorsAngleCos = 0;
-
+  uint32_t profile_sqrtInt = 0;
+  uint32_t profile_clamp = 0;
+  uint32_t profile_cosInt = 0;
+  uint32_t profile_angleToDirection = 0;
+  uint32_t profile_dist = 0;
+  uint32_t profile_len = 0;
+  uint32_t profile_pointIsLeftOfRay = 0;
+  uint32_t profile_castRaySquare = 0;
+  uint32_t profile_castRayMultiHit = 0; 
+  uint32_t profile_castRay = 0;
+  uint32_t profile_absVal = 0;
+  uint32_t profile_normalize = 0;
+  uint32_t profile_vectorsAngleCos = 0;
+  uint32_t profile_perspectiveScale = 0;
   #define profileCall(c) profile_##c += 1
 
   #define printProfile() {\
@@ -214,7 +215,9 @@ void render(Camera cam, ArrayFunction arrayFunc, PixelFunction pixelFunc,
     printf("  castRayMultiHit : %d\n",profile_castRayMultiHit);\
     printf("  castRay: %d\n",profile_castRay);\
     printf("  normalize: %d\n",profile_normalize);\
-    printf("  vectorsAngleCos: %d\n",profile_vectorsAngleCos); }
+    printf("  vectorsAngleCos: %d\n",profile_vectorsAngleCos);\
+    printf("  absVal: %d\n",profile_absVal);\
+    printf("  perspectiveScale: %d\n",profile_perspectiveScale); }
 #else
   #define profileCall(c)
 #endif
@@ -234,6 +237,8 @@ Unit clamp(Unit value, Unit valueMin, Unit valueMax)
 
 inline Unit absVal(Unit value)
 {
+  profileCall(absVal);
+
   return value < 0 ? -1 * value : value;
 }
 
@@ -446,6 +451,8 @@ void castRayMultiHit(Ray ray, ArrayFunction arrayFunc, HitResult *hitResults,
 
   no.x = 0;        // just to supress a warning
   no.y = 0;
+  co.x = 0;
+  co.y = 0;
 
   for (uint16_t i = 0; i < constraints.maxSteps; ++i)
   {
@@ -537,7 +544,6 @@ void castRaysMultiHit(Camera cam, ArrayFunction arrayFunc,
   Unit dY = dir2.y - dir1.y;
 
   HitResult hits[constraints.maxHits];
-  Ray rays[constraints.maxHits];
   uint16_t hitCount;
 
   Ray r;
@@ -822,6 +828,8 @@ Unit degreesToUnitsAngle(int16_t degrees)
 
 Unit perspectiveScale(Unit originalSize, Unit distance)
 {
+  profileCall(perspectiveScale);
+
   if (distance == 0)
     return 0;
 
