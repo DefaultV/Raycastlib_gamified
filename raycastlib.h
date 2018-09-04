@@ -127,6 +127,11 @@ typedef void
 HitResult castRay(Ray ray, ArrayFunction arrayFunc);
 
 /**
+ Maps a single point in the world to the screen (2D position + depth).
+ */
+PixelInfo mapToScreen(Vector2D worldPosition, Unit height, Camera camera);
+
+/**
  Casts a single ray and returns a list of collisions.
  */
 void castRayMultiHit(Ray ray, ArrayFunction arrayFunc, HitResult *hitResults,
@@ -753,6 +758,52 @@ Unit vectorsAngleCos(Vector2D v1, Vector2D v2)
   return (v1.x * v2.x + v1.y * v2.y) / UNITS_PER_SQUARE;
 }
 
+PixelInfo mapToScreen(Vector2D worldPosition, Unit height, Camera camera)
+{
+  // TODO: precompute some stuff that's constant in the frame
+
+  PixelInfo result;
+
+  Unit d = dist(worldPosition,camera.position);
+
+  Vector2D toPoint;
+
+  toPoint.x = worldPosition.x - camera.position.x;
+  toPoint.y = worldPosition.y - camera.position.y;
+
+  Vector2D cameraDir = angleToDirection(camera.direction);
+
+  result.depth = // adjusted distance
+    (d * vectorsAngleCos(cameraDir,toPoint)) / UNITS_PER_SQUARE;
+
+  result.position.y = camera.resolution.y / 2 -
+    (camera.resolution.y *
+     perspectiveScale(height - camera.height,result.depth)) / UNITS_PER_SQUARE;
+
+  Unit middleColumn = camera.resolution.x / 2;
+
+  Unit a = sqrtInt(d * d - result.depth * result.depth);
+
+  Ray r;
+  r.start = camera.position;
+  r.direction = cameraDir;
+
+  if (!pointIsLeftOfRay(worldPosition,r))
+    a *= -1;
+
+  Unit alpha = camera.fovAngle / 2;
+
+  Unit cos = cosInt(alpha);
+
+  Unit b =
+    (result.depth * sinInt(alpha)) / (cos == 0 ? 1 : cos); // sin/cos = tan
+
+  result.position.x = (a * middleColumn) / b;
+  result.position.x = 2 * (middleColumn - result.position.x);
+
+  return result;
+}
+
 Unit degreesToUnitsAngle(int16_t degrees)
 {
   return (degrees * UNITS_PER_SQUARE) / 360;
@@ -760,6 +811,9 @@ Unit degreesToUnitsAngle(int16_t degrees)
 
 Unit perspectiveScale(Unit originalSize, Unit distance)
 {
+  if (distance == 0)
+    return 0;
+
   return (originalSize * UNITS_PER_SQUARE) /
     ((VERTICAL_FOV * 2 * distance) / UNITS_PER_SQUARE);
     // ^ approximation of tan function
