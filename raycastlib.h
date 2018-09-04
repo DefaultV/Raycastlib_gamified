@@ -311,8 +311,7 @@ uint16_t sqrtInt(uint_maybe32_t value)
   profileCall(sqrtInt);
 
   uint_maybe32_t result = 0;
-
-  uint_maybe32_t a  = value;
+  uint_maybe32_t a = value;
 
 #ifdef RAYCAST_TINY
   uint_maybe32_t b = 1u << 14;
@@ -767,7 +766,7 @@ Vector2D normalize(Vector2D v)
 
   Unit l = len(v);
 
-  l = l == 0 ? 1 : l;
+  l = l != 0 ? l : 1;
 
   result.x = (v.x * UNITS_PER_SQUARE) / l;
   result.y = (v.y * UNITS_PER_SQUARE) / l;
