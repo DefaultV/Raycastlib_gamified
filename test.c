@@ -93,6 +93,38 @@ void benchCastRays()
   }
 }
 
+void benchmarkMapping()
+{
+  Vector2D v;
+  Camera c;
+
+  c.resolution.x = 1024;
+  c.resolution.y = 768;
+  c.position.x = UNITS_PER_SQUARE / 2;
+  c.position.y = UNITS_PER_SQUARE * 2;
+  c.direction = UNITS_PER_SQUARE / 8;
+  c.height = 0;
+  c.fovAngle = UNITS_PER_SQUARE / 2;
+
+  PixelInfo p;
+
+  Vector2D pos;
+  Unit height;
+
+  pos.x = -1024 * UNITS_PER_SQUARE;
+  pos.y = -512 * UNITS_PER_SQUARE;
+  height = 0;
+ 
+  for (int i = 0; i < 1000000; ++i)
+  {
+    p = mapToScreen(pos,height,c);
+
+    pos.x += 4;
+    pos.y += 8;
+    height = (height + 16) % 1024;
+  }
+}
+
 int main()
 {
   printf("Testing raycastlib.\n"); 
@@ -150,6 +182,9 @@ int main()
   long t;
   t = measureTime(benchCastRays);
   printf("cast 1000000 rays: %ld ms\n",t);
+
+  t = measureTime(benchmarkMapping);
+  printf("map point to screen 1000000 times: %ld ms\n",t);
  
   printf("\n"); 
   printProfile();
