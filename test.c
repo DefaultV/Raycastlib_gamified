@@ -57,6 +57,49 @@ int testSingleRay(Unit startX, Unit startY, Unit dirX, Unit dirY,
   return result;
 }
 
+int testSingleMapping(Unit posX, Unit posY, Unit posZ, uint32_t resX,
+  uint32_t resY, Unit camX, Unit camY, Unit camZ, Unit camDir, Unit fov,
+  Unit expectX, Unit expectY, Unit expectZ)
+{
+  int result;
+
+  Camera c;
+
+  c.resolution.x = resX;
+  c.resolution.y = resY;
+  c.position.x = camY;
+  c.position.y = camY;
+  c.direction = camDir;
+  c.height = posZ;
+  c.fovAngle = fov;
+
+  Vector2D pos;
+  Unit height;
+
+  pos.x = posX;
+  pos.y = posY;
+  height = posZ;
+ 
+  PixelInfo p;
+
+  printf("- mapping pixel: %d %d %d\n",posX,posY,posZ);
+
+  p = mapToScreen(pos,height,c);
+
+  printf("- result:\n");
+  logPixelInfo(p);
+
+  result = p.position.x == expectX && p.position.y == expectY &&
+    p.depth == expectZ;
+
+  if (result)
+    printf("\nOK\n\n");
+  else
+    printf("\nFAIL\n\n");
+
+  return result;
+}
+
 // returns milliseconds
 long measureTime(void (*func)(void))
 {
@@ -95,7 +138,6 @@ void benchCastRays()
 
 void benchmarkMapping()
 {
-  Vector2D v;
   Camera c;
 
   c.resolution.x = 1024;
@@ -164,6 +206,23 @@ int main()
     1, 2900,
     16))
     return 1;
+
+  if (!testSingleMapping(
+    -UNITS_PER_SQUARE,
+    0,
+    UNITS_PER_SQUARE / 2,
+    1280,
+    640,
+    0,
+    0,
+    0,
+    UNITS_PER_SQUARE / 2,
+    UNITS_PER_SQUARE / 4,
+    1280, // shouldn't be half?
+    320,
+    1024
+    ))
+    return -1;
 
   for (Unit i = -UNITS_PER_SQUARE; i <= UNITS_PER_SQUARE; i += 64)
   {

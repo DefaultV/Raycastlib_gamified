@@ -58,6 +58,17 @@ typedef uint16_t uint_maybe32_t;
   printf("  dist: %d\n", h.distance);\
   printf("  texcoord: %d\n", h.textureCoord);}\
 
+#define logPixelInfo(p){\
+  printf("pixel:\n");\
+  printf("  position: ");\
+  logVector2D(p.position);\
+  printf("  depth: %d\n", p.depth);\
+  printf("  wall: %d\n", p.isWall);\
+  printf("  textCoordY: %d\n", p.textureCoordY);\
+  printf("  hit: ");\
+  logHitResult(p.hit);\
+  }\
+
 /// Position in 2D space.
 typedef struct
 {
@@ -800,7 +811,7 @@ PixelInfo mapToScreen(Vector2D worldPosition, Unit height, Camera camera)
 
   result.position.x = (a * middleColumn) / b;
   result.position.x = 2 * (middleColumn - result.position.x);
-
+             // TODO: ^ why is this 2 here?
   return result;
 }
 
