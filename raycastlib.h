@@ -810,8 +810,8 @@ PixelInfo mapToScreen(Vector2D worldPosition, Unit height, Camera camera)
     (result.depth * sinInt(alpha)) / (cos == 0 ? 1 : cos); // sin/cos = tan
 
   result.position.x = (a * middleColumn) / b;
-  result.position.x = 2 * (middleColumn - result.position.x);
-             // TODO: ^ why is this 2 here?
+  result.position.x = middleColumn - result.position.x;
+
   return result;
 }
 
