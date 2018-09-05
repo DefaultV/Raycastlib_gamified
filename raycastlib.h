@@ -108,7 +108,8 @@ typedef struct
 typedef struct
 {
   Vector2D position;  ///< On-screen position.
-  int8_t isWall;      ///< Whether the pixel is a wall or a floor(/ceiling).
+  int8_t isWall;      ///< Whether the pixel is a wall or a floor/ceiling.
+  int8_t isFloor;     ///< Whether the pixel is floor or ceiling.
   Unit depth;         ///< Corrected depth.
   HitResult hit;      ///< Corresponding ray hit.
   Unit textureCoordY; ///< Normalized (0 to UNITS_PER_SQUARE - 1) tex coord.
@@ -691,6 +692,7 @@ void _columnFunction(HitResult *hits, uint16_t hitCount, uint16_t x, Ray ray)
     // draw floor until wall
 
     p.isWall = 0;
+    p.isFloor = 1;
 
     Unit floorCameraDiff = absVal(worldZPrev) * VERTICAL_DEPTH_MULTIPLY;
 
@@ -702,6 +704,8 @@ void _columnFunction(HitResult *hits, uint16_t hitCount, uint16_t x, Ray ray)
     }
 
     // draw ceiling until wall
+
+    p.isFloor = 0;
 
     if (_ceilFunction != 0)
     {
@@ -719,6 +723,7 @@ void _columnFunction(HitResult *hits, uint16_t hitCount, uint16_t x, Ray ray)
 
     p.isWall = 1;
     p.depth = dist;
+    p.isFloor = 1;
 
     int_maybe32_t iTo = y2 < zTop ? zTop : y2;
 
@@ -735,6 +740,8 @@ void _columnFunction(HitResult *hits, uint16_t hitCount, uint16_t x, Ray ray)
     }
 
     // draw ceiling wall
+
+    p.isFloor = 0;
 
     if (_ceilFunction != 0)
     {
@@ -767,6 +774,7 @@ void _columnFunction(HitResult *hits, uint16_t hitCount, uint16_t x, Ray ray)
   // draw floor until horizon
 
   p.isWall = 0;
+  p.isFloor = 1;
 
   Unit floorCameraDiff = absVal(worldZPrev) * VERTICAL_DEPTH_MULTIPLY;
   Unit horizon = (y2 < _middleRow || _ceilFunction == 0) ? _middleRow : y2;
@@ -783,6 +791,8 @@ void _columnFunction(HitResult *hits, uint16_t hitCount, uint16_t x, Ray ray)
 
   if (_ceilFunction != 0)
   {
+    p.isFloor = 0;
+
     Unit ceilCameraDiff = absVal(worldZPrevCeil) * VERTICAL_DEPTH_MULTIPLY;
     horizon = y > _middleRow ? _middleRow : y;
 
