@@ -722,7 +722,7 @@ void _columnFunction(HitResult *hits, uint16_t hitCount, uint16_t x, Ray ray)
 
     int_maybe32_t iTo = y2 < zTop ? zTop : y2;
 
-    for (int_maybe32_t i = z1Screen < y ? z1Screen : y; i > iTo; --i)
+    for (int_maybe32_t i = z1Screen < y ? z1Screen : y; i >= iTo; --i)
     {
       p.position.y = i;
       p.hit = hit;
@@ -740,7 +740,7 @@ void _columnFunction(HitResult *hits, uint16_t hitCount, uint16_t x, Ray ray)
     {
       iTo = y > zBottomCeil ? zBottomCeil : y;
 
-      for (int_maybe32_t i = z1ScreenCeil > y2 ? z1ScreenCeil : y2; i < iTo;
+      for (int_maybe32_t i = z1ScreenCeil > y2 ? z1ScreenCeil : y2; i <= iTo;
         ++i)
       {
         p.position.y = i;
@@ -771,7 +771,7 @@ void _columnFunction(HitResult *hits, uint16_t hitCount, uint16_t x, Ray ray)
   Unit floorCameraDiff = absVal(worldZPrev) * VERTICAL_DEPTH_MULTIPLY;
   Unit horizon = (y2 < _middleRow || _ceilFunction == 0) ? _middleRow : y2;
 
-  for (int_maybe32_t i = y; i >= horizon; --i)
+  for (int_maybe32_t i = y; i >= horizon + (horizon > y2 ? 0 : 1); --i)
   {
     p.position.y = i;
     p.depth = (_camera.resolution.y - i) * _floorDepthStep + floorCameraDiff;
