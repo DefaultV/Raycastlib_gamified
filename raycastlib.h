@@ -646,6 +646,9 @@ void _columnFunction(HitResult *hits, uint16_t hitCount, uint16_t x, Ray ray)
     int_maybe32_t zBottomCeil = z1ScreenCeil > z2ScreenCeil ?
       z1ScreenCeil : z2ScreenCeil;
 
+//if (x == 26)
+//  printf("%d %d %d %d\n",z1Screen,z2Screen,z1ScreenCeil,z2ScreenCeil);
+
     if (zTop <= zBottomCeil)
       zBottomCeil = zTop; // walls on ceiling and floor met
 
@@ -673,27 +676,32 @@ void _columnFunction(HitResult *hits, uint16_t hitCount, uint16_t x, Ray ray)
       _pixelFunction(p);  
     }
 
-    // draw wall
+    // draw floor wall
 
     p.isWall = 1;
     p.depth = dist;
 
-    for (int_maybe32_t i = z1Screen < y ? z1Screen : y; i > z2Screen; --i)
+    int_maybe32_t iTo = y2 < zTop ? zTop : y2;
+
+    for (int_maybe32_t i = z1Screen < y ? z1Screen : y; i > iTo; --i)
     {
       p.position.y = i;
       p.hit = hit;
-      p.textureCoordY = ((i - z1ScreenNoClamp) * UNITS_PER_SQUARE) / wallScreenHeightNoClamp;
+      p.textureCoordY = ((i - z1ScreenNoClamp) * UNITS_PER_SQUARE) /
+        wallScreenHeightNoClamp;
       _pixelFunction(p);
     }
 
     // draw ceiling wall
 
-    for (int_maybe32_t i = z1ScreenCeil > y2 ? z1ScreenCeil : y2;
-      i < z2ScreenCeil; ++i)
+    iTo = y > zBottomCeil ? zBottomCeil : y;
+
+    for (int_maybe32_t i = z1ScreenCeil > y2 ? z1ScreenCeil : y2; i < iTo; ++i)
     {
       p.position.y = i;
       p.hit = hit;
-      p.textureCoordY = ((i - z1ScreenCeilNoClamp) * UNITS_PER_SQUARE) / wallScreenHeightCeilNoClamp;
+      p.textureCoordY = ((i - z1ScreenCeilNoClamp) * UNITS_PER_SQUARE) /
+        wallScreenHeightCeilNoClamp;
       _pixelFunction(p);
     }
 
@@ -701,7 +709,6 @@ void _columnFunction(HitResult *hits, uint16_t hitCount, uint16_t x, Ray ray)
     worldZPrev = worldZ2;
 
     y2 = y2 < zBottomCeil ? zBottomCeil : y2;
-
     worldZPrevCeil = worldZ2Ceil;
 
     if (y <= y2)
