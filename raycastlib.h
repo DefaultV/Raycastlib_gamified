@@ -36,7 +36,9 @@
   typedef uint16_t uint_maybe32_t;
 #endif
 
+#ifndef VERTICAL_FOV
 #define VERTICAL_FOV (UNITS_PER_SQUARE / 2)
+#endif
 
 #define logVector2D(v)\
   printf("[%d,%d]\n",v.x,v.y);
@@ -87,7 +89,8 @@ typedef struct
   Vector2D position;   ///< Exact collision position in Units.
   Unit     distance;   /**< Euclidean distance to the hit position, or -1 if
                             no collision happened. */
-  Unit     textureCoord; /// Normalized (0 to UNITS_PER_SQUARE - 1) tex coord.
+  Unit     textureCoord; ///< Normalized (0 to UNITS_PER_SQUARE - 1) tex coord.
+  Unit     type;         ///< Integer identifying type of square.
   uint8_t  direction;    ///< Direction of hit.
 } HitResult;
 
@@ -145,8 +148,8 @@ PixelInfo mapToScreen(Vector2D worldPosition, Unit height, Camera camera);
 /**
  Casts a single ray and returns a list of collisions.
  */
-void castRayMultiHit(Ray ray, ArrayFunction arrayFunc, HitResult *hitResults,
-  uint16_t *hitResultsLen, RayConstraints constraints);
+void castRayMultiHit(Ray ray, ArrayFunction arrayFunc, ArrayFunction typeFunc, 
+  HitResult *hitResults, uint16_t *hitResultsLen, RayConstraints constraints);
 
 Vector2D angleToDirection(Unit angle);
 Unit cosInt(Unit input);
@@ -176,7 +179,8 @@ Unit perspectiveScale(Unit originalSize, Unit distance);
  function.
  */
 void castRaysMultiHit(Camera cam, ArrayFunction arrayFunc,
-  ColumnFunction columnFunc, RayConstraints constraints);
+  ArrayFunction typeFunction, ColumnFunction columnFunc,
+  RayConstraints constraints);
 
 /**
  Renders a complete camera view.
@@ -185,11 +189,14 @@ void castRaysMultiHit(Camera cam, ArrayFunction arrayFunc,
  @param floorHeightFunc function that returns floor height (in Units)
  @param ceilingHeightFunc same as floorHeightFunc but for ceiling, can also be
                           0 (no ceiling will be rendered)
+ @param typeFunction function that says a type of square (e.g. its texture
+                     index), can be 0 (no type in hit result)
  @param pixelFunc callback function to draw a single pixel on screen
  @param constraints constraints for each cast ray
  */
-void render(Camera cam, ArrayFunction floorHeightFunc, ArrayFunction
-  ceilingHeightFunc, PixelFunction pixelFunc, RayConstraints constraints);
+void render(Camera cam, ArrayFunction floorHeightFunc,
+  ArrayFunction ceilingHeightFunc, ArrayFunction typeFunction,
+  PixelFunction pixelFunc, RayConstraints constraints);
 
 //=============================================================================
 // privates
@@ -449,8 +456,8 @@ void castRaySquare(Ray localRay, Vector2D *nextCellOff, Vector2D *collOff)
   collOff->y += nextCellOff->y;
 }
 
-void castRayMultiHit(Ray ray, ArrayFunction arrayFunc, HitResult *hitResults,
-  uint16_t *hitResultsLen, RayConstraints constraints)
+void castRayMultiHit(Ray ray, ArrayFunction arrayFunc, ArrayFunction typeFunc, 
+  HitResult *hitResults, uint16_t *hitResultsLen, RayConstraints constraints)
 {
   profileCall(castRayMultiHit);
 
@@ -486,6 +493,9 @@ void castRayMultiHit(Ray ray, ArrayFunction arrayFunc, HitResult *hitResults,
       h.position = currentPos;
       h.square   = currentSquare;
       h.distance = dist(initialPos,currentPos);
+
+      if (typeFunc != 0)
+        h.type = typeFunc(currentSquare.x,currentSquare.y);
 
       if (no.y > 0)
       {
@@ -543,7 +553,7 @@ HitResult castRay(Ray ray, ArrayFunction arrayFunc)
   c.maxSteps = 1000;
   c.maxHits = 1;
 
-  castRayMultiHit(ray,arrayFunc,&result,&len,c);
+  castRayMultiHit(ray,arrayFunc,0,&result,&len,c);
 
   if (len == 0)
     result.distance = -1;
@@ -552,7 +562,8 @@ HitResult castRay(Ray ray, ArrayFunction arrayFunc)
 }
 
 void castRaysMultiHit(Camera cam, ArrayFunction arrayFunc,
-  ColumnFunction columnFunc, RayConstraints constraints)
+  ArrayFunction typeFunction, ColumnFunction columnFunc,
+  RayConstraints constraints)
 {
   uint16_t fovHalf = cam.fovAngle / 2;
 
@@ -573,7 +584,7 @@ void castRaysMultiHit(Camera cam, ArrayFunction arrayFunc,
     r.direction.x = dir1.x + (dX * i) / cam.resolution.x;
     r.direction.y = dir1.y + (dY * i) / cam.resolution.x;
 
-    castRayMultiHit(r,arrayFunc,hits,&hitCount,constraints);
+    castRayMultiHit(r,arrayFunc,typeFunction,hits,&hitCount,constraints);
 
     columnFunc(hits,hitCount,i,r);
   }
@@ -787,8 +798,9 @@ void _columnFunction(HitResult *hits, uint16_t hitCount, uint16_t x, Ray ray)
   #undef VERTICAL_DEPTH_MULTIPLY
 }
 
-void render(Camera cam, ArrayFunction floorHeightFunc, ArrayFunction
-  ceilingHeightFunc, PixelFunction pixelFunc, RayConstraints constraints)
+void render(Camera cam, ArrayFunction floorHeightFunc,
+  ArrayFunction ceilingHeightFunc, ArrayFunction typeFunction,
+  PixelFunction pixelFunc, RayConstraints constraints)
 {
   _pixelFunction = pixelFunc;
   _floorFunction = floorHeightFunc;
@@ -812,7 +824,8 @@ void render(Camera cam, ArrayFunction floorHeightFunc, ArrayFunction
   // TODO
   _floorDepthStep = (12 * UNITS_PER_SQUARE) / cam.resolution.y; 
 
-  castRaysMultiHit(cam,_floorCeilFunction,_columnFunction,constraints);
+  castRaysMultiHit(cam,_floorCeilFunction,typeFunction,
+    _columnFunction,constraints);
 }
 
 Vector2D normalize(Vector2D v)
