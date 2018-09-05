@@ -178,8 +178,8 @@ Unit perspectiveScale(Unit originalSize, Unit distance);
 void castRaysMultiHit(Camera cam, ArrayFunction arrayFunc,
   ColumnFunction columnFunc, RayConstraints constraints);
 
-void render(Camera cam, ArrayFunction arrayFunc, PixelFunction pixelFunc,
-  RayConstraints constraints);
+void render(Camera cam, ArrayFunction floorHeightFunc, ArrayFunction
+  ceilingHeightFunc, PixelFunction pixelFunc, RayConstraints constraints);
 
 //=============================================================================
 // privates
@@ -454,7 +454,7 @@ void castRayMultiHit(Ray ray, ArrayFunction arrayFunc, HitResult *hitResults,
 
   *hitResultsLen = 0;
 
-  int16_t squareType = arrayFunc(currentSquare.x,currentSquare.y);
+  Unit squareType = arrayFunc(currentSquare.x,currentSquare.y);
 
   Vector2D no, co; // next cell offset, collision offset
 
@@ -465,7 +465,7 @@ void castRayMultiHit(Ray ray, ArrayFunction arrayFunc, HitResult *hitResults,
 
   for (uint16_t i = 0; i < constraints.maxSteps; ++i)
   {
-    int16_t currentType = arrayFunc(currentSquare.x,currentSquare.y);
+    Unit currentType = arrayFunc(currentSquare.x,currentSquare.y);
 
     if (currentType != squareType)
     {
@@ -569,22 +569,35 @@ void castRaysMultiHit(Camera cam, ArrayFunction arrayFunc,
   }
 }
 
+// global helper variables, for precomputing stuff etc.
 PixelFunction _pixelFunction = 0;
-ArrayFunction _arrayFunction = 0;
 Camera _camera;
 Unit _floorDepthStep = 0; 
-Unit _startHeight = 0;
+Unit _startFloorHeight = 0;
+Unit _startCeilHeight = 0;
 int_maybe32_t _camResYLimit = 0;
 Unit _middleRow = 0;
+ArrayFunction _floorFunction = 0;
+ArrayFunction _ceilFunction = 0;
+
+/// Helper function that determines intersection with both ceiling and floor.
+Unit _floorCeilFunction(int16_t x, int16_t y)
+{
+  // TODO: adjust also for RAYCAST_TINY
+
+  Unit f = _floorFunction(x,y);
+  Unit c = _ceilFunction(x,y);
+
+  return ((f & 0x0000ffff) << 16) | (c & 0x0000ffff);
+}
 
 void _columnFunction(HitResult *hits, uint16_t hitCount, uint16_t x, Ray ray)
 {
   int_maybe32_t y = _camResYLimit; // screen y (for floor), will only go up
   int_maybe32_t y2 = 0;            // screen y (for ceil), will only fo down
 
-  Unit worldZPrev = _startHeight;
-  Unit worldZPrevCeil =
-    UNITS_PER_SQUARE * 5 - _startHeight - 2 * _camera.height;
+  Unit worldZPrev = _startFloorHeight;
+  Unit worldZPrevCeil = _startCeilHeight;
 
   PixelInfo p;
   p.position.x = x;
@@ -607,11 +620,12 @@ void _columnFunction(HitResult *hits, uint16_t hitCount, uint16_t x, Ray ray)
 
     dist = dist == 0 ? 1 : dist; // prevent division by zero
 
-    Unit wallHeight = _arrayFunction(hit.square.x,hit.square.y);
+    Unit wallHeight = _floorFunction(hit.square.x,hit.square.y);
+    Unit wallHeightCeil = _ceilFunction(hit.square.x,hit.square.y);
 
     Unit worldZ2 = wallHeight - _camera.height;
 
-    Unit worldZ2Ceil = (UNITS_PER_SQUARE * 5 - wallHeight) - _camera.height;
+    Unit worldZ2Ceil = wallHeightCeil - _camera.height;
 
     int_maybe32_t z1Screen = _middleRow - perspectiveScale(
       (worldZPrev * _camera.resolution.y) / UNITS_PER_SQUARE,dist);
@@ -645,9 +659,6 @@ void _columnFunction(HitResult *hits, uint16_t hitCount, uint16_t x, Ray ray)
 
     int_maybe32_t zBottomCeil = z1ScreenCeil > z2ScreenCeil ?
       z1ScreenCeil : z2ScreenCeil;
-
-//if (x == 26)
-//  printf("%d %d %d %d\n",z1Screen,z2Screen,z1ScreenCeil,z2ScreenCeil);
 
     if (zTop <= zBottomCeil)
       zBottomCeil = zTop; // walls on ceiling and floor met
@@ -746,23 +757,28 @@ void _columnFunction(HitResult *hits, uint16_t hitCount, uint16_t x, Ray ray)
   #undef VERTICAL_DEPTH_MULTIPLY
 }
 
-void render(Camera cam, ArrayFunction arrayFunc, PixelFunction pixelFunc,
-  RayConstraints constraints)
+void render(Camera cam, ArrayFunction floorHeightFunc, ArrayFunction
+  ceilingHeightFunc, PixelFunction pixelFunc, RayConstraints constraints)
 {
   _pixelFunction = pixelFunc;
-  _arrayFunction = arrayFunc;
+  _floorFunction = floorHeightFunc;
+  _ceilFunction = ceilingHeightFunc;
   _camera = cam;
   _camResYLimit = cam.resolution.y - 1;
   _middleRow = cam.resolution.y / 2;
 
-  _startHeight = arrayFunc(
+  _startFloorHeight = floorHeightFunc(
+    divRoundDown(cam.position.x,UNITS_PER_SQUARE),
+    divRoundDown(cam.position.y,UNITS_PER_SQUARE)) -1 * cam.height;
+
+  _startCeilHeight = ceilingHeightFunc(
     divRoundDown(cam.position.x,UNITS_PER_SQUARE),
     divRoundDown(cam.position.y,UNITS_PER_SQUARE)) -1 * cam.height;
 
   // TODO
   _floorDepthStep = (12 * UNITS_PER_SQUARE) / cam.resolution.y; 
 
-  castRaysMultiHit(cam,arrayFunc,_columnFunction,constraints);
+  castRaysMultiHit(cam,_floorCeilFunction,_columnFunction,constraints);
 }
 
 Vector2D normalize(Vector2D v)
