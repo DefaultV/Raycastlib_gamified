@@ -20,21 +20,20 @@
 #include <stdint.h>
 
 #ifndef RAYCAST_TINY
-
-#define UNITS_PER_SQUARE 1024 ///< No. of Units in a side of a spatial square.
-typedef int32_t Unit;   /**< Smallest spatial unit, there is UNITS_PER_SQUARE
+  #define UNITS_PER_SQUARE 1024 ///< N. of Units in a side of a spatial square.
+  typedef int32_t Unit; /**< Smallest spatial unit, there is UNITS_PER_SQUARE
                              units in a square's length. This effectively
                              serves the purpose of a fixed-point arithmetic. */
-typedef int32_t int_maybe32_t;
-typedef uint32_t uint_maybe32_t;
+  #define UNIT_INFINITY 2147483647;
 
+  typedef int32_t int_maybe32_t;
+  typedef uint32_t uint_maybe32_t;
 #else
-
-#define UNITS_PER_SQUARE 64
-typedef int16_t Unit;
-typedef int16_t int_maybe32_t;
-typedef uint16_t uint_maybe32_t;
-
+  #define UNITS_PER_SQUARE 64
+  typedef int16_t Unit;
+  #define UNIT_INFINITY 32767;
+  typedef int16_t int_maybe32_t;
+  typedef uint16_t uint_maybe32_t;
 #endif
 
 #define VERTICAL_FOV (UNITS_PER_SQUARE / 2)
@@ -179,6 +178,16 @@ Unit perspectiveScale(Unit originalSize, Unit distance);
 void castRaysMultiHit(Camera cam, ArrayFunction arrayFunc,
   ColumnFunction columnFunc, RayConstraints constraints);
 
+/**
+ Renders a complete camera view.
+
+ @param cam camera whose view to render
+ @param floorHeightFunc function that returns floor height (in Units)
+ @param ceilingHeightFunc same as floorHeightFunc but for ceiling, can also be
+                          0 (no ceiling will be rendered)
+ @param pixelFunc callback function to draw a single pixel on screen
+ @param constraints constraints for each cast ray
+ */
 void render(Camera cam, ArrayFunction floorHeightFunc, ArrayFunction
   ceilingHeightFunc, PixelFunction pixelFunc, RayConstraints constraints);
 
@@ -588,7 +597,7 @@ Unit _floorCeilFunction(int16_t x, int16_t y)
   // TODO: adjust also for RAYCAST_TINY
 
   Unit f = _floorFunction(x,y);
-  Unit c = _ceilFunction(x,y);
+  Unit c = _ceilFunction != 0 ? _ceilFunction(x,y) : 0;
 
   return ((f & 0x0000ffff) << 16) | (c & 0x0000ffff);
 }
@@ -623,7 +632,9 @@ void _columnFunction(HitResult *hits, uint16_t hitCount, uint16_t x, Ray ray)
     dist = dist == 0 ? 1 : dist; // prevent division by zero
 
     Unit wallHeight = _floorFunction(hit.square.x,hit.square.y);
-    Unit wallHeightCeil = _ceilFunction(hit.square.x,hit.square.y);
+
+    Unit wallHeightCeil = _ceilFunction != 0 ?
+      _ceilFunction(hit.square.x,hit.square.y) : 0;
 
     Unit worldZ2 = wallHeight - _camera.height;
 
@@ -681,13 +692,16 @@ void _columnFunction(HitResult *hits, uint16_t hitCount, uint16_t x, Ray ray)
 
     // draw ceiling until wall
 
-    Unit ceilCameraDiff = absVal(worldZPrevCeil) * VERTICAL_DEPTH_MULTIPLY;
-
-    for (int_maybe32_t i = y2; i < z1ScreenCeil; ++i)
+    if (_ceilFunction != 0)
     {
-      p.position.y = i;
-      p.depth = i * _floorDepthStep + ceilCameraDiff;
-      _pixelFunction(p);  
+      Unit ceilCameraDiff = absVal(worldZPrevCeil) * VERTICAL_DEPTH_MULTIPLY;
+
+      for (int_maybe32_t i = y2; i < z1ScreenCeil; ++i)
+      {
+        p.position.y = i;
+        p.depth = i * _floorDepthStep + ceilCameraDiff;
+        _pixelFunction(p);  
+      }
     }
 
     // draw floor wall
@@ -711,18 +725,22 @@ void _columnFunction(HitResult *hits, uint16_t hitCount, uint16_t x, Ray ray)
 
     // draw ceiling wall
 
-    iTo = y > zBottomCeil ? zBottomCeil : y;
-
-    for (int_maybe32_t i = z1ScreenCeil > y2 ? z1ScreenCeil : y2; i < iTo; ++i)
+    if (_ceilFunction != 0)
     {
-      p.position.y = i;
-      p.hit = hit;
+      iTo = y > zBottomCeil ? zBottomCeil : y;
 
-      if (_computeTextureCoords)
-        p.textureCoordY = ((i - z1ScreenCeilNoClamp) * UNITS_PER_SQUARE) /
-          wallScreenHeightCeilNoClamp;
+      for (int_maybe32_t i = z1ScreenCeil > y2 ? z1ScreenCeil : y2; i < iTo;
+        ++i)
+      {
+        p.position.y = i;
+        p.hit = hit;
 
-      _pixelFunction(p);
+        if (_computeTextureCoords)
+          p.textureCoordY = ((i - z1ScreenCeilNoClamp) * UNITS_PER_SQUARE) /
+            wallScreenHeightCeilNoClamp;
+
+        _pixelFunction(p);
+      }
     }
 
     y = y > zTop ? zTop : y;
@@ -740,7 +758,7 @@ void _columnFunction(HitResult *hits, uint16_t hitCount, uint16_t x, Ray ray)
   p.isWall = 0;
 
   Unit floorCameraDiff = absVal(worldZPrev) * VERTICAL_DEPTH_MULTIPLY;
-  Unit horizon = y2 < _middleRow ? _middleRow : y2;
+  Unit horizon = (y2 < _middleRow || _ceilFunction == 0) ? _middleRow : y2;
 
   for (int_maybe32_t i = y; i >= horizon; --i)
   {
@@ -752,15 +770,18 @@ void _columnFunction(HitResult *hits, uint16_t hitCount, uint16_t x, Ray ray)
 
   // draw ceiling until horizon
 
-  Unit ceilCameraDiff = absVal(worldZPrevCeil) * VERTICAL_DEPTH_MULTIPLY;
-  horizon = y > _middleRow ? _middleRow : y;
-
-  for (int_maybe32_t i = y2; i < horizon; ++i)
+  if (_ceilFunction != 0)
   {
-    p.position.y = i;
-    p.depth = i * _floorDepthStep + ceilCameraDiff;
+    Unit ceilCameraDiff = absVal(worldZPrevCeil) * VERTICAL_DEPTH_MULTIPLY;
+    horizon = y > _middleRow ? _middleRow : y;
 
-    _pixelFunction(p);
+    for (int_maybe32_t i = y2; i < horizon; ++i)
+    {
+      p.position.y = i;
+      p.depth = i * _floorDepthStep + ceilCameraDiff;
+
+      _pixelFunction(p);
+    }
   }
 
   #undef VERTICAL_DEPTH_MULTIPLY
@@ -781,9 +802,12 @@ void render(Camera cam, ArrayFunction floorHeightFunc, ArrayFunction
     divRoundDown(cam.position.x,UNITS_PER_SQUARE),
     divRoundDown(cam.position.y,UNITS_PER_SQUARE)) -1 * cam.height;
 
-  _startCeilHeight = ceilingHeightFunc(
-    divRoundDown(cam.position.x,UNITS_PER_SQUARE),
-    divRoundDown(cam.position.y,UNITS_PER_SQUARE)) -1 * cam.height;
+  _startCeilHeight = 
+    ceilingHeightFunc != 0 ?
+      ceilingHeightFunc(
+        divRoundDown(cam.position.x,UNITS_PER_SQUARE),
+        divRoundDown(cam.position.y,UNITS_PER_SQUARE)) -1 * cam.height
+      : UNIT_INFINITY;
 
   // TODO
   _floorDepthStep = (12 * UNITS_PER_SQUARE) / cam.resolution.y; 
