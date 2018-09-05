@@ -116,6 +116,7 @@ typedef struct
 {
   uint16_t maxHits;
   uint16_t maxSteps;
+  uint8_t computeTextureCoords; ///< Turns texture coords on/off.
 } RayConstraints;
 
 /**
@@ -579,6 +580,7 @@ int_maybe32_t _camResYLimit = 0;
 Unit _middleRow = 0;
 ArrayFunction _floorFunction = 0;
 ArrayFunction _ceilFunction = 0;
+uint8_t _computeTextureCoords = 0;
 
 /// Helper function that determines intersection with both ceiling and floor.
 Unit _floorCeilFunction(int16_t x, int16_t y)
@@ -651,7 +653,8 @@ void _columnFunction(HitResult *hits, uint16_t hitCount, uint16_t x, Ray ray)
     int_maybe32_t z2ScreenCeil = _middleRow - perspectiveScale(
       (worldZ2Ceil * _camera.resolution.y) / UNITS_PER_SQUARE,dist);
 
-    int_maybe32_t wallScreenHeightCeilNoClamp = z2ScreenCeil - z1ScreenCeilNoClamp;
+    int_maybe32_t wallScreenHeightCeilNoClamp =
+      z2ScreenCeil - z1ScreenCeilNoClamp;
 
     z2ScreenCeil = clamp(z2ScreenCeil,0,_camResYLimit);
 
@@ -698,8 +701,11 @@ void _columnFunction(HitResult *hits, uint16_t hitCount, uint16_t x, Ray ray)
     {
       p.position.y = i;
       p.hit = hit;
-      p.textureCoordY = ((i - z1ScreenNoClamp) * UNITS_PER_SQUARE) /
-        wallScreenHeightNoClamp;
+
+      if (_computeTextureCoords)
+        p.textureCoordY = ((i - z1ScreenNoClamp) * UNITS_PER_SQUARE) /
+          wallScreenHeightNoClamp;
+
       _pixelFunction(p);
     }
 
@@ -711,8 +717,11 @@ void _columnFunction(HitResult *hits, uint16_t hitCount, uint16_t x, Ray ray)
     {
       p.position.y = i;
       p.hit = hit;
-      p.textureCoordY = ((i - z1ScreenCeilNoClamp) * UNITS_PER_SQUARE) /
-        wallScreenHeightCeilNoClamp;
+
+      if (_computeTextureCoords)
+        p.textureCoordY = ((i - z1ScreenCeilNoClamp) * UNITS_PER_SQUARE) /
+          wallScreenHeightCeilNoClamp;
+
       _pixelFunction(p);
     }
 
@@ -766,6 +775,7 @@ void render(Camera cam, ArrayFunction floorHeightFunc, ArrayFunction
   _camera = cam;
   _camResYLimit = cam.resolution.y - 1;
   _middleRow = cam.resolution.y / 2;
+  _computeTextureCoords = constraints.computeTextureCoords;
 
   _startFloorHeight = floorHeightFunc(
     divRoundDown(cam.position.x,UNITS_PER_SQUARE),
