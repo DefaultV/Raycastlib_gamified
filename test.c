@@ -18,6 +18,11 @@ Unit testArrayFunc(int16_t x, int16_t y)
   return (x < 0 || y < 0 || x > 9 || y > 9) ? 1 : 0;
 }
 
+Unit testArrayFunc2(int16_t x, int16_t y)
+{
+  return testArrayFunc(x,y) + 10 * UNITS_PER_SQUARE;
+}
+
 /**
   Simple automatic test function.
 */
@@ -189,7 +194,7 @@ void benchmarkRender()
   constraints.maxSteps = 12;
 
   for (int i = 0; i < 100; ++i)
-    render(c,testArrayFunc,pixelFunc,constraints);
+    render(c,testArrayFunc,testArrayFunc2,pixelFunc,constraints);
 }
 
 int main()
