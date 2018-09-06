@@ -501,22 +501,26 @@ void castRayMultiHit(Ray ray, ArrayFunction arrayFunc, ArrayFunction typeFunc,
       if (no.y > 0)
       {
         h.direction = 0;
-        h.textureCoord = co.x;
+        h.textureCoord = constraints.computeTextureCoords ?
+          wrap(currentPos.x,UNITS_PER_SQUARE) : 0;
       }
       else if (no.x > 0)
       {
         h.direction = 1;
-        h.textureCoord = co.y;
+        h.textureCoord = constraints.computeTextureCoords ?
+          wrap(UNITS_PER_SQUARE - currentPos.y,UNITS_PER_SQUARE) : 0;
       }
       else if (no.y < 0)
       {
         h.direction = 2;
-        h.textureCoord = co.x;
+        h.textureCoord = constraints.computeTextureCoords ?
+          wrap(UNITS_PER_SQUARE - currentPos.x,UNITS_PER_SQUARE) : 0;
       }
       else
       {
         h.direction = 3;
-        h.textureCoord = co.y;
+        h.textureCoord = constraints.computeTextureCoords ?
+          wrap(currentPos.y,UNITS_PER_SQUARE) : 0;
       }
 
       hitResults[*hitResultsLen] = h;
