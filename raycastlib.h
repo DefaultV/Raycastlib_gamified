@@ -979,34 +979,51 @@ void moveCameraWithCollision(Camera *camera, Vector2D planeOffset,
   int16_t xSquareNew = divRoundDown(cornerNew.x,UNITS_PER_SQUARE);
   int16_t ySquareNew = divRoundDown(cornerNew.y,UNITS_PER_SQUARE);
 
-  int8_t xCollides =
-    xSquare != xSquareNew &&
-    floorHeightFunc(xSquareNew,ySquare) > UNITS_PER_SQUARE;
+  Unit bottomLimit = camera->height - camera->collisionHeightBelow;
+  Unit topLimit = camera->height + camera->collisionHeightAbove;
 
-  int8_t yCollides =
-    ySquare != ySquareNew &&
-    floorHeightFunc(xSquare,ySquareNew) > UNITS_PER_SQUARE;
+  int8_t xCollides;
+  int8_t yCollides;
 
-  #define collideHelper(dir)\
+  #define collideHelper(dir,s1,s2)\
+  if (dir##Square != dir##SquareNew)\
+  {\
+    Unit height = floorHeightFunc(xSquare##s1,ySquare##s2);\
+    if (height > bottomLimit)\
+      dir##Collides = true;\
+    else if (ceilingHeightFunc != 0)\
+    {\
+      height = ceilingHeightFunc(xSquare##s1,ySquare##s2);\
+      if (height < topLimit)\
+        dir##Collides = true;\
+    }\
+  }\
+  else\
+    dir##Collides = false;\
+  \
   if (dir##Collides)\
     cornerNew.dir = (dir##Square) * UNITS_PER_SQUARE + UNITS_PER_SQUARE / 2 +\
-    dir##Dir * (UNITS_PER_SQUARE / 2) - dir##Dir;
+    dir##Dir * (UNITS_PER_SQUARE / 2) - dir##Dir;\
 
-  collideHelper(x)
-  collideHelper(y)
+  collideHelper(x,New,)
+  collideHelper(y,,New)
 
   #undef collideHelper
 
   camera->position.x = cornerNew.x - xDir * camera->collisionRadius;
   camera->position.y = cornerNew.y - yDir * camera->collisionRadius;
   camera->height += heightOffset;
+  
+  xSquareNew = divRoundDown(camera->position.x,UNITS_PER_SQUARE);
+  ySquareNew = divRoundDown(camera->position.y,UNITS_PER_SQUARE);
 
-/*
+  Unit floorHeightNew = floorHeightFunc(xSquareNew,ySquareNew);
+  Unit ceilingHeightNew = ceilingHeightFunc != 0 ?
+    ceilingHeightFunc(xSquareNew,ySquareNew) : UNIT_INFINITY;
+
   camera->height = clamp(camera->height,
-    floorHeight2 + camera->collisionHeightBelow,
-    ceilHeight2 - camera->collisionHeightAbove);
-*/
-
+    floorHeightNew + camera->collisionHeightBelow,
+    ceilingHeightNew - camera->collisionHeightAbove);
 }
 
 #endif
