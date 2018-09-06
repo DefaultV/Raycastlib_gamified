@@ -85,9 +85,9 @@ typedef struct
 
 typedef struct
 {
-  Vector2D square;     ///< Collided square coordinates.
-  Vector2D position;   ///< Exact collision position in Units.
-  Unit     distance;   /**< Euclidean distance to the hit position, or -1 if
+  Vector2D square;       ///< Collided square coordinates.
+  Vector2D position;     ///< Exact collision position in Units.
+  Unit     distance;     /**< Euclidean distance to the hit position, or -1 if
                             no collision happened. */
   Unit     textureCoord; ///< Normalized (0 to UNITS_PER_SQUARE - 1) tex coord.
   Unit     type;         ///< Integer identifying type of square.
@@ -105,6 +105,10 @@ typedef struct
   Unit height;
 } Camera;
 
+/**
+  Holds an information about a single rendered pixel (for a pixel function
+  that works as a fragment shader.
+*/
 typedef struct
 {
   Vector2D position;  ///< On-screen position.
@@ -123,9 +127,10 @@ typedef struct
 } RayConstraints;
 
 /**
- Function used to retrieve the cells of the rendered scene. It should return
- a "type" of given square as an integer (e.g. square height) - between squares
- that return different numbers there is considered to be a collision.
+  Function used to retrieve some information about cells of the rendered scene.
+  It should return a characteristic of given square as an integer (e.g. square
+  height, texture index, ...) - between squares that return different numbers
+  there is considered to be a collision.
 */ 
 typedef Unit (*ArrayFunction)(int16_t x, int16_t y);
 
@@ -135,19 +140,18 @@ typedef void
   (*ColumnFunction)(HitResult *hits, uint16_t hitCount, uint16_t x, Ray ray);
 
 /**
- Simple-interface function to cast a single ray.
-
- @return          The first collision result.
+  Simple-interface function to cast a single ray.
+  @return          The first collision result.
  */
 HitResult castRay(Ray ray, ArrayFunction arrayFunc);
 
 /**
- Maps a single point in the world to the screen (2D position + depth).
+  Maps a single point in the world to the screen (2D position + depth).
  */
 PixelInfo mapToScreen(Vector2D worldPosition, Unit height, Camera camera);
 
 /**
- Casts a single ray and returns a list of collisions.
+  Casts a single ray and returns a list of collisions.
  */
 void castRayMultiHit(Ray ray, ArrayFunction arrayFunc, ArrayFunction typeFunc, 
   HitResult *hitResults, uint16_t *hitResultsLen, RayConstraints constraints);
@@ -167,8 +171,8 @@ Unit dist(Vector2D p1, Vector2D p2);
 Unit len(Vector2D v);
 
 /**
- Converts an angle in whole degrees to an angle in Units that this library
- uses.
+  Converts an angle in whole degrees to an angle in Units that this library
+  uses.
  */   
 Unit degreesToUnitsAngle(int16_t degrees);
 
@@ -176,24 +180,24 @@ Unit degreesToUnitsAngle(int16_t degrees);
 Unit perspectiveScale(Unit originalSize, Unit distance);
 
 /**
- Casts rays for given camera view and for each hit calls a user provided
- function.
+  Casts rays for given camera view and for each hit calls a user provided
+  function.
  */
 void castRaysMultiHit(Camera cam, ArrayFunction arrayFunc,
   ArrayFunction typeFunction, ColumnFunction columnFunc,
   RayConstraints constraints);
 
 /**
- Renders a complete camera view.
+  Using provided functions, renders a complete complex camera view.
 
- @param cam camera whose view to render
- @param floorHeightFunc function that returns floor height (in Units)
- @param ceilingHeightFunc same as floorHeightFunc but for ceiling, can also be
+  @param cam camera whose view to render
+  @param floorHeightFunc function that returns floor height (in Units)
+  @param ceilingHeightFunc same as floorHeightFunc but for ceiling, can also be
                           0 (no ceiling will be rendered)
- @param typeFunction function that says a type of square (e.g. its texture
+  @param typeFunction function that says a type of square (e.g. its texture
                      index), can be 0 (no type in hit result)
- @param pixelFunc callback function to draw a single pixel on screen
- @param constraints constraints for each cast ray
+  @param pixelFunc callback function to draw a single pixel on screen
+  @param constraints constraints for each cast ray
  */
 void render(Camera cam, ArrayFunction floorHeightFunc,
   ArrayFunction ceilingHeightFunc, ArrayFunction typeFunction,
@@ -390,7 +394,7 @@ int8_t pointIsLeftOfRay(Vector2D point, Ray ray)
 
 /**
   Casts a ray within a single square, to collide with the square borders.  
- */
+*/
 void castRaySquare(Ray localRay, Vector2D *nextCellOff, Vector2D *collOff)
 {
   profileCall(castRaySquare);
@@ -607,7 +611,9 @@ ArrayFunction _floorFunction = 0;
 ArrayFunction _ceilFunction = 0;
 uint8_t _computeTextureCoords = 0;
 
-/// Helper function that determines intersection with both ceiling and floor.
+/**
+  Helper function that determines intersection with both ceiling and floor.
+*/
 Unit _floorCeilFunction(int16_t x, int16_t y)
 {
   // TODO: adjust also for RAYCAST_TINY
