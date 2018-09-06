@@ -745,8 +745,8 @@ void _columnFunction(HitResult *hits, uint16_t hitCount, uint16_t x, Ray ray)
       p.hit = hit;
 
       if (_computeTextureCoords)
-        p.textureCoordY = ((i - z1ScreenNoClamp) * UNITS_PER_SQUARE) /
-          wallScreenHeightNoClamp;
+        p.textureCoordY = UNITS_PER_SQUARE - ((i - z1ScreenNoClamp) *
+          UNITS_PER_SQUARE) / wallScreenHeightNoClamp;
 
       _pixelFunction(p);
     }
@@ -766,8 +766,8 @@ void _columnFunction(HitResult *hits, uint16_t hitCount, uint16_t x, Ray ray)
         p.hit = hit;
 
         if (_computeTextureCoords)
-          p.textureCoordY = ((i - z1ScreenCeilNoClamp) * UNITS_PER_SQUARE) /
-            wallScreenHeightCeilNoClamp;
+          p.textureCoordY = UNITS_PER_SQUARE - ((i - z1ScreenCeilNoClamp) *
+            UNITS_PER_SQUARE) / wallScreenHeightCeilNoClamp;
 
         _pixelFunction(p);
       }
