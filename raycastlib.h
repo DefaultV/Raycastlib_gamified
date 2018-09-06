@@ -770,7 +770,7 @@ void _columnFunction(HitResult *hits, uint16_t hitCount, uint16_t x, Ray ray)
         p.hit = hit;
 
         if (_computeTextureCoords)
-          p.textureCoordY = UNITS_PER_SQUARE - 1 - ((i - z1ScreenCeilNoClamp) *
+          p.textureCoordY = ((i - z1ScreenCeilNoClamp) *
             UNITS_PER_SQUARE) / wallScreenHeightCeilNoClamp;
 
         _pixelFunction(p);
