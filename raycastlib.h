@@ -103,6 +103,10 @@ typedef struct
   Vector2D resolution;
   Unit fovAngle;
   Unit height;
+
+  Unit collisionRadius;
+  Unit collisionHeightBelow;
+  Unit collisionHeightAbove;
 } Camera;
 
 /**
@@ -202,6 +206,10 @@ void castRaysMultiHit(Camera cam, ArrayFunction arrayFunc,
 void render(Camera cam, ArrayFunction floorHeightFunc,
   ArrayFunction ceilingHeightFunc, ArrayFunction typeFunction,
   PixelFunction pixelFunc, RayConstraints constraints);
+
+void moveCameraWithCollision(Camera *camera, Vector2D planeOffset,
+  Unit heightOffset, ArrayFunction floorHeightFunc,
+  ArrayFunction ceilingHeightFunc);
 
 //=============================================================================
 // privates
@@ -945,6 +953,60 @@ Unit perspectiveScale(Unit originalSize, Unit distance)
    (originalSize * UNITS_PER_SQUARE) /
       ((VERTICAL_FOV * 2 * distance) / UNITS_PER_SQUARE)
    : 0;
+}
+
+void moveCameraWithCollision(Camera *camera, Vector2D planeOffset,
+  Unit heightOffset, ArrayFunction floorHeightFunc,
+  ArrayFunction ceilingHeightFunc)
+{
+  // TODO: have the cam coll parameters precomputed as macros? => faster
+
+  Vector2D corner; // we're only interested in the corner of the BBox
+  Vector2D cornerNew;
+
+  int16_t xDir = planeOffset.x > 0 ? 1 : (planeOffset.x < 0 ? -1 : 0);
+  int16_t yDir = planeOffset.y > 0 ? 1 : (planeOffset.y < 0 ? -1 : 0);
+
+  corner.x = camera->position.x + xDir * camera->collisionRadius;
+  corner.y = camera->position.y + yDir * camera->collisionRadius;
+
+  int16_t xSquare = divRoundDown(corner.x,UNITS_PER_SQUARE);
+  int16_t ySquare = divRoundDown(corner.y,UNITS_PER_SQUARE);
+
+  cornerNew.x = corner.x + planeOffset.x;
+  cornerNew.y = corner.y + planeOffset.y;
+
+  int16_t xSquareNew = divRoundDown(cornerNew.x,UNITS_PER_SQUARE);
+  int16_t ySquareNew = divRoundDown(cornerNew.y,UNITS_PER_SQUARE);
+
+  int8_t xCollides =
+    xSquare != xSquareNew &&
+    floorHeightFunc(xSquareNew,ySquare) > UNITS_PER_SQUARE;
+
+  int8_t yCollides =
+    ySquare != ySquareNew &&
+    floorHeightFunc(xSquare,ySquareNew) > UNITS_PER_SQUARE;
+
+  #define collideHelper(dir)\
+  if (dir##Collides)\
+    cornerNew.dir = (dir##Square) * UNITS_PER_SQUARE + UNITS_PER_SQUARE / 2 +\
+    dir##Dir * (UNITS_PER_SQUARE / 2) - dir##Dir;
+
+  collideHelper(x)
+  collideHelper(y)
+
+  #undef collideHelper
+
+  camera->position.x = cornerNew.x - xDir * camera->collisionRadius;
+  camera->position.y = cornerNew.y - yDir * camera->collisionRadius;
+  camera->height += heightOffset;
+
+/*
+  camera->height = clamp(camera->height,
+    floorHeight2 + camera->collisionHeightBelow,
+    ceilHeight2 - camera->collisionHeightAbove);
+*/
+
 }
 
 #endif
