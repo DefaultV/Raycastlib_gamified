@@ -107,6 +107,7 @@ typedef struct
   Unit collisionRadius;
   Unit collisionHeightBelow;
   Unit collisionHeightAbove;
+  Unit collisionStepHeight;
 } Camera;
 
 /**
@@ -983,7 +984,8 @@ void moveCameraWithCollision(Camera *camera, Vector2D planeOffset,
   int16_t xSquareNew = divRoundDown(cornerNew.x,UNITS_PER_SQUARE);
   int16_t ySquareNew = divRoundDown(cornerNew.y,UNITS_PER_SQUARE);
 
-  Unit bottomLimit = camera->height - camera->collisionHeightBelow;
+  Unit bottomLimit = camera->height - camera->collisionHeightBelow +
+    camera->collisionStepHeight;
   Unit topLimit = camera->height + camera->collisionHeightAbove;
 
   // checks a single square for collision against the camera
