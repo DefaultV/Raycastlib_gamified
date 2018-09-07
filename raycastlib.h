@@ -961,7 +961,7 @@ void moveCameraWithCollision(Camera *camera, Vector2D planeOffset,
 {
   // TODO: have the cam coll parameters precomputed as macros? => faster
 
-  Vector2D corner; // we're only interested in the corner of the BBox
+  Vector2D corner; // BBox corner in the movement direction
   Vector2D cornerNew;
 
   int16_t xDir = planeOffset.x > 0 ? 1 : (planeOffset.x < 0 ? -1 : 0);
@@ -982,33 +982,59 @@ void moveCameraWithCollision(Camera *camera, Vector2D planeOffset,
   Unit bottomLimit = camera->height - camera->collisionHeightBelow;
   Unit topLimit = camera->height + camera->collisionHeightAbove;
 
-  int8_t xCollides;
-  int8_t yCollides;
-
-  #define collideHelper(dir,s1,s2)\
-  if (dir##Square != dir##SquareNew)\
+  #define collCheck(dir,s1,s2)\
   {\
-    Unit height = floorHeightFunc(xSquare##s1,ySquare##s2);\
+    Unit height = floorHeightFunc(s1,s2);\
     if (height > bottomLimit)\
       dir##Collides = true;\
     else if (ceilingHeightFunc != 0)\
     {\
-      height = ceilingHeightFunc(xSquare##s1,ySquare##s2);\
+      height = ceilingHeightFunc(s1,s2);\
       if (height < topLimit)\
         dir##Collides = true;\
     }\
   }\
-  else\
-    dir##Collides = false;\
-  \
+
+  #define collCheckOrtho(dir,dir2,s1,s2)\
+  if (dir##SquareNew != dir##Square)\
+    collCheck(dir,s1,s2)\
+  if (!dir##Collides)\
+  {\
+    int16_t dir2##Square2 = divRoundDown(corner.dir2 - dir2##Dir *\
+      camera->collisionRadius,UNITS_PER_SQUARE);\
+    if (dir2##Square2 != dir2##Square)\
+      collCheck(dir,dir2##Square2,dir##SquareNew)\
+  }
+
+  int8_t xCollides = false;
+  collCheckOrtho(x,y,xSquareNew,ySquare)
+
+  int8_t yCollides = false;
+  collCheckOrtho(y,x,xSquare,ySquareNew)
+
+  #define collHandle(dir)\
   if (dir##Collides)\
     cornerNew.dir = (dir##Square) * UNITS_PER_SQUARE + UNITS_PER_SQUARE / 2 +\
     dir##Dir * (UNITS_PER_SQUARE / 2) - dir##Dir;\
 
-  collideHelper(x,New,)
-  collideHelper(y,,New)
+  collHandle(x)
+  collHandle(y)
 
-  #undef collideHelper
+  if (!xCollides && !yCollides) /* if collision happend by now, corner
+                                   collision can't happen */
+  {
+    if (xSquare != xSquareNew && ySquare != ySquareNew) // corner?
+    {
+      int8_t xyCollides = false;
+      collCheck(xy,xSquareNew,ySquareNew)
+      
+      if (xyCollides)
+        cornerNew = corner;
+    }
+  }
+
+  #undef collCheck
+  #undef collHandle
 
   camera->position.x = cornerNew.x - xDir * camera->collisionRadius;
   camera->position.y = cornerNew.y - yDir * camera->collisionRadius;
