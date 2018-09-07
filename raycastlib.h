@@ -982,6 +982,7 @@ void moveCameraWithCollision(Camera *camera, Vector2D planeOffset,
   Unit bottomLimit = camera->height - camera->collisionHeightBelow;
   Unit topLimit = camera->height + camera->collisionHeightAbove;
 
+  // checks a single square for collision against the camera
   #define collCheck(dir,s1,s2)\
   {\
     Unit height = floorHeightFunc(s1,s2);\
@@ -995,22 +996,28 @@ void moveCameraWithCollision(Camera *camera, Vector2D planeOffset,
     }\
   }\
 
-  #define collCheckOrtho(dir,dir2,s1,s2)\
+  // check a collision against non-diagonal square
+  #define collCheckOrtho(dir,dir2,s1,s2,x)\
   if (dir##SquareNew != dir##Square)\
     collCheck(dir,s1,s2)\
   if (!dir##Collides)\
-  {\
+  { /* now also check for coll on the neighbouring square */ \
     int16_t dir2##Square2 = divRoundDown(corner.dir2 - dir2##Dir *\
       camera->collisionRadius,UNITS_PER_SQUARE);\
     if (dir2##Square2 != dir2##Square)\
-      collCheck(dir,dir2##Square2,dir##SquareNew)\
+    {\
+      if (x)\
+        collCheck(dir,dir##SquareNew,dir2##Square2)\
+      else\
+        collCheck(dir,dir2##Square2,dir##SquareNew)\
+    }\
   }
 
   int8_t xCollides = false;
-  collCheckOrtho(x,y,xSquareNew,ySquare)
+  collCheckOrtho(x,y,xSquareNew,ySquare,1)
 
   int8_t yCollides = false;
-  collCheckOrtho(y,x,xSquare,ySquareNew)
+  collCheckOrtho(y,x,xSquare,ySquareNew,0)
 
   #define collHandle(dir)\
   if (dir##Collides)\
