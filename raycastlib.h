@@ -203,10 +203,13 @@ void castRaysMultiHit(Camera cam, ArrayFunction arrayFunc,
                      index), can be 0 (no type in hit result)
   @param pixelFunc callback function to draw a single pixel on screen
   @param constraints constraints for each cast ray
+  @param verticalShear normalized camera shear from (1 = UNITS_PER_SQUARE =
+                       camera y resolution, 0 means no shear), can simulate
+                       looking up/down
  */
 void render(Camera cam, ArrayFunction floorHeightFunc,
   ArrayFunction ceilingHeightFunc, ArrayFunction typeFunction,
-  PixelFunction pixelFunc, RayConstraints constraints);
+  PixelFunction pixelFunc, RayConstraints constraints, Unit verticalShear);
 
 void moveCameraWithCollision(Camera *camera, Vector2D planeOffset,
   Unit heightOffset, ArrayFunction floorHeightFunc,
@@ -644,6 +647,9 @@ void _columnFunction(HitResult *hits, uint16_t hitCount, uint16_t x, Ray ray)
   PixelInfo p;
   p.position.x = x;
 
+  Unit fogStartYBottom;
+  Unit fogStartYTop;
+
   #define VERTICAL_DEPTH_MULTIPLY 2
 
   //  we'll be simulatenously drawing the floor and the ceiling now  
@@ -655,6 +661,8 @@ void _columnFunction(HitResult *hits, uint16_t hitCount, uint16_t x, Ray ray)
        possibly be computed more efficiently by not computing Euclidean
        distance at all, but rather compute the distance of the collision
        point from the projection plane (line). */
+
+    Unit halfResY = _camera.resolution.y / 2;
 
     Unit dist = // adjusted distance
       (hit.distance * vectorsAngleCos(angleToDirection(_camera.direction),
@@ -725,10 +733,13 @@ void _columnFunction(HitResult *hits, uint16_t hitCount, uint16_t x, Ray ray)
 
     Unit floorCameraDiff = absVal(worldZPrev) * VERTICAL_DEPTH_MULTIPLY;
 
+    fogStartYBottom = _middleRow + halfResY;
+    fogStartYTop = _middleRow - halfResY;
+
     for (int_maybe32_t i = y; i > z1Screen; --i)
     {
       p.position.y = i;
-      p.depth = (_camera.resolution.y - i) * _floorDepthStep + floorCameraDiff;
+      p.depth = (fogStartYBottom - i) * _floorDepthStep + floorCameraDiff;
       _pixelFunction(p);  
     }
 
@@ -746,7 +757,7 @@ void _columnFunction(HitResult *hits, uint16_t hitCount, uint16_t x, Ray ray)
       for (int_maybe32_t i = y2; i < z1ScreenCeil; ++i)
       {
         p.position.y = i;
-        p.depth = i * _floorDepthStep + ceilCameraDiff;
+        p.depth = (i - fogStartYTop) * _floorDepthStep + ceilCameraDiff;
         _pixelFunction(p);  
       }
     }
@@ -817,8 +828,7 @@ void _columnFunction(HitResult *hits, uint16_t hitCount, uint16_t x, Ray ray)
   for (int_maybe32_t i = y; i >= horizon + (horizon > y2 ? 0 : 1); --i)
   {
     p.position.y = i;
-    p.depth = (_camera.resolution.y - i) * _floorDepthStep + floorCameraDiff;
-
+    p.depth = (fogStartYBottom - i) * _floorDepthStep + floorCameraDiff;
     _pixelFunction(p);
   }
 
@@ -834,8 +844,7 @@ void _columnFunction(HitResult *hits, uint16_t hitCount, uint16_t x, Ray ray)
     for (int_maybe32_t i = y2; i < horizon; ++i)
     {
       p.position.y = i;
-      p.depth = i * _floorDepthStep + ceilCameraDiff;
-
+      p.depth = (i - fogStartYTop) * _floorDepthStep + ceilCameraDiff;
       _pixelFunction(p);
     }
   }
@@ -845,7 +854,7 @@ void _columnFunction(HitResult *hits, uint16_t hitCount, uint16_t x, Ray ray)
 
 void render(Camera cam, ArrayFunction floorHeightFunc,
   ArrayFunction ceilingHeightFunc, ArrayFunction typeFunction,
-  PixelFunction pixelFunc, RayConstraints constraints)
+  PixelFunction pixelFunc, RayConstraints constraints, Unit verticalShear)
 {
   _pixelFunction = pixelFunc;
   _floorFunction = floorHeightFunc;
@@ -853,6 +862,11 @@ void render(Camera cam, ArrayFunction floorHeightFunc,
   _camera = cam;
   _camResYLimit = cam.resolution.y - 1;
   _middleRow = cam.resolution.y / 2;
+
+  if (verticalShear != 0)
+    _middleRow = _middleRow + (verticalShear * _middleRow) /
+      UNITS_PER_SQUARE;
+
   _computeTextureCoords = constraints.computeTextureCoords;
 
   _startFloorHeight = floorHeightFunc(
