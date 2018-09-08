@@ -1071,11 +1071,8 @@ void moveCameraWithCollision(Camera *camera, Vector2D planeOffset,
         
         if (xyCollides)
         {
-          if (wrap(cornerNew.x,UNITS_PER_SQUARE) >
-              wrap(cornerNew.y,UNITS_PER_SQUARE))
-            yCollides = true;
-          else
-            xCollides = true;
+          // normally should slide, but let's KISS
+          cornerNew = corner;
         }
       }
     }
