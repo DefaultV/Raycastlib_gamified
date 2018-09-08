@@ -1006,6 +1006,9 @@ void moveCameraWithCollision(Camera *camera, Vector2D planeOffset,
     int16_t xSquare = divRoundDown(corner.x,UNITS_PER_SQUARE);
     int16_t ySquare = divRoundDown(corner.y,UNITS_PER_SQUARE);
 
+    int8_t isOnGround = camera->height - CAMERA_COLL_HEIGHT_BELOW -
+      floorHeightFunc(xSquareNew,ySquareNew) < 2;
+
     cornerNew.x = corner.x + planeOffset.x;
     cornerNew.y = corner.y + planeOffset.y;
 
@@ -1013,7 +1016,7 @@ void moveCameraWithCollision(Camera *camera, Vector2D planeOffset,
     ySquareNew = divRoundDown(cornerNew.y,UNITS_PER_SQUARE);
 
     Unit bottomLimit = camera->height - CAMERA_COLL_HEIGHT_BELOW +
-      CAMERA_COLL_RADIUS;
+      (isOnGround ? CAMERA_COLL_STEP_HEIGHT : 0);
     Unit topLimit = camera->height + CAMERA_COLL_HEIGHT_ABOVE;
 
     // checks a single square for collision against the camera
@@ -1058,10 +1061,7 @@ void moveCameraWithCollision(Camera *camera, Vector2D planeOffset,
       cornerNew.dir = (dir##Square) * UNITS_PER_SQUARE + UNITS_PER_SQUARE / 2\
       + dir##Dir * (UNITS_PER_SQUARE / 2) - dir##Dir;\
 
-    collHandle(x)
-    collHandle(y)
-
-    if (!xCollides && !yCollides) /* if collision happend by now, corner
+    if (!xCollides && !yCollides) /* if non-diagonal collision happend, corner
                                      collision can't happen */
     {
       if (xSquare != xSquareNew && ySquare != ySquareNew) // corner?
@@ -1070,9 +1070,18 @@ void moveCameraWithCollision(Camera *camera, Vector2D planeOffset,
         collCheck(xy,xSquareNew,ySquareNew)
         
         if (xyCollides)
-          cornerNew = corner;
+        {
+          if (wrap(cornerNew.x,UNITS_PER_SQUARE) >
+              wrap(cornerNew.y,UNITS_PER_SQUARE))
+            yCollides = true;
+          else
+            xCollides = true;
+        }
       }
     }
+
+    collHandle(x)
+    collHandle(y)
 
     #undef collCheck
     #undef collHandle
