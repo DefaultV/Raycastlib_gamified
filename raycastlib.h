@@ -24,7 +24,7 @@
   typedef int32_t Unit; /**< Smallest spatial unit, there is UNITS_PER_SQUARE
                              units in a square's length. This effectively
                              serves the purpose of a fixed-point arithmetic. */
-  #define UNIT_INFINITY 2147483647;
+  #define UNIT_INFINITY 5000000;
 
   typedef int32_t int_maybe32_t;
   typedef uint32_t uint_maybe32_t;
@@ -646,13 +646,20 @@ Unit _floorCeilFunction(int16_t x, int16_t y)
   // TODO: adjust also for RAYCAST_TINY
 
   Unit f = _floorFunction(x,y);
-  Unit c = _ceilFunction != 0 ? _ceilFunction(x,y) : 0;
+
+  if (_ceilFunction == 0)
+    return f;
+
+  Unit c = _ceilFunction(x,y);
 
   return ((f & 0x0000ffff) << 16) | (c & 0x0000ffff);
 }
 
 void _columnFunction(HitResult *hits, uint16_t hitCount, uint16_t x, Ray ray)
 {
+if (x == 25)
+  printf("------%d\n",hitCount);
+
   int_maybe32_t y = _camResYLimit; // screen y (for floor), will only go up
   int_maybe32_t y2 = 0;            // screen y (for ceil), will only fo down
 
@@ -682,12 +689,7 @@ void _columnFunction(HitResult *hits, uint16_t hitCount, uint16_t x, Ray ray)
 
     Unit wallHeight = _floorFunction(hit.square.x,hit.square.y);
 
-    Unit wallHeightCeil = _ceilFunction != 0 ?
-      _ceilFunction(hit.square.x,hit.square.y) : 0;
-
     Unit worldZ2 = wallHeight - _camera.height;
-
-    Unit worldZ2Ceil = wallHeightCeil - _camera.height;
 
     int_maybe32_t z1Screen = _middleRow - perspectiveScale(
       (worldZPrev * _camera.resolution.y) / UNITS_PER_SQUARE,dist);
@@ -696,14 +698,6 @@ void _columnFunction(HitResult *hits, uint16_t hitCount, uint16_t x, Ray ray)
 
     z1Screen = clamp(z1Screen,0,_camResYLimit);
     z1Screen = z1Screen > y2 ? z1Screen : y2;
-
-    int_maybe32_t z1ScreenCeil = _middleRow - perspectiveScale(
-      (worldZPrevCeil * _camera.resolution.y) / UNITS_PER_SQUARE,dist);
-
-    int_maybe32_t z1ScreenCeilNoClamp = z1ScreenCeil;
-
-    z1ScreenCeil = clamp(z1ScreenCeil,0,_camResYLimit);
-    z1ScreenCeil = z1ScreenCeil < y ? z1ScreenCeil : y;
 
     int_maybe32_t z2Screen = _middleRow - perspectiveScale(
       (worldZ2 * _camera.resolution.y) / UNITS_PER_SQUARE,dist);
@@ -716,8 +710,32 @@ void _columnFunction(HitResult *hits, uint16_t hitCount, uint16_t x, Ray ray)
     z2Screen = clamp(z2Screen,0,_camResYLimit);
     z2Screen = z2Screen > y2 ? z2Screen : y2;
 
-    int_maybe32_t z2ScreenCeil = _middleRow - perspectiveScale(
-      (worldZ2Ceil * _camera.resolution.y) / UNITS_PER_SQUARE,dist);
+    // make the same variables for ceiling
+
+    Unit wallHeightCeil = 0;
+    Unit worldZ2Ceil = 0;
+    int_maybe32_t z1ScreenCeil = 0;
+    int_maybe32_t z1ScreenCeilNoClamp = 0; 
+    int_maybe32_t z2ScreenCeil = 0;
+
+    if (_ceilFunction != 0)
+    {
+      wallHeightCeil = _ceilFunction != 0 ?
+        _ceilFunction(hit.square.x,hit.square.y) : 0;
+
+      worldZ2Ceil = wallHeightCeil - _camera.height;
+
+      z1ScreenCeil = _middleRow - perspectiveScale(
+        (worldZPrevCeil * _camera.resolution.y) / UNITS_PER_SQUARE,dist);
+
+      z1ScreenCeilNoClamp = z1ScreenCeil;
+
+      z1ScreenCeil = clamp(z1ScreenCeil,0,_camResYLimit);
+      z1ScreenCeil = z1ScreenCeil < y ? z1ScreenCeil : y;
+
+      z2ScreenCeil = _middleRow - perspectiveScale(
+        (worldZ2Ceil * _camera.resolution.y) / UNITS_PER_SQUARE,dist);
+    }
 
     int_maybe32_t wallScreenHeightCeilNoClamp =
       z2ScreenCeil - z1ScreenCeilNoClamp;
