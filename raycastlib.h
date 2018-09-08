@@ -101,6 +101,8 @@ typedef struct
   Vector2D position;
   Unit direction;
   Vector2D resolution;
+  int16_t shear; /* Shear offset in pixels (0 => no shear), can simulate
+                    looking up/down. */
   Unit fovAngle;
   Unit height;
 
@@ -203,13 +205,10 @@ void castRaysMultiHit(Camera cam, ArrayFunction arrayFunc,
                      index), can be 0 (no type in hit result)
   @param pixelFunc callback function to draw a single pixel on screen
   @param constraints constraints for each cast ray
-  @param verticalShear normalized camera shear from (1 = UNITS_PER_SQUARE =
-                       camera y resolution, 0 means no shear), can simulate
-                       looking up/down
  */
 void render(Camera cam, ArrayFunction floorHeightFunc,
   ArrayFunction ceilingHeightFunc, ArrayFunction typeFunction,
-  PixelFunction pixelFunc, RayConstraints constraints, Unit verticalShear);
+  PixelFunction pixelFunc, RayConstraints constraints);
 
 void moveCameraWithCollision(Camera *camera, Vector2D planeOffset,
   Unit heightOffset, ArrayFunction floorHeightFunc,
@@ -854,7 +853,7 @@ void _columnFunction(HitResult *hits, uint16_t hitCount, uint16_t x, Ray ray)
 
 void render(Camera cam, ArrayFunction floorHeightFunc,
   ArrayFunction ceilingHeightFunc, ArrayFunction typeFunction,
-  PixelFunction pixelFunc, RayConstraints constraints, Unit verticalShear)
+  PixelFunction pixelFunc, RayConstraints constraints)
 {
   _pixelFunction = pixelFunc;
   _floorFunction = floorHeightFunc;
@@ -863,9 +862,7 @@ void render(Camera cam, ArrayFunction floorHeightFunc,
   _camResYLimit = cam.resolution.y - 1;
   _middleRow = cam.resolution.y / 2;
 
-  if (verticalShear != 0)
-    _middleRow = _middleRow + (verticalShear * _middleRow) /
-      UNITS_PER_SQUARE;
+  _middleRow = _middleRow + cam.shear;
 
   _computeTextureCoords = constraints.computeTextureCoords;
 
@@ -933,7 +930,8 @@ PixelInfo mapToScreen(Vector2D worldPosition, Unit height, Camera camera)
 
   result.position.y = camera.resolution.y / 2 -
     (camera.resolution.y *
-     perspectiveScale(height - camera.height,result.depth)) / UNITS_PER_SQUARE;
+     perspectiveScale(height - camera.height,result.depth)) / UNITS_PER_SQUARE
+    + camera.shear;
 
   Unit middleColumn = camera.resolution.x / 2;
 
