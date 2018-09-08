@@ -977,103 +977,114 @@ void moveCameraWithCollision(Camera *camera, Vector2D planeOffset,
 {
   // TODO: have the cam coll parameters precomputed as macros? => faster
 
-  Vector2D corner; // BBox corner in the movement direction
-  Vector2D cornerNew;
+  int8_t movesInPlane = planeOffset.x != 0 || planeOffset.y != 0;
 
-  int16_t xDir = planeOffset.x > 0 ? 1 : (planeOffset.x < 0 ? -1 : 0);
-  int16_t yDir = planeOffset.y > 0 ? 1 : (planeOffset.y < 0 ? -1 : 0);
+  int16_t xSquareNew, ySquareNew;
 
-  corner.x = camera->position.x + xDir * camera->collisionRadius;
-  corner.y = camera->position.y + yDir * camera->collisionRadius;
-
-  int16_t xSquare = divRoundDown(corner.x,UNITS_PER_SQUARE);
-  int16_t ySquare = divRoundDown(corner.y,UNITS_PER_SQUARE);
-
-  cornerNew.x = corner.x + planeOffset.x;
-  cornerNew.y = corner.y + planeOffset.y;
-
-  int16_t xSquareNew = divRoundDown(cornerNew.x,UNITS_PER_SQUARE);
-  int16_t ySquareNew = divRoundDown(cornerNew.y,UNITS_PER_SQUARE);
-
-  Unit bottomLimit = camera->height - camera->collisionHeightBelow +
-    camera->collisionStepHeight;
-  Unit topLimit = camera->height + camera->collisionHeightAbove;
-
-  // checks a single square for collision against the camera
-  #define collCheck(dir,s1,s2)\
-  {\
-    Unit height = floorHeightFunc(s1,s2);\
-    if (height > bottomLimit)\
-      dir##Collides = true;\
-    else if (ceilingHeightFunc != 0)\
-    {\
-      height = ceilingHeightFunc(s1,s2);\
-      if (height < topLimit)\
-        dir##Collides = true;\
-    }\
-  }\
-
-  // check a collision against non-diagonal square
-  #define collCheckOrtho(dir,dir2,s1,s2,x)\
-  if (dir##SquareNew != dir##Square)\
-    collCheck(dir,s1,s2)\
-  if (!dir##Collides)\
-  { /* now also check for coll on the neighbouring square */ \
-    int16_t dir2##Square2 = divRoundDown(corner.dir2 - dir2##Dir *\
-      camera->collisionRadius,UNITS_PER_SQUARE);\
-    if (dir2##Square2 != dir2##Square)\
-    {\
-      if (x)\
-        collCheck(dir,dir##SquareNew,dir2##Square2)\
-      else\
-        collCheck(dir,dir2##Square2,dir##SquareNew)\
-    }\
-  }
-
-  int8_t xCollides = false;
-  collCheckOrtho(x,y,xSquareNew,ySquare,1)
-
-  int8_t yCollides = false;
-  collCheckOrtho(y,x,xSquare,ySquareNew,0)
-
-  #define collHandle(dir)\
-  if (dir##Collides)\
-    cornerNew.dir = (dir##Square) * UNITS_PER_SQUARE + UNITS_PER_SQUARE / 2 +\
-    dir##Dir * (UNITS_PER_SQUARE / 2) - dir##Dir;\
-
-  collHandle(x)
-  collHandle(y)
-
-  if (!xCollides && !yCollides) /* if collision happend by now, corner
-                                   collision can't happen */
+  if (movesInPlane)
   {
-    if (xSquare != xSquareNew && ySquare != ySquareNew) // corner?
-    {
-      int8_t xyCollides = false;
-      collCheck(xy,xSquareNew,ySquareNew)
-      
-      if (xyCollides)
-        cornerNew = corner;
+    Vector2D corner; // BBox corner in the movement direction
+    Vector2D cornerNew;
+
+    int16_t xDir = planeOffset.x > 0 ? 1 : (planeOffset.x < 0 ? -1 : 0);
+    int16_t yDir = planeOffset.y > 0 ? 1 : (planeOffset.y < 0 ? -1 : 0);
+
+    corner.x = camera->position.x + xDir * camera->collisionRadius;
+    corner.y = camera->position.y + yDir * camera->collisionRadius;
+
+    int16_t xSquare = divRoundDown(corner.x,UNITS_PER_SQUARE);
+    int16_t ySquare = divRoundDown(corner.y,UNITS_PER_SQUARE);
+
+    cornerNew.x = corner.x + planeOffset.x;
+    cornerNew.y = corner.y + planeOffset.y;
+
+    xSquareNew = divRoundDown(cornerNew.x,UNITS_PER_SQUARE);
+    ySquareNew = divRoundDown(cornerNew.y,UNITS_PER_SQUARE);
+
+    Unit bottomLimit = camera->height - camera->collisionHeightBelow +
+      camera->collisionStepHeight;
+    Unit topLimit = camera->height + camera->collisionHeightAbove;
+
+    // checks a single square for collision against the camera
+    #define collCheck(dir,s1,s2)\
+    {\
+      Unit height = floorHeightFunc(s1,s2);\
+      if (height > bottomLimit)\
+        dir##Collides = true;\
+      else if (ceilingHeightFunc != 0)\
+      {\
+        height = ceilingHeightFunc(s1,s2);\
+        if (height < topLimit)\
+          dir##Collides = true;\
+      }\
+    }\
+
+    // check a collision against non-diagonal square
+    #define collCheckOrtho(dir,dir2,s1,s2,x)\
+    if (dir##SquareNew != dir##Square)\
+      collCheck(dir,s1,s2)\
+    if (!dir##Collides)\
+    { /* now also check for coll on the neighbouring square */ \
+      int16_t dir2##Square2 = divRoundDown(corner.dir2 - dir2##Dir *\
+        camera->collisionRadius,UNITS_PER_SQUARE);\
+      if (dir2##Square2 != dir2##Square)\
+      {\
+        if (x)\
+          collCheck(dir,dir##SquareNew,dir2##Square2)\
+        else\
+          collCheck(dir,dir2##Square2,dir##SquareNew)\
+      }\
     }
+
+    int8_t xCollides = false;
+    collCheckOrtho(x,y,xSquareNew,ySquare,1)
+
+    int8_t yCollides = false;
+    collCheckOrtho(y,x,xSquare,ySquareNew,0)
+
+    #define collHandle(dir)\
+    if (dir##Collides)\
+      cornerNew.dir = (dir##Square) * UNITS_PER_SQUARE + UNITS_PER_SQUARE / 2\
+      + dir##Dir * (UNITS_PER_SQUARE / 2) - dir##Dir;\
+
+    collHandle(x)
+    collHandle(y)
+
+    if (!xCollides && !yCollides) /* if collision happend by now, corner
+                                     collision can't happen */
+    {
+      if (xSquare != xSquareNew && ySquare != ySquareNew) // corner?
+      {
+        int8_t xyCollides = false;
+        collCheck(xy,xSquareNew,ySquareNew)
+        
+        if (xyCollides)
+          cornerNew = corner;
+      }
+    }
+
+    #undef collCheck
+    #undef collHandle
+
+    camera->position.x = cornerNew.x - xDir * camera->collisionRadius;
+    camera->position.y = cornerNew.y - yDir * camera->collisionRadius;
   }
 
-  #undef collCheck
-  #undef collHandle
+  if (movesInPlane || heightOffset != 0)
+  {
+    camera->height += heightOffset;
+    
+    xSquareNew = divRoundDown(camera->position.x,UNITS_PER_SQUARE);
+    ySquareNew = divRoundDown(camera->position.y,UNITS_PER_SQUARE);
 
-  camera->position.x = cornerNew.x - xDir * camera->collisionRadius;
-  camera->position.y = cornerNew.y - yDir * camera->collisionRadius;
-  camera->height += heightOffset;
-  
-  xSquareNew = divRoundDown(camera->position.x,UNITS_PER_SQUARE);
-  ySquareNew = divRoundDown(camera->position.y,UNITS_PER_SQUARE);
+    Unit floorHeightNew = floorHeightFunc(xSquareNew,ySquareNew);
+    Unit ceilingHeightNew = ceilingHeightFunc != 0 ?
+      ceilingHeightFunc(xSquareNew,ySquareNew) : UNIT_INFINITY;
 
-  Unit floorHeightNew = floorHeightFunc(xSquareNew,ySquareNew);
-  Unit ceilingHeightNew = ceilingHeightFunc != 0 ?
-    ceilingHeightFunc(xSquareNew,ySquareNew) : UNIT_INFINITY;
-
-  camera->height = clamp(camera->height,
-    floorHeightNew + camera->collisionHeightBelow,
-    ceilingHeightNew - camera->collisionHeightAbove);
+    camera->height = clamp(camera->height,
+      floorHeightNew + camera->collisionHeightBelow,
+      ceilingHeightNew - camera->collisionHeightAbove);
+  }
 }
 
 #endif
