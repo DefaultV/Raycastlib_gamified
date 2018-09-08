@@ -1040,7 +1040,7 @@ void moveCameraWithCollision(Camera *camera, Vector2D planeOffset,
     if (!dir##Collides)\
     { /* now also check for coll on the neighbouring square */ \
       int16_t dir2##Square2 = divRoundDown(corner.dir2 - dir2##Dir *\
-        CAMERA_COLL_RADIUS,UNITS_PER_SQUARE);\
+        CAMERA_COLL_RADIUS * 2,UNITS_PER_SQUARE);\
       if (dir2##Square2 != dir2##Square)\
       {\
         if (x)\
