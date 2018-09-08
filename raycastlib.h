@@ -1006,9 +1006,6 @@ void moveCameraWithCollision(Camera *camera, Vector2D planeOffset,
     int16_t xSquare = divRoundDown(corner.x,UNITS_PER_SQUARE);
     int16_t ySquare = divRoundDown(corner.y,UNITS_PER_SQUARE);
 
-    int8_t isOnGround = camera->height - CAMERA_COLL_HEIGHT_BELOW -
-      floorHeightFunc(xSquareNew,ySquareNew) < 2;
-
     cornerNew.x = corner.x + planeOffset.x;
     cornerNew.y = corner.y + planeOffset.y;
 
@@ -1016,7 +1013,7 @@ void moveCameraWithCollision(Camera *camera, Vector2D planeOffset,
     ySquareNew = divRoundDown(cornerNew.y,UNITS_PER_SQUARE);
 
     Unit bottomLimit = camera->height - CAMERA_COLL_HEIGHT_BELOW +
-      (isOnGround ? CAMERA_COLL_STEP_HEIGHT : 0);
+      CAMERA_COLL_STEP_HEIGHT;
     Unit topLimit = camera->height + CAMERA_COLL_HEIGHT_ABOVE;
 
     // checks a single square for collision against the camera
