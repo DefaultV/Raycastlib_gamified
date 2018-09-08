@@ -657,9 +657,6 @@ Unit _floorCeilFunction(int16_t x, int16_t y)
 
 void _columnFunction(HitResult *hits, uint16_t hitCount, uint16_t x, Ray ray)
 {
-if (x == 25)
-  printf("------%d\n",hitCount);
-
   int_maybe32_t y = _camResYLimit; // screen y (for floor), will only go up
   int_maybe32_t y2 = 0;            // screen y (for ceil), will only fo down
 
@@ -671,7 +668,7 @@ if (x == 25)
 
   #define VERTICAL_DEPTH_MULTIPLY 2
 
-  //  we'll be simulatenously drawing the floor and the ceiling now  
+  // we'll be simulatenously drawing the floor and the ceiling now  
   for (uint_maybe32_t j = 0; j < hitCount; ++j)
   {
     HitResult hit = hits[j];
@@ -859,19 +856,19 @@ if (x == 25)
 
   // draw ceiling until horizon
 
-  if (_ceilFunction != 0)
+  p.isFloor = 0;
+
+  Unit ceilCameraDiff = 
+    _ceilFunction != 0 ?
+    absVal(worldZPrevCeil) * VERTICAL_DEPTH_MULTIPLY : UNITS_PER_SQUARE;
+
+  horizon = y > _middleRow ? _middleRow : y;
+
+  for (int_maybe32_t i = y2; i < horizon; ++i)
   {
-    p.isFloor = 0;
-
-    Unit ceilCameraDiff = absVal(worldZPrevCeil) * VERTICAL_DEPTH_MULTIPLY;
-    horizon = y > _middleRow ? _middleRow : y;
-
-    for (int_maybe32_t i = y2; i < horizon; ++i)
-    {
-      p.position.y = i;
-      p.depth = (i - _fogStartYTop) * _floorDepthStep + ceilCameraDiff;
-      _pixelFunction(p);
-    }
+    p.position.y = i;
+    p.depth = (i - _fogStartYTop) * _floorDepthStep + ceilCameraDiff;
+    _pixelFunction(p);
   }
 
   #undef VERTICAL_DEPTH_MULTIPLY
