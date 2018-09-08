@@ -40,6 +40,12 @@
 #define VERTICAL_FOV (UNITS_PER_SQUARE / 2)
 #endif
 
+#ifndef HORIZONTAL_FOV
+#define HORIZONTAL_FOV (UNITS_PER_SQUARE / 4)
+#endif
+
+#define HORIZONTAL_FOV_HALF (HORIZONTAL_FOV / 2)
+
 #define logVector2D(v)\
   printf("[%d,%d]\n",v.x,v.y);
 
@@ -103,7 +109,6 @@ typedef struct
   Vector2D resolution;
   int16_t shear; /* Shear offset in pixels (0 => no shear), can simulate
                     looking up/down. */
-  Unit fovAngle;
   Unit height;
 
   Unit collisionRadius;
@@ -585,10 +590,8 @@ void castRaysMultiHit(Camera cam, ArrayFunction arrayFunc,
   ArrayFunction typeFunction, ColumnFunction columnFunc,
   RayConstraints constraints)
 {
-  uint16_t fovHalf = cam.fovAngle / 2;
-
-  Vector2D dir1 = angleToDirection(cam.direction - fovHalf);
-  Vector2D dir2 = angleToDirection(cam.direction + fovHalf);
+  Vector2D dir1 = angleToDirection(cam.direction - HORIZONTAL_FOV_HALF);
+  Vector2D dir2 = angleToDirection(cam.direction + HORIZONTAL_FOV_HALF);
 
   Unit dX = dir2.x - dir1.x;
   Unit dY = dir2.y - dir1.y;
@@ -621,6 +624,8 @@ Unit _middleRow = 0;
 ArrayFunction _floorFunction = 0;
 ArrayFunction _ceilFunction = 0;
 uint8_t _computeTextureCoords = 0;
+Unit _fogStartYBottom = 0;
+Unit _fogStartYTop = 0;
 
 /**
   Helper function that determines intersection with both ceiling and floor.
@@ -646,9 +651,6 @@ void _columnFunction(HitResult *hits, uint16_t hitCount, uint16_t x, Ray ray)
   PixelInfo p;
   p.position.x = x;
 
-  Unit fogStartYBottom;
-  Unit fogStartYTop;
-
   #define VERTICAL_DEPTH_MULTIPLY 2
 
   //  we'll be simulatenously drawing the floor and the ceiling now  
@@ -660,8 +662,6 @@ void _columnFunction(HitResult *hits, uint16_t hitCount, uint16_t x, Ray ray)
        possibly be computed more efficiently by not computing Euclidean
        distance at all, but rather compute the distance of the collision
        point from the projection plane (line). */
-
-    Unit halfResY = _camera.resolution.y / 2;
 
     Unit dist = // adjusted distance
       (hit.distance * vectorsAngleCos(angleToDirection(_camera.direction),
@@ -732,13 +732,10 @@ void _columnFunction(HitResult *hits, uint16_t hitCount, uint16_t x, Ray ray)
 
     Unit floorCameraDiff = absVal(worldZPrev) * VERTICAL_DEPTH_MULTIPLY;
 
-    fogStartYBottom = _middleRow + halfResY;
-    fogStartYTop = _middleRow - halfResY;
-
     for (int_maybe32_t i = y; i > z1Screen; --i)
     {
       p.position.y = i;
-      p.depth = (fogStartYBottom - i) * _floorDepthStep + floorCameraDiff;
+      p.depth = (_fogStartYBottom - i) * _floorDepthStep + floorCameraDiff;
       _pixelFunction(p);  
     }
 
@@ -756,7 +753,7 @@ void _columnFunction(HitResult *hits, uint16_t hitCount, uint16_t x, Ray ray)
       for (int_maybe32_t i = y2; i < z1ScreenCeil; ++i)
       {
         p.position.y = i;
-        p.depth = (i - fogStartYTop) * _floorDepthStep + ceilCameraDiff;
+        p.depth = (i - _fogStartYTop) * _floorDepthStep + ceilCameraDiff;
         _pixelFunction(p);  
       }
     }
@@ -827,7 +824,7 @@ void _columnFunction(HitResult *hits, uint16_t hitCount, uint16_t x, Ray ray)
   for (int_maybe32_t i = y; i >= horizon + (horizon > y2 ? 0 : 1); --i)
   {
     p.position.y = i;
-    p.depth = (fogStartYBottom - i) * _floorDepthStep + floorCameraDiff;
+    p.depth = (_fogStartYBottom - i) * _floorDepthStep + floorCameraDiff;
     _pixelFunction(p);
   }
 
@@ -843,7 +840,7 @@ void _columnFunction(HitResult *hits, uint16_t hitCount, uint16_t x, Ray ray)
     for (int_maybe32_t i = y2; i < horizon; ++i)
     {
       p.position.y = i;
-      p.depth = (i - fogStartYTop) * _floorDepthStep + ceilCameraDiff;
+      p.depth = (i - _fogStartYTop) * _floorDepthStep + ceilCameraDiff;
       _pixelFunction(p);
     }
   }
@@ -860,9 +857,13 @@ void render(Camera cam, ArrayFunction floorHeightFunc,
   _ceilFunction = ceilingHeightFunc;
   _camera = cam;
   _camResYLimit = cam.resolution.y - 1;
-  _middleRow = cam.resolution.y / 2;
 
-  _middleRow = _middleRow + cam.shear;
+  int16_t halfResY = cam.resolution.y / 2;
+
+  _middleRow = halfResY + cam.shear;
+
+  _fogStartYBottom = _middleRow + halfResY;
+  _fogStartYTop = _middleRow - halfResY;
 
   _computeTextureCoords = constraints.computeTextureCoords;
 
@@ -944,12 +945,10 @@ PixelInfo mapToScreen(Vector2D worldPosition, Unit height, Camera camera)
   if (!pointIsLeftOfRay(worldPosition,r))
     a *= -1;
 
-  Unit alpha = camera.fovAngle / 2;
-
-  Unit cos = cosInt(alpha);
+  Unit cos = cosInt(HORIZONTAL_FOV_HALF);
 
   Unit b =
-    (result.depth * sinInt(alpha)) / (cos == 0 ? 1 : cos); // sin/cos = tan
+    (result.depth * sinInt(HORIZONTAL_FOV_HALF)) / (cos == 0 ? 1 : cos); // sin/cos = tan
 
   result.position.x = (a * middleColumn) / b;
   result.position.x = middleColumn - result.position.x;
