@@ -228,7 +228,7 @@ void render(Camera cam, ArrayFunction floorHeightFunc,
 
 void moveCameraWithCollision(Camera *camera, Vector2D planeOffset,
   Unit heightOffset, ArrayFunction floorHeightFunc,
-  ArrayFunction ceilingHeightFunc);
+  ArrayFunction ceilingHeightFunc, int8_t computeHeight);
 
 //=============================================================================
 // privates
@@ -984,7 +984,7 @@ Unit perspectiveScale(Unit originalSize, Unit distance)
 
 void moveCameraWithCollision(Camera *camera, Vector2D planeOffset,
   Unit heightOffset, ArrayFunction floorHeightFunc,
-  ArrayFunction ceilingHeightFunc)
+  ArrayFunction ceilingHeightFunc, int8_t computeHeight)
 {
   // TODO: have the cam coll parameters precomputed as macros? => faster
 
@@ -1017,6 +1017,7 @@ void moveCameraWithCollision(Camera *camera, Vector2D planeOffset,
 
     // checks a single square for collision against the camera
     #define collCheck(dir,s1,s2)\
+    if (computeHeight)\
     {\
       Unit height = floorHeightFunc(s1,s2);\
       if (height > bottomLimit)\
@@ -1028,6 +1029,8 @@ void moveCameraWithCollision(Camera *camera, Vector2D planeOffset,
           dir##Collides = true;\
       }\
     }\
+    else\
+      dir##Collides = floorHeightFunc(s1,s2) > CAMERA_COLL_STEP_HEIGHT;
 
     // check a collision against non-diagonal square
     #define collCheckOrtho(dir,dir2,s1,s2,x)\
@@ -1083,7 +1086,7 @@ void moveCameraWithCollision(Camera *camera, Vector2D planeOffset,
     camera->position.y = cornerNew.y - yDir * CAMERA_COLL_RADIUS;
   }
 
-  if (movesInPlane || heightOffset != 0)
+  if (computeHeight && (movesInPlane || heightOffset != 0))
   {
     camera->height += heightOffset;
 
