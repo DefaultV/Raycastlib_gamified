@@ -46,6 +46,22 @@
 
 #define HORIZONTAL_FOV_HALF (HORIZONTAL_FOV / 2)
 
+#ifndef CAMERA_COLL_RADIUS
+#define CAMERA_COLL_RADIUS UNITS_PER_SQUARE / 4
+#endif
+
+#ifndef CAMERA_COLL_HEIGHT_BELOW
+#define CAMERA_COLL_HEIGHT_BELOW UNITS_PER_SQUARE
+#endif 
+
+#ifndef CAMERA_COLL_HEIGHT_ABOVE
+#define CAMERA_COLL_HEIGHT_ABOVE (UNITS_PER_SQUARE / 3)
+#endif
+
+#ifndef CAMERA_COLL_STEP_HEIGHT
+#define CAMERA_COLL_STEP_HEIGHT (UNITS_PER_SQUARE / 2)
+#endif
+
 #define logVector2D(v)\
   printf("[%d,%d]\n",v.x,v.y);
 
@@ -110,11 +126,6 @@ typedef struct
   int16_t shear; /* Shear offset in pixels (0 => no shear), can simulate
                     looking up/down. */
   Unit height;
-
-  Unit collisionRadius;
-  Unit collisionHeightBelow;
-  Unit collisionHeightAbove;
-  Unit collisionStepHeight;
 } Camera;
 
 /**
@@ -989,8 +1000,8 @@ void moveCameraWithCollision(Camera *camera, Vector2D planeOffset,
     int16_t xDir = planeOffset.x > 0 ? 1 : (planeOffset.x < 0 ? -1 : 0);
     int16_t yDir = planeOffset.y > 0 ? 1 : (planeOffset.y < 0 ? -1 : 0);
 
-    corner.x = camera->position.x + xDir * camera->collisionRadius;
-    corner.y = camera->position.y + yDir * camera->collisionRadius;
+    corner.x = camera->position.x + xDir * CAMERA_COLL_RADIUS;
+    corner.y = camera->position.y + yDir * CAMERA_COLL_RADIUS;
 
     int16_t xSquare = divRoundDown(corner.x,UNITS_PER_SQUARE);
     int16_t ySquare = divRoundDown(corner.y,UNITS_PER_SQUARE);
@@ -1001,9 +1012,9 @@ void moveCameraWithCollision(Camera *camera, Vector2D planeOffset,
     xSquareNew = divRoundDown(cornerNew.x,UNITS_PER_SQUARE);
     ySquareNew = divRoundDown(cornerNew.y,UNITS_PER_SQUARE);
 
-    Unit bottomLimit = camera->height - camera->collisionHeightBelow +
-      camera->collisionStepHeight;
-    Unit topLimit = camera->height + camera->collisionHeightAbove;
+    Unit bottomLimit = camera->height - CAMERA_COLL_HEIGHT_BELOW +
+      CAMERA_COLL_RADIUS;
+    Unit topLimit = camera->height + CAMERA_COLL_HEIGHT_ABOVE;
 
     // checks a single square for collision against the camera
     #define collCheck(dir,s1,s2)\
@@ -1026,7 +1037,7 @@ void moveCameraWithCollision(Camera *camera, Vector2D planeOffset,
     if (!dir##Collides)\
     { /* now also check for coll on the neighbouring square */ \
       int16_t dir2##Square2 = divRoundDown(corner.dir2 - dir2##Dir *\
-        camera->collisionRadius,UNITS_PER_SQUARE);\
+        CAMERA_COLL_RADIUS,UNITS_PER_SQUARE);\
       if (dir2##Square2 != dir2##Square)\
       {\
         if (x)\
@@ -1066,8 +1077,8 @@ void moveCameraWithCollision(Camera *camera, Vector2D planeOffset,
     #undef collCheck
     #undef collHandle
 
-    camera->position.x = cornerNew.x - xDir * camera->collisionRadius;
-    camera->position.y = cornerNew.y - yDir * camera->collisionRadius;
+    camera->position.x = cornerNew.x - xDir * CAMERA_COLL_RADIUS;
+    camera->position.y = cornerNew.y - yDir * CAMERA_COLL_RADIUS;
   }
 
   if (movesInPlane || heightOffset != 0)
@@ -1082,8 +1093,8 @@ void moveCameraWithCollision(Camera *camera, Vector2D planeOffset,
       ceilingHeightFunc(xSquareNew,ySquareNew) : UNIT_INFINITY;
 
     camera->height = clamp(camera->height,
-      floorHeightNew + camera->collisionHeightBelow,
-      ceilingHeightNew - camera->collisionHeightAbove);
+      floorHeightNew + CAMERA_COLL_HEIGHT_BELOW,
+      ceilingHeightNew - CAMERA_COLL_HEIGHT_ABOVE);
   }
 }
 
