@@ -989,7 +989,6 @@ void moveCameraWithCollision(Camera *camera, Vector2D planeOffset,
   // TODO: have the cam coll parameters precomputed as macros? => faster
 
   int8_t movesInPlane = planeOffset.x != 0 || planeOffset.y != 0;
-
   int16_t xSquareNew, ySquareNew;
 
   if (movesInPlane)
@@ -1087,17 +1086,44 @@ void moveCameraWithCollision(Camera *camera, Vector2D planeOffset,
   if (movesInPlane || heightOffset != 0)
   {
     camera->height += heightOffset;
-    
-    xSquareNew = divRoundDown(camera->position.x,UNITS_PER_SQUARE);
-    ySquareNew = divRoundDown(camera->position.y,UNITS_PER_SQUARE);
 
-    Unit floorHeightNew = floorHeightFunc(xSquareNew,ySquareNew);
-    Unit ceilingHeightNew = ceilingHeightFunc != 0 ?
+    int16_t xSquare1 =
+      divRoundDown(camera->position.x - CAMERA_COLL_RADIUS,UNITS_PER_SQUARE);
+    int16_t xSquare2 =
+      divRoundDown(camera->position.x + CAMERA_COLL_RADIUS,UNITS_PER_SQUARE);
+    int16_t ySquare1 =
+      divRoundDown(camera->position.y - CAMERA_COLL_RADIUS,UNITS_PER_SQUARE);
+    int16_t ySquare2 =
+      divRoundDown(camera->position.y + CAMERA_COLL_RADIUS,UNITS_PER_SQUARE);
+
+    Unit bottomLimit = floorHeightFunc(xSquare1,ySquare1);
+
+    Unit height;
+
+    if (xSquare2 != xSquare1)
+    {
+      height = floorHeightFunc(xSquare2,ySquare1);
+      bottomLimit = bottomLimit < height ? height : bottomLimit;
+    }
+
+    if (ySquare2 != ySquare1)
+    {
+      height = floorHeightFunc(xSquare1,ySquare2);
+      bottomLimit = bottomLimit < height ? height : bottomLimit;
+    }
+
+    if (xSquare2 != xSquare1 && ySquare2 != ySquare1)
+    {
+      height = floorHeightFunc(xSquare2,ySquare2);
+      bottomLimit = bottomLimit < height ? height : bottomLimit;
+    }
+
+    Unit topLimit = ceilingHeightFunc != 0 ?
       ceilingHeightFunc(xSquareNew,ySquareNew) : UNIT_INFINITY;
-
+   
     camera->height = clamp(camera->height,
-      floorHeightNew + CAMERA_COLL_HEIGHT_BELOW,
-      ceilingHeightNew - CAMERA_COLL_HEIGHT_ABOVE);
+      bottomLimit + CAMERA_COLL_HEIGHT_BELOW,
+      topLimit - CAMERA_COLL_HEIGHT_ABOVE);
   }
 }
 
