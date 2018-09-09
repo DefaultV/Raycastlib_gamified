@@ -15,7 +15,7 @@
   - Each game square is UNITS_PER_SQUARE * UNITS_PER_SQUARE.
   - Angles are in Units, 0 means pointing right (x+) and positively rotates
     clockwise, a full angle has UNITS_PER_SQUARE Units.
-  */
+*/
 
 #include <stdint.h>
 
@@ -154,9 +154,19 @@ typedef struct
   It should return a characteristic of given square as an integer (e.g. square
   height, texture index, ...) - between squares that return different numbers
   there is considered to be a collision.
+
+  This function should be as fast as possible as it will typically be called
+  very often.
 */ 
 typedef Unit (*ArrayFunction)(int16_t x, int16_t y);
 
+/**
+  Function that renders a single pixel at the display. It is handed an info
+  about the pixel it should draw.
+
+  This function should be as fast as possible as it will typically be called
+  very often.
+*/
 typedef void (*PixelFunction)(PixelInfo info);
 
 typedef void
@@ -165,22 +175,30 @@ typedef void
 /**
   Simple-interface function to cast a single ray.
   @return          The first collision result.
- */
+*/
 HitResult castRay(Ray ray, ArrayFunction arrayFunc);
 
 /**
   Maps a single point in the world to the screen (2D position + depth).
- */
+*/
 PixelInfo mapToScreen(Vector2D worldPosition, Unit height, Camera camera);
 
 /**
   Casts a single ray and returns a list of collisions.
- */
+*/
 void castRayMultiHit(Ray ray, ArrayFunction arrayFunc, ArrayFunction typeFunc, 
   HitResult *hitResults, uint16_t *hitResultsLen, RayConstraints constraints);
 
 Vector2D angleToDirection(Unit angle);
+
+/**
+Cos function.
+
+@param input to cos in Units (UNITS_PER_SQUARE = 2 * pi = 360 degrees)
+@return normalized output in Units (from -UNITS_PER_SQUARE to UNITS_PER_SQUARE)
+*/
 Unit cosInt(Unit input);
+
 Unit sinInt(Unit input);
 
 /// Normalizes given vector to have UNITS_PER_SQUARE length.
@@ -196,7 +214,7 @@ Unit len(Vector2D v);
 /**
   Converts an angle in whole degrees to an angle in Units that this library
   uses.
- */   
+*/   
 Unit degreesToUnitsAngle(int16_t degrees);
 
 ///< Computes the change in size of an object due to perspective.
@@ -205,7 +223,7 @@ Unit perspectiveScale(Unit originalSize, Unit distance);
 /**
   Casts rays for given camera view and for each hit calls a user provided
   function.
- */
+*/
 void castRaysMultiHit(Camera cam, ArrayFunction arrayFunc,
   ArrayFunction typeFunction, ColumnFunction columnFunc,
   RayConstraints constraints);
@@ -216,16 +234,32 @@ void castRaysMultiHit(Camera cam, ArrayFunction arrayFunc,
   @param cam camera whose view to render
   @param floorHeightFunc function that returns floor height (in Units)
   @param ceilingHeightFunc same as floorHeightFunc but for ceiling, can also be
-                          0 (no ceiling will be rendered)
+                           0 (no ceiling will be rendered)
   @param typeFunction function that says a type of square (e.g. its texture
                      index), can be 0 (no type in hit result)
   @param pixelFunc callback function to draw a single pixel on screen
   @param constraints constraints for each cast ray
- */
+*/
 void render(Camera cam, ArrayFunction floorHeightFunc,
   ArrayFunction ceilingHeightFunc, ArrayFunction typeFunction,
   PixelFunction pixelFunc, RayConstraints constraints);
 
+/**
+  Function that moves given camera and makes it collide with walls and
+  potentially also floor and ceilings. It's meant to help implement player
+  movement.
+
+  @param camera camera to move
+  @param planeOffset offset to move the camera in
+  @param heightOffset height offset to move the camera in
+  @param floorHeightFunc function used to retrieve the floor height
+  @param ceilingHeightFunc function for retrieving ceiling height, can be 0
+                           (camera won't collide with ceiling)
+  @param computeHeight whether to compute height - if false (0), floor and
+                       ceiling functions won't be used and the camera will
+                       only collide horizontally with walls (good for simpler
+                       game, also faster)
+*/
 void moveCameraWithCollision(Camera *camera, Vector2D planeOffset,
   Unit heightOffset, ArrayFunction floorHeightFunc,
   ArrayFunction ceilingHeightFunc, int8_t computeHeight);
