@@ -1115,33 +1115,33 @@ void moveCameraWithCollision(Camera *camera, Vector2D planeOffset,
       divRoundDown(camera->position.y + CAMERA_COLL_RADIUS,UNITS_PER_SQUARE);
 
     Unit bottomLimit = floorHeightFunc(xSquare1,ySquare1);
+    Unit topLimit = ceilingHeightFunc != 0 ?
+      ceilingHeightFunc(xSquare1,ySquare1) : UNIT_INFINITY;
 
     Unit height;
 
-    if (xSquare2 != xSquare1)
-    {
-      height = floorHeightFunc(xSquare2,ySquare1);
-      bottomLimit = bottomLimit < height ? height : bottomLimit;
+    #define checkSquares(s1,s2)\
+    {\
+      height = floorHeightFunc(xSquare##s1,ySquare##s2);\
+      bottomLimit = bottomLimit < height ? height : bottomLimit;\
+      height = ceilingHeightFunc != 0 ?\
+        ceilingHeightFunc(xSquare##s1,ySquare##s2) : UNIT_INFINITY;\
+      topLimit = topLimit > height ? height : topLimit;\
     }
+
+    if (xSquare2 != xSquare1)
+      checkSquares(2,1)
 
     if (ySquare2 != ySquare1)
-    {
-      height = floorHeightFunc(xSquare1,ySquare2);
-      bottomLimit = bottomLimit < height ? height : bottomLimit;
-    }
+      checkSquares(1,2)
 
     if (xSquare2 != xSquare1 && ySquare2 != ySquare1)
-    {
-      height = floorHeightFunc(xSquare2,ySquare2);
-      bottomLimit = bottomLimit < height ? height : bottomLimit;
-    }
+      checkSquares(2,2)
 
-    Unit topLimit = ceilingHeightFunc != 0 ?
-      ceilingHeightFunc(xSquareNew,ySquareNew) : UNIT_INFINITY;
-   
     camera->height = clamp(camera->height,
       bottomLimit + CAMERA_COLL_HEIGHT_BELOW,
       topLimit - CAMERA_COLL_HEIGHT_ABOVE);
+    #undef checkSquares
   }
 }
 
