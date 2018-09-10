@@ -883,6 +883,7 @@ void _columnFunction(HitResult *hits, uint16_t hitCount, uint16_t x, Ray ray)
 
   Unit floorCameraDiff = absVal(worldZPrev) * VERTICAL_DEPTH_MULTIPLY;
   Unit horizon = (y2 < _middleRow || _ceilFunction == 0) ? _middleRow : y2;
+  horizon = clamp(horizon,0,_camera.resolution.y);
 
   for (int_maybe32_t i = y; i >= horizon + (horizon > y2 ? 0 : 1); --i)
   {
@@ -900,6 +901,7 @@ void _columnFunction(HitResult *hits, uint16_t hitCount, uint16_t x, Ray ray)
     absVal(worldZPrevCeil) * VERTICAL_DEPTH_MULTIPLY : UNITS_PER_SQUARE;
 
   horizon = y > _middleRow ? _middleRow : y;
+  horizon = clamp(horizon,0,_camera.resolution.y);
 
   for (int_maybe32_t i = y2; i < horizon; ++i)
   {
