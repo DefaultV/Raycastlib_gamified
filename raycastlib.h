@@ -137,6 +137,7 @@ typedef struct
   Vector2D position;  ///< On-screen position.
   int8_t isWall;      ///< Whether the pixel is a wall or a floor/ceiling.
   int8_t isFloor;     ///< Whether the pixel is floor or ceiling.
+  int8_t isHorizon;   ///< Whether the pixel is floor going towards horizon.
   Unit depth;         ///< Corrected depth.
   HitResult hit;      ///< Corresponding ray hit.
   Unit textureCoordY; ///< Normalized (0 to UNITS_PER_SQUARE - 1) tex coord.
@@ -789,6 +790,7 @@ void _columnFunction(HitResult *hits, uint16_t hitCount, uint16_t x, Ray ray)
 
     p.isWall = 0;
     p.isFloor = 1;
+    p.isHorizon = 0;
 
     Unit floorCameraDiff = absVal(worldZPrev) * VERTICAL_DEPTH_MULTIPLY;
 
@@ -877,6 +879,7 @@ void _columnFunction(HitResult *hits, uint16_t hitCount, uint16_t x, Ray ray)
 
   p.isWall = 0;
   p.isFloor = 1;
+  p.isHorizon = 1;
 
   Unit floorCameraDiff = absVal(worldZPrev) * VERTICAL_DEPTH_MULTIPLY;
   Unit horizon = (y2 < _middleRow || _ceilFunction == 0) ? _middleRow : y2;
