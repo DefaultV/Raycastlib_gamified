@@ -1202,12 +1202,12 @@ void moveCameraWithCollision(Camera *camera, Vector2D planeOffset,
     {\
       Unit height = floorHeightFunc(s1,s2);\
       if (height > bottomLimit)\
-        dir##Collides = 0;\
+        dir##Collides = 1;\
       else if (ceilingHeightFunc != 0)\
       {\
         height = ceilingHeightFunc(s1,s2);\
         if (height < topLimit)\
-          dir##Collides = 0;\
+          dir##Collides = 1;\
       }\
     }\
     else\
