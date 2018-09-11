@@ -245,6 +245,9 @@ void render(Camera cam, ArrayFunction floorHeightFunc,
   ArrayFunction ceilingHeightFunc, ArrayFunction typeFunction,
   PixelFunction pixelFunc, RayConstraints constraints);
 
+void renderSimple(Camera cam, ArrayFunction floorHeightFunc,
+  ArrayFunction typeFunc, PixelFunction pixelFunc, RayConstraints constraints);
+
 /**
   Function that moves given camera and makes it collide with walls and
   potentially also floor and ceilings. It's meant to help implement player
@@ -690,6 +693,22 @@ Unit _floorCeilFunction(int16_t x, int16_t y)
   return ((f & 0x0000ffff) << 16) | (c & 0x0000ffff);
 }
 
+inline Unit adjustDistance(Unit distance, Camera camera, Ray ray)
+{
+  /* FIXME/TODO: The adjusted (=orthogonal, camera-space) distance could
+     possibly be computed more efficiently by not computing Euclidean
+     distance at all, but rather compute the distance of the collision
+     point from the projection plane (line). */
+
+  Unit result =
+    (distance *
+     vectorsAngleCos(angleToDirection(camera.direction),ray.direction)) /
+     UNITS_PER_SQUARE;
+
+  return result == 0 ? 1 : result;
+                // ^ prevent division by zero
+}
+
 void _columnFunction(HitResult *hits, uint16_t hitCount, uint16_t x, Ray ray)
 {
   int_maybe32_t y = _camResYLimit; // screen y (for floor), will only go up
@@ -708,16 +727,7 @@ void _columnFunction(HitResult *hits, uint16_t hitCount, uint16_t x, Ray ray)
   {
     HitResult hit = hits[j];
 
-    /* FIXME/TODO: The adjusted (=orthogonal, camera-space) distance could
-       possibly be computed more efficiently by not computing Euclidean
-       distance at all, but rather compute the distance of the collision
-       point from the projection plane (line). */
-
-    Unit dist = // adjusted distance
-      (hit.distance * vectorsAngleCos(angleToDirection(_camera.direction),
-      ray.direction)) / UNITS_PER_SQUARE;
-
-    dist = dist == 0 ? 1 : dist; // prevent division by zero
+    Unit dist = adjustDistance(hit.distance,_camera,ray);
 
     Unit wallHeight = _floorFunction(hit.square.x,hit.square.y);
 
@@ -901,7 +911,7 @@ void _columnFunction(HitResult *hits, uint16_t hitCount, uint16_t x, Ray ray)
     absVal(worldZPrevCeil) * VERTICAL_DEPTH_MULTIPLY : UNITS_PER_SQUARE;
 
   horizon = y > _middleRow ? _middleRow : y;
-  horizon = clamp(horizon,0,_camera.resolution.y);
+  horizon = clamp(horizon,0,_camResYLimit);
 
   for (int_maybe32_t i = y2; i < horizon; ++i)
   {
@@ -911,6 +921,76 @@ void _columnFunction(HitResult *hits, uint16_t hitCount, uint16_t x, Ray ray)
   }
 
   #undef VERTICAL_DEPTH_MULTIPLY
+}
+
+void _columnFunctionSimple(HitResult *hits, uint16_t hitCount, uint16_t x,
+  Ray ray)
+{
+  int16_t y = 0;
+  int16_t wallScreenHeight = 0;
+  Unit dist = 1;
+
+  PixelInfo p;
+  p.position.x = x;
+
+  if (hitCount > 0)
+  {
+    HitResult hit = hits[0];
+    p.hit = hit;
+    dist = adjustDistance(hit.distance,_camera,ray);
+    int16_t wallHeightWorld = _floorFunction(hit.square.x,hit.square.y);
+    wallScreenHeight = perspectiveScale((wallHeightWorld *
+      _camera.resolution.y) / UNITS_PER_SQUARE,dist);
+  }
+
+  int16_t wallStart = clamp(_middleRow - wallScreenHeight / 2,0,_camResYLimit);
+  int16_t wallEnd = clamp(wallStart + wallScreenHeight,0,_camResYLimit);
+
+  // draw ceiling
+
+  p.isWall = 0;
+  p.isFloor = 0;
+  p.isHorizon = 1;
+  p.depth = 1;
+
+  while (y < wallStart)
+  {
+    p.position.y = y;
+    _pixelFunction(p);
+    ++y;
+  }
+
+  // draw wall
+
+  p.isWall = 1;
+  p.isFloor = 1;
+  p.depth = dist;
+
+  int16_t coordHelper = 0;
+
+  while (y < wallEnd)
+  {
+    p.position.y = y;
+
+    if (_computeTextureCoords)
+      p.textureCoordY = (coordHelper * UNITS_PER_SQUARE) / wallScreenHeight;
+
+    _pixelFunction(p);
+    ++y;
+    ++coordHelper;
+  }
+
+  // draw floor
+
+  p.isWall = 0;
+  p.depth = 1;
+
+  while (y < _camera.resolution.y)
+  {
+    p.position.y = y;
+    _pixelFunction(p);
+    ++y;
+  }
 }
 
 void render(Camera cam, ArrayFunction floorHeightFunc,
@@ -948,6 +1028,25 @@ void render(Camera cam, ArrayFunction floorHeightFunc,
 
   castRaysMultiHit(cam,_floorCeilFunction,typeFunction,
     _columnFunction,constraints);
+}
+
+void renderSimple(Camera cam, ArrayFunction floorHeightFunc,
+  ArrayFunction typeFunc, PixelFunction pixelFunc, RayConstraints constraints)
+{
+  _pixelFunction = pixelFunc;
+  _floorFunction = floorHeightFunc;
+  _camera = cam;
+  _camResYLimit = cam.resolution.y - 1;
+  _middleRow = cam.resolution.y / 2;
+  _computeTextureCoords = constraints.computeTextureCoords;
+
+  // TODO
+  _floorDepthStep = (12 * UNITS_PER_SQUARE) / cam.resolution.y; 
+
+  constraints.maxHits = 1;
+
+  castRaysMultiHit(cam,_floorFunction,typeFunc,_columnFunctionSimple,
+    constraints);
 }
 
 Vector2D normalize(Vector2D v)
