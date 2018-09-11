@@ -1202,12 +1202,12 @@ void moveCameraWithCollision(Camera *camera, Vector2D planeOffset,
     {\
       Unit height = floorHeightFunc(s1,s2);\
       if (height > bottomLimit)\
-        dir##Collides = true;\
+        dir##Collides = 0;\
       else if (ceilingHeightFunc != 0)\
       {\
         height = ceilingHeightFunc(s1,s2);\
         if (height < topLimit)\
-          dir##Collides = true;\
+          dir##Collides = 0;\
       }\
     }\
     else\
@@ -1230,10 +1230,10 @@ void moveCameraWithCollision(Camera *camera, Vector2D planeOffset,
       }\
     }
 
-    int8_t xCollides = false;
+    int8_t xCollides = 0;
     collCheckOrtho(x,y,xSquareNew,ySquare,1)
 
-    int8_t yCollides = false;
+    int8_t yCollides = 0;
     collCheckOrtho(y,x,xSquare,ySquareNew,0)
 
     #define collHandle(dir)\
@@ -1246,7 +1246,7 @@ void moveCameraWithCollision(Camera *camera, Vector2D planeOffset,
     {
       if (xSquare != xSquareNew && ySquare != ySquareNew) // corner?
       {
-        int8_t xyCollides = false;
+        int8_t xyCollides = 0;
         collCheck(xy,xSquareNew,ySquareNew)
         
         if (xyCollides)
