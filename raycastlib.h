@@ -169,7 +169,7 @@ typedef Unit (*ArrayFunction)(int16_t x, int16_t y);
   This function should be as fast as possible as it will typically be called
   very often.
 */
-typedef void (*PixelFunction)(PixelInfo info);
+typedef void (*PixelFunction)(PixelInfo *info);
 
 typedef void
   (*ColumnFunction)(HitResult *hits, uint16_t hitCount, uint16_t x, Ray ray);
@@ -819,7 +819,7 @@ void _columnFunction(HitResult *hits, uint16_t hitCount, uint16_t x, Ray ray)
     {
       p.position.y = i;
       p.depth = (_fogStartYBottom - i) * _floorDepthStep + floorCameraDiff;
-      _pixelFunction(p);  
+      _pixelFunction(&p);  
     }
 
     if (z1Screen < y)
@@ -837,7 +837,7 @@ void _columnFunction(HitResult *hits, uint16_t hitCount, uint16_t x, Ray ray)
       {
         p.position.y = i;
         p.depth = (i - _fogStartYTop) * _floorDepthStep + ceilCameraDiff;
-        _pixelFunction(p);  
+        _pixelFunction(&p);  
       }
     }
 
@@ -861,7 +861,7 @@ void _columnFunction(HitResult *hits, uint16_t hitCount, uint16_t x, Ray ray)
         p.textureCoordY = UNITS_PER_SQUARE - 1 - ((z1ScreenNoClamp - i) *
           UNITS_PER_SQUARE) / wallScreenHeightNoClamp;
 
-      _pixelFunction(p);
+      _pixelFunction(&p);
     }
 
     // draw ceiling wall
@@ -882,7 +882,7 @@ void _columnFunction(HitResult *hits, uint16_t hitCount, uint16_t x, Ray ray)
           p.textureCoordY = ((i - z1ScreenCeilNoClamp) *
             UNITS_PER_SQUARE) / wallScreenHeightCeilNoClamp;
 
-        _pixelFunction(p);
+        _pixelFunction(&p);
       }
     }
 
@@ -910,7 +910,7 @@ void _columnFunction(HitResult *hits, uint16_t hitCount, uint16_t x, Ray ray)
   {
     p.position.y = i;
     p.depth = (_fogStartYBottom - i) * _floorDepthStep + floorCameraDiff;
-    _pixelFunction(p);
+    _pixelFunction(&p);
   }
 
   // draw ceiling until horizon
@@ -928,7 +928,7 @@ void _columnFunction(HitResult *hits, uint16_t hitCount, uint16_t x, Ray ray)
   {
     p.position.y = i;
     p.depth = (i - _fogStartYTop) * _floorDepthStep + ceilCameraDiff;
-    _pixelFunction(p);
+    _pixelFunction(&p);
   }
 
   #undef VERTICAL_DEPTH_MULTIPLY
@@ -979,7 +979,7 @@ void _columnFunctionSimple(HitResult *hits, uint16_t hitCount, uint16_t x,
   while (y < wallStart)
   {
     p.position.y = y;
-    _pixelFunction(p);
+    _pixelFunction(&p);
     ++y;
     p.depth += _floorDepthStep;
   }
@@ -997,7 +997,7 @@ void _columnFunctionSimple(HitResult *hits, uint16_t hitCount, uint16_t x,
     if (_computeTextureCoords)
       p.textureCoordY = (coordHelper * UNITS_PER_SQUARE) / wallScreenHeight;
 
-    _pixelFunction(p);
+    _pixelFunction(&p);
     ++y;
     ++coordHelper;
   }
@@ -1010,7 +1010,7 @@ void _columnFunctionSimple(HitResult *hits, uint16_t hitCount, uint16_t x,
   while (y < _camera.resolution.y)
   {
     p.position.y = y;
-    _pixelFunction(p);
+    _pixelFunction(&p);
     ++y;
     p.depth -= _floorDepthStep;
   }
