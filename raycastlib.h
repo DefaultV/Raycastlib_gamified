@@ -804,6 +804,9 @@ void _columnFunction(HitResult *hits, uint16_t hitCount, uint16_t x, Ray ray)
     if (zTop <= zBottomCeil)
       zBottomCeil = zTop; // walls on ceiling and floor met
 
+    if (z1Screen == 0) // TMP: nasty shear bug workaround
+      z1Screen = -1;
+
     // draw floor until wall
 
     p.isWall = 0;
