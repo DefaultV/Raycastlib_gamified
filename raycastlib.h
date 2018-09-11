@@ -675,6 +675,7 @@ ArrayFunction _ceilFunction = 0;
 uint8_t _computeTextureCoords = 0;
 Unit _fogStartYBottom = 0;
 Unit _fogStartYTop = 0;
+int16_t _cameraHeightScreen = 0;
 
 /**
   Helper function that determines intersection with both ceiling and floor.
@@ -928,6 +929,11 @@ void _columnFunctionSimple(HitResult *hits, uint16_t hitCount, uint16_t x,
 {
   int16_t y = 0;
   int16_t wallScreenHeight = 0;
+  int16_t coordHelper = 0;
+  int16_t wallStart = _middleRow;
+  int16_t wallEnd = _middleRow;
+  int16_t heightOffset = 0;
+
   Unit dist = 1;
 
   PixelInfo p;
@@ -941,10 +947,19 @@ void _columnFunctionSimple(HitResult *hits, uint16_t hitCount, uint16_t x,
     int16_t wallHeightWorld = _floorFunction(hit.square.x,hit.square.y);
     wallScreenHeight = perspectiveScale((wallHeightWorld *
       _camera.resolution.y) / UNITS_PER_SQUARE,dist);
-  }
 
-  int16_t wallStart = clamp(_middleRow - wallScreenHeight / 2,0,_camResYLimit);
-  int16_t wallEnd = clamp(wallStart + wallScreenHeight,0,_camResYLimit);
+    heightOffset = perspectiveScale(_cameraHeightScreen,dist);
+
+    wallStart = _middleRow - wallScreenHeight / 2 + heightOffset;
+
+    coordHelper = -1 * wallStart;
+    coordHelper = coordHelper >= 0 ? coordHelper : 0;
+
+
+
+    wallStart = clamp(wallStart,0,_camResYLimit);
+    wallEnd = clamp(wallStart + wallScreenHeight,0,_camResYLimit);
+  }
 
   // draw ceiling
 
@@ -958,6 +973,7 @@ void _columnFunctionSimple(HitResult *hits, uint16_t hitCount, uint16_t x,
     p.position.y = y;
     _pixelFunction(p);
     ++y;
+    p.depth += _floorDepthStep;
   }
 
   // draw wall
@@ -965,8 +981,6 @@ void _columnFunctionSimple(HitResult *hits, uint16_t hitCount, uint16_t x,
   p.isWall = 1;
   p.isFloor = 1;
   p.depth = dist;
-
-  int16_t coordHelper = 0;
 
   while (y < wallEnd)
   {
@@ -983,13 +997,14 @@ void _columnFunctionSimple(HitResult *hits, uint16_t hitCount, uint16_t x,
   // draw floor
 
   p.isWall = 0;
-  p.depth = 1;
+  p.depth = _middleRow * _floorDepthStep;
 
   while (y < _camera.resolution.y)
   {
     p.position.y = y;
     _pixelFunction(p);
     ++y;
+    p.depth -= _floorDepthStep;
   }
 }
 
@@ -1039,6 +1054,10 @@ void renderSimple(Camera cam, ArrayFunction floorHeightFunc,
   _camResYLimit = cam.resolution.y - 1;
   _middleRow = cam.resolution.y / 2;
   _computeTextureCoords = constraints.computeTextureCoords;
+
+  _cameraHeightScreen =
+    (_camera.resolution.y * (_camera.height - UNITS_PER_SQUARE)) /
+    UNITS_PER_SQUARE;
 
   // TODO
   _floorDepthStep = (12 * UNITS_PER_SQUARE) / cam.resolution.y; 
