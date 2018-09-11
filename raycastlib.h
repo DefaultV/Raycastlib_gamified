@@ -336,7 +336,7 @@ Unit clamp(Unit value, Unit valueMin, Unit valueMax)
     return valueMin;
 }
 
-inline Unit absVal(Unit value)
+Unit absVal(Unit value)
 {
   profileCall(absVal);
 
@@ -344,7 +344,7 @@ inline Unit absVal(Unit value)
 }
 
 /// Like mod, but behaves differently for negative values.
-inline Unit wrap(Unit value, Unit mod)
+Unit wrap(Unit value, Unit mod)
 {
   profileCall(wrap);
 
@@ -352,7 +352,7 @@ inline Unit wrap(Unit value, Unit mod)
 }
 
 /// Performs division, rounding down, NOT towards zero.
-inline Unit divRoundDown(Unit value, Unit divisor)
+Unit divRoundDown(Unit value, Unit divisor)
 {
   profileCall(divRoundDown);
 
@@ -702,7 +702,7 @@ Unit _floorCeilFunction(int16_t x, int16_t y)
   return ((f & 0x0000ffff) << 16) | (c & 0x0000ffff);
 }
 
-inline Unit adjustDistance(Unit distance, Camera camera, Ray ray)
+Unit adjustDistance(Unit distance, Camera camera, Ray ray)
 {
   /* FIXME/TODO: The adjusted (=orthogonal, camera-space) distance could
      possibly be computed more efficiently by not computing Euclidean
