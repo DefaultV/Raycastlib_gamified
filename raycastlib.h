@@ -869,7 +869,7 @@ void _columnFunction(HitResult *hits, uint16_t hitCount, uint16_t x, Ray ray)
     {
       iTo = y > zBottomCeil ? zBottomCeil : y;
 
-      for (int_maybe32_t i = z1ScreenCeil > y2 ? z1ScreenCeil : y2; i <= iTo;
+      for (int_maybe32_t i = z1ScreenCeil > y2 ? z1ScreenCeil : y2; i < iTo;
         ++i)
       {
         p.position.y = i;
