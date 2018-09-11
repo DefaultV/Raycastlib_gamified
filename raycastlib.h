@@ -955,8 +955,6 @@ void _columnFunctionSimple(HitResult *hits, uint16_t hitCount, uint16_t x,
     coordHelper = -1 * wallStart;
     coordHelper = coordHelper >= 0 ? coordHelper : 0;
 
-
-
     wallStart = clamp(wallStart,0,_camResYLimit);
     wallEnd = clamp(wallStart + wallScreenHeight,0,_camResYLimit);
   }
