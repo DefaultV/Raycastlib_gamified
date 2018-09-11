@@ -753,10 +753,9 @@ void _columnFunction(HitResult *hits, uint16_t hitCount, uint16_t x, Ray ray)
     int_maybe32_t z2Screen = _middleRow - perspectiveScale(
       (worldZ2 * _camera.resolution.y) / UNITS_PER_SQUARE,dist);
 
-    int_maybe32_t wallScreenHeightNoClamp = z2Screen - z1ScreenNoClamp;
-
-    wallScreenHeightNoClamp = wallScreenHeightNoClamp != 0 ?
-      wallScreenHeightNoClamp : 1;
+    int_maybe32_t wallScreenHeightNoClamp = z1ScreenNoClamp - z2Screen + 1;
+    wallScreenHeightNoClamp = wallScreenHeightNoClamp == 0 ? 1 :
+      wallScreenHeightNoClamp;
 
     z2Screen = clamp(z2Screen,0,_camResYLimit);
     z2Screen = z2Screen > y2 ? z2Screen : y2;
@@ -856,7 +855,7 @@ void _columnFunction(HitResult *hits, uint16_t hitCount, uint16_t x, Ray ray)
       p.hit = hit;
 
       if (_computeTextureCoords)
-        p.textureCoordY = UNITS_PER_SQUARE - 1 -((i - z1ScreenNoClamp) *
+        p.textureCoordY = UNITS_PER_SQUARE - 1 - ((z1ScreenNoClamp - i) *
           UNITS_PER_SQUARE) / wallScreenHeightNoClamp;
 
       _pixelFunction(p);
