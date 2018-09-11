@@ -8,6 +8,7 @@
 
   author: Miloslav "drummyfish" Ciz
   license: CC0
+  version: 0.1
 
   - Game field's bottom left corner is at [0,0].
   - X axis goes right.
@@ -245,6 +246,13 @@ void render(Camera cam, ArrayFunction floorHeightFunc,
   ArrayFunction ceilingHeightFunc, ArrayFunction typeFunction,
   PixelFunction pixelFunc, RayConstraints constraints);
 
+/**
+  Renders given camera view, with help of provided functions. This function is
+  simpler and faster than render(...) and is meant to be rendering scenes
+  with simple 1-intersection raycasting. The render(...) function can give more
+  accurate results than this function, so it's to be considered even for simple
+  scenes.
+*/
 void renderSimple(Camera cam, ArrayFunction floorHeightFunc,
   ArrayFunction typeFunc, PixelFunction pixelFunc, RayConstraints constraints);
 
@@ -1129,7 +1137,8 @@ PixelInfo mapToScreen(Vector2D worldPosition, Unit height, Camera camera)
   Unit cos = cosInt(HORIZONTAL_FOV_HALF);
 
   Unit b =
-    (result.depth * sinInt(HORIZONTAL_FOV_HALF)) / (cos == 0 ? 1 : cos); // sin/cos = tan
+    (result.depth * sinInt(HORIZONTAL_FOV_HALF)) / (cos == 0 ? 1 : cos);
+    // sin/cos = tan
 
   result.position.x = (a * middleColumn) / b;
   result.position.x = middleColumn - result.position.x;
