@@ -1184,7 +1184,7 @@ PixelInfo mapToScreen(Vector2D worldPosition, Unit height, Camera camera)
     (result.depth * sinInt(HORIZONTAL_FOV_HALF)) / (cos == 0 ? 1 : cos);
     // sin/cos = tan
 
-  result.position.x = (a * middleColumn) / b;
+  result.position.x = (a * middleColumn) / (b == 0 ? 1 : b);
   result.position.x = middleColumn - result.position.x;
 
   return result;

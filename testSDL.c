@@ -1,5 +1,5 @@
 /*
-  Raycasting SDL test.
+  Raycasting SDL test. This is a port of my Pokitto demo.
 
   author: Miloslav Ciz
   license: CC0
@@ -25,6 +25,10 @@
 #define SCREEN_HEIGHT 480
 #define MIDDLE_ROW (SCREEN_HEIGHT / 2)
 
+#define TRANSPARENT_COLOR 0b00000111
+
+#define max(a,b) ((a) > (b) ? (a) : (b))
+
 #define KEYS 6
 #define KEY_UP 0
 #define KEY_RIGHT 1
@@ -49,7 +53,7 @@ typedef struct
   Unit mPixelSize;
 } Sprite;
 
-#define RGB(r,g,b) (0 | ((r << 24) | (g << 16) | (b << 8)))
+uint32_t palette[256];
 
 #define SPRITES 7
 #define SPRITE_MAX_DISTANCE 5 * UNITS_PER_SQUARE
@@ -750,17 +754,66 @@ Unit floorHeightAt(int16_t x, int16_t y)
   if (x >= 0 && x < LEVEL_X_RES && y >= 0 && y < LEVEL_Y_RES)
     return (levelFloor[(LEVEL_Y_RES - y -1) * LEVEL_X_RES + x] * UNITS_PER_SQUARE) / 8; 
 
-  return 0;
+  int a = absVal(x - LEVEL_X_RES / 2) - LEVEL_X_RES / 2;
+  int b = absVal(y - LEVEL_Y_RES / 2) - LEVEL_Y_RES / 2;
+
+  return (a > b ? a : b) * UNITS_PER_SQUARE;
 }
 
 Unit ceilingHeightAt(int16_t x, int16_t y)
 {
-  signed char v = 127;
+  int v = 1024;
 
   if (x >= 0 && x < LEVEL_X_RES && y >= 0 && y < LEVEL_Y_RES)
     v = levelCeiling[(LEVEL_Y_RES - y -1) * LEVEL_X_RES + x]; 
 
   return (v * UNITS_PER_SQUARE) / 8;
+}
+
+/**
+  Draws a scaled sprite on screen in an optimized way. The sprite has to be
+  square in resolution.
+*/
+void drawSpriteSquare(const unsigned char *sprite, int16_t x, int16_t y, Unit depth, int16_t size)
+{
+  if (size < 0 || size > 200 || // let's not mess up with the incoming array
+      sprite[0] != sprite[1])   // only draw square sprites
+    return;
+
+  int16_t samplingIndices[size];
+
+  // optimization: precompute the indices
+
+  for (Unit i = 0; i < size; ++i)
+    samplingIndices[i] = (i * sprite[0]) / size;
+
+  x -= size / 2;
+  y -= size / 2;
+
+  Unit step = UNITS_PER_SQUARE / size;
+
+  uint8_t c;
+
+  int16_t jTo = size - max(0,y + size - 88);
+  int16_t iTo = size - max(0,x + size - 110);
+
+  for (Unit i = max(-1 * x,0); i < iTo; ++i)
+  {
+    int16_t xPos = x + i;
+
+    if (zBuffer[xPos] <= depth)
+      continue;
+
+    int16_t columnLocation = 2 + samplingIndices[i] * sprite[0];
+
+    for (Unit j = max(-1 * y,0); j < jTo; ++j)
+    {
+      c = sprite[columnLocation + samplingIndices[j]];
+     
+      if (c != TRANSPARENT_COLOR)
+        pixels[j * SCREEN_WIDTH + i] = c | c | c;
+    }
+  }
 }
 
 /**
@@ -774,33 +827,30 @@ void pixelFunc(PixelInfo *pixel)
 
   uint8_t c;
 
-  Unit depth = pixel->depth - UNITS_PER_SQUARE * 3;
-  depth = depth > 0 ? depth : 1;
-
-  int intensity = 7 - (depth * 7) / (UNITS_PER_SQUARE * 5);
-
-  if (intensity < 0)
-    intensity = 0;
-
-//intensity = 5;
-
   if (pixel->isWall)
-  {
-    if ((pixel->hit.direction == 0 || pixel->hit.direction == 2))
-      intensity -= 2;
-
-    if (intensity < 0)
-      intensity = 0;
-
     c = sampleImage(textures[pixel->hit.type],pixel->hit.textureCoord,pixel->textureCoordY);
-    c = addIntensity(c,intensity - 3);
-  }
   else
-    c = pixel->isFloor ?
-          rgbToIndex(intensity/2,intensity,intensity/3) :
-          rgbToIndex(intensity,intensity/2,0);
+    c = pixel->isFloor ? 0b00010001 : 0b00001010;
 
-  pixels[pixel->position.y * SCREEN_WIDTH + pixel->position.x] = RGB(   (c & 0b00000111) * 36, ((c & 0b00111000) >> 3) * 36 , ((c & 0b11000000) >> 6) * 85 );
+  int intensity = pixel->depth - 8 * UNITS_PER_SQUARE;
+  intensity = intensity < 0 ? 0 : intensity;
+  intensity = (intensity * 32) / UNITS_PER_SQUARE;
+
+  int32_t color = palette[c];
+
+  int32_t r = ((color & 0xFF000000) >> 24) - intensity;
+  r = r > 0 ? r : 0;
+  r = r << 24;
+
+  int32_t g = ((color & 0x00FF0000) >> 16) - intensity;
+  g = g > 0 ? g : 0;
+  g = g << 16;
+
+  int32_t b = ((color & 0x0000FF00) >> 8) - intensity;
+  b = b > 0 ? b : 0;
+  b = b << 8;
+
+  pixels[pixel->position.y * SCREEN_WIDTH + pixel->position.x] = r | g | b;
 }
 
 void draw()
@@ -808,15 +858,12 @@ void draw()
   RayConstraints c;
 
   c.maxHits = 16;
-//  c.maxSteps = 10;
-c.maxSteps = 20;
+  c.maxSteps = 20;
 
   c.computeTextureCoords = 1;
   render(camera,floorHeightAt,ceilingHeightAt,textureAt,pixelFunc,c);
 
   Unit previousDepth;
-
-  // draw sprites
 
   for (uint8_t i = 0; i < SPRITES; ++i)
   {
@@ -828,6 +875,20 @@ c.maxSteps = 20;
       continue;
 
     PixelInfo pos = mapToScreen(sprites[i].mPosition,sprites[i].mHeight,camera);
+
+    if (pos.depth > 0)
+      drawSpriteSquare(sprites[i].mImage,pos.position.x,pos.position.y,
+                 pos.depth,perspectiveScale(sprites[i].mPixelSize,pos.depth));
+
+    /* trick: sort the sprites by distance with bubble sort as we draw - the
+       order will be correct in a few frames */
+    if (i != 0 && pos.depth > previousDepth)
+    {
+      Sprite tmp = sprites[i];
+      sprites[i] = sprites[i - 1];
+      sprites[i - 1] = tmp;
+    }
+
     previousDepth = pos.depth;
   }
 }
@@ -837,16 +898,35 @@ int main()
   for (int i = 0; i < SCREEN_WIDTH; ++i)
     zBuffer[i] = 0;  
 
-  camera.position.x = 5;
-  camera.position.y = 5;
+  for (uint8_t r = 0; r < 8; ++r)
+    for (uint8_t g = 0; g < 8; ++g)
+      for (uint8_t b = 0; b < 4; ++b)
+        palette[rgbToIndex(r,g,b)] = ((36 * r) << 24) | ((36 * g) << 16) | ((85 * b) << 8);
+
+  #define placeSprite(i,s,X,Y,z,n)\
+    sprites[i].mImage = s;\
+    sprites[i].mPosition.x = X * UNITS_PER_SQUARE;\
+    sprites[i].mPosition.y = Y * UNITS_PER_SQUARE;\
+    sprites[i].mHeight = z;\
+    sprites[i].mPixelSize = n;
+
+  placeSprite(0,sprite1,10,5,1,100);
+  placeSprite(1,sprite1,14,5,1,100);
+  placeSprite(2,sprite2,15,19,1,200);
+  placeSprite(3,sprite3,8,2,1,300);
+  placeSprite(4,sprite3,20,5,1,300);
+  placeSprite(5,sprite3,26,18,1,300);
+  placeSprite(6,sprite3,16,12,1,300);
+
+  #undef placeSprite
+
+  camera.position.x = UNITS_PER_SQUARE * 5;
+  camera.position.y = UNITS_PER_SQUARE * 4;
   camera.shear = 0;
   camera.direction = 0;
   camera.height = UNITS_PER_SQUARE * 2;
   camera.resolution.x = SCREEN_WIDTH;
   camera.resolution.y = SCREEN_HEIGHT;
-
-  for (int i = 0; i < KEYS; ++i)
-    keys[i] = 0;
 
   SDL_Window *window = SDL_CreateWindow("raycasting", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN); 
   SDL_Renderer *renderer = SDL_CreateRenderer(window,-1,0);
