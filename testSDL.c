@@ -776,8 +776,8 @@ Unit ceilingHeightAt(int16_t x, int16_t y)
 */
 void drawSpriteSquare(const unsigned char *sprite, int16_t x, int16_t y, Unit depth, int16_t size)
 {
-  if (size < 0 || size > 200 || // let's not mess up with the incoming array
-      sprite[0] != sprite[1])   // only draw square sprites
+  if (size < 0 || size > 512 || // let's not mess up with the incoming array
+      sprite[0] != sprite[1])    // only draw square sprites
     return;
 
   int16_t samplingIndices[size];
@@ -794,8 +794,8 @@ void drawSpriteSquare(const unsigned char *sprite, int16_t x, int16_t y, Unit de
 
   uint8_t c;
 
-  int16_t jTo = size - max(0,y + size - 88);
-  int16_t iTo = size - max(0,x + size - 110);
+  int16_t jTo = size - max(0,y + size - SCREEN_HEIGHT);
+  int16_t iTo = size - max(0,x + size - SCREEN_WIDTH);
 
   for (Unit i = max(-1 * x,0); i < iTo; ++i)
   {
@@ -811,7 +811,10 @@ void drawSpriteSquare(const unsigned char *sprite, int16_t x, int16_t y, Unit de
       c = sprite[columnLocation + samplingIndices[j]];
      
       if (c != TRANSPARENT_COLOR)
-        pixels[j * SCREEN_WIDTH + i] = c | c | c;
+        pixels[(y + j) * SCREEN_WIDTH + xPos] =
+          (((c & 0b00000111) * 36) << 24) |
+          ((((c & 0b00111000) >> 3) * 36) << 16) |
+          ((((c & 0b11000000) >> 6) * 85) << 8);
     }
   }
 }
@@ -905,18 +908,18 @@ int main()
 
   #define placeSprite(i,s,X,Y,z,n)\
     sprites[i].mImage = s;\
-    sprites[i].mPosition.x = X * UNITS_PER_SQUARE;\
-    sprites[i].mPosition.y = Y * UNITS_PER_SQUARE;\
-    sprites[i].mHeight = z;\
+    sprites[i].mPosition.x = X * UNITS_PER_SQUARE + UNITS_PER_SQUARE / 2;\
+    sprites[i].mPosition.y = Y * UNITS_PER_SQUARE + UNITS_PER_SQUARE / 2;\
+    sprites[i].mHeight = z * UNITS_PER_SQUARE + UNITS_PER_SQUARE / 2;\
     sprites[i].mPixelSize = n;
 
-  placeSprite(0,sprite1,10,5,1,100);
-  placeSprite(1,sprite1,14,5,1,100);
-  placeSprite(2,sprite2,15,19,1,200);
-  placeSprite(3,sprite3,8,2,1,300);
-  placeSprite(4,sprite3,20,5,1,300);
-  placeSprite(5,sprite3,26,18,1,300);
-  placeSprite(6,sprite3,16,12,1,300);
+  placeSprite(0,sprite1,10,5,1,1000);
+  placeSprite(1,sprite1,14,5,1,1000);
+  placeSprite(2,sprite2,15,19,1,1500);
+  placeSprite(3,sprite3,8,2,1,3000);
+  placeSprite(4,sprite3,20,5,1,3000);
+  placeSprite(5,sprite3,26,18,1,3000);
+  placeSprite(6,sprite3,16,12,1,3000);
 
   #undef placeSprite
 
