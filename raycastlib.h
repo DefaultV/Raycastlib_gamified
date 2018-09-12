@@ -815,7 +815,7 @@ void _columnFunction(HitResult *hits, uint16_t hitCount, uint16_t x, Ray ray)
     int_maybe32_t z1ScreenCeilNoClamp = 0; 
     int_maybe32_t z2ScreenCeil = 0;
     int_maybe32_t wallScreenHeightCeilNoClamp = 0;
-    int_maybe32_t zBottomCeil;
+    int_maybe32_t zBottomCeil = y2;
     int8_t skipCeilingWall = 1;
 
     if (_ceilFunction != 0)
@@ -959,12 +959,16 @@ void _columnFunction(HitResult *hits, uint16_t hitCount, uint16_t x, Ray ray)
   Unit horizon = (y2 < _middleRow || _ceilFunction == 0) ? _middleRow : y2;
   horizon = clamp(horizon,0,_camera.resolution.y);
 
-  for (int_maybe32_t i = y; i >= horizon + (horizon > y2 ? 0 : 1); --i)
+  horizon += horizon > y2 ? 0 : 1; // bug workaround
+
+  for (int_maybe32_t i = y; i >= horizon; --i)
   {
     p.position.y = i;
     p.depth = (_fogStartYBottom - i) * _floorDepthStep + floorCameraDiff;
     _pixelFunction(&p);
   }
+
+  y = horizon < y ? horizon : y;
 
   // draw ceiling until horizon
 
@@ -974,10 +978,7 @@ void _columnFunction(HitResult *hits, uint16_t hitCount, uint16_t x, Ray ray)
     _ceilFunction != 0 ?
     absVal(worldZPrevCeil) * VERTICAL_DEPTH_MULTIPLY : UNITS_PER_SQUARE;
 
-  horizon = y > _middleRow ? _middleRow : y;
-  horizon = clamp(horizon,0,_camResYLimit);
-
-  for (int_maybe32_t i = y2; i < horizon; ++i)
+  for (int_maybe32_t i = y2; i < y; ++i)
   {
     p.position.y = i;
     p.depth = (i - _fogStartYTop) * _floorDepthStep + ceilCameraDiff;
