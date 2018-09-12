@@ -887,10 +887,10 @@ void _columnFunction(HitResult *hits, uint16_t hitCount, uint16_t x, Ray ray)
         p.depth = (i - _fogStartYTop) * _floorDepthStep + ceilCameraDiff;
         _pixelFunction(&p);  
       }
-    }
 
-    if (z1ScreenCeil > y2)
-      y2 = z1ScreenCeil;
+if (z1ScreenCeil > y2)
+  y2 = z1ScreenCeil;
+    }
 
     // draw floor wall
 
