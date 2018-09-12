@@ -41,6 +41,8 @@
 
 int keys[KEYS];
 
+unsigned long frame = 0;
+
 Unit zBuffer[SCREEN_WIDTH]; ///< 1D z-buffer for visibility determination.
 
 Camera camera;
@@ -753,6 +755,9 @@ Unit textureAt(int16_t x, int16_t y)
 
 Unit floorHeightAt(int16_t x, int16_t y)
 {
+  if (x == 6 && (y == 13 || y == 14)) // moving lift
+    return ((absVal(-1 * (frame % 64) + 32)) * UNITS_PER_SQUARE) / 8; 
+
   if (x >= 0 && x < LEVEL_X_RES && y >= 0 && y < LEVEL_Y_RES)
     return (levelFloor[(LEVEL_Y_RES - y -1) * LEVEL_X_RES + x] * UNITS_PER_SQUARE) / 8; 
 
@@ -1022,6 +1027,8 @@ int main()
     SDL_RenderClear(renderer);
     SDL_RenderCopy(renderer,texture,NULL,NULL);
     SDL_RenderPresent(renderer);
+
+    frame++;
   }
 
   return 0;
