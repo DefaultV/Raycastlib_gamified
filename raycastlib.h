@@ -787,13 +787,16 @@ void _columnFunction(HitResult *hits, uint16_t hitCount, uint16_t x, Ray ray)
     int_maybe32_t z1Screen = _middleRow - perspectiveScale(
       (worldZPrev * _camera.resolution.y) / UNITS_PER_SQUARE,dist);
 
+    int_maybe32_t z2Screen = _middleRow - perspectiveScale(
+      (worldZ2 * _camera.resolution.y) / UNITS_PER_SQUARE,dist);
+
+    int8_t skipFloorWall = ((z1Screen < 0 && z2Screen < 0) ||
+      (z1Screen > _camResYLimit && z2Screen > _camResYLimit));
+
     int_maybe32_t z1ScreenNoClamp = z1Screen;
 
     z1Screen = clamp(z1Screen,0,_camResYLimit);
     z1Screen = z1Screen > y2 ? z1Screen : y2;
-
-    int_maybe32_t z2Screen = _middleRow - perspectiveScale(
-      (worldZ2 * _camera.resolution.y) / UNITS_PER_SQUARE,dist);
 
     int_maybe32_t wallScreenHeightNoClamp = z1ScreenNoClamp - z2Screen + 1;
     wallScreenHeightNoClamp = wallScreenHeightNoClamp == 0 ? 1 :
@@ -802,6 +805,8 @@ void _columnFunction(HitResult *hits, uint16_t hitCount, uint16_t x, Ray ray)
     z2Screen = clamp(z2Screen,0,_camResYLimit);
     z2Screen = z2Screen > y2 ? z2Screen : y2;
 
+    int_maybe32_t zTop = z1Screen < z2Screen ? z1Screen : z2Screen;
+
     // make the same variables for ceiling
 
     Unit wallHeightCeil = 0;
@@ -809,6 +814,9 @@ void _columnFunction(HitResult *hits, uint16_t hitCount, uint16_t x, Ray ray)
     int_maybe32_t z1ScreenCeil = 0;
     int_maybe32_t z1ScreenCeilNoClamp = 0; 
     int_maybe32_t z2ScreenCeil = 0;
+    int_maybe32_t wallScreenHeightCeilNoClamp = 0;
+    int_maybe32_t zBottomCeil;
+    int8_t skipCeilingWall = 1;
 
     if (_ceilFunction != 0)
     {
@@ -820,34 +828,32 @@ void _columnFunction(HitResult *hits, uint16_t hitCount, uint16_t x, Ray ray)
       z1ScreenCeil = _middleRow - perspectiveScale(
         (worldZPrevCeil * _camera.resolution.y) / UNITS_PER_SQUARE,dist);
 
+      z2ScreenCeil = _middleRow - perspectiveScale(
+        (worldZ2Ceil * _camera.resolution.y) / UNITS_PER_SQUARE,dist);
+
+      skipCeilingWall = ((z1ScreenCeil < 0 && z2ScreenCeil < 0) ||
+        (z1ScreenCeil > _camResYLimit && z2ScreenCeil > _camResYLimit));
+
       z1ScreenCeilNoClamp = z1ScreenCeil;
 
       z1ScreenCeil = clamp(z1ScreenCeil,0,_camResYLimit);
       z1ScreenCeil = z1ScreenCeil < y ? z1ScreenCeil : y;
 
-      z2ScreenCeil = _middleRow - perspectiveScale(
-        (worldZ2Ceil * _camera.resolution.y) / UNITS_PER_SQUARE,dist);
+      wallScreenHeightCeilNoClamp =
+        z2ScreenCeil - z1ScreenCeilNoClamp;
+
+      wallScreenHeightCeilNoClamp = wallScreenHeightCeilNoClamp != 0 ?
+        wallScreenHeightCeilNoClamp : 1;
+
+      z2ScreenCeil = clamp(z2ScreenCeil,0,_camResYLimit);
+      z2ScreenCeil = z2ScreenCeil < y ? z2ScreenCeil : y;
+
+      zBottomCeil = z1ScreenCeil > z2ScreenCeil ?
+        z1ScreenCeil : z2ScreenCeil;
     }
-
-    int_maybe32_t wallScreenHeightCeilNoClamp =
-      z2ScreenCeil - z1ScreenCeilNoClamp;
-
-    wallScreenHeightCeilNoClamp = wallScreenHeightCeilNoClamp != 0 ?
-      wallScreenHeightCeilNoClamp : 1;
-
-    z2ScreenCeil = clamp(z2ScreenCeil,0,_camResYLimit);
-    z2ScreenCeil = z2ScreenCeil < y ? z2ScreenCeil : y;
-
-    int_maybe32_t zTop = z1Screen < z2Screen ? z1Screen : z2Screen;
-
-    int_maybe32_t zBottomCeil = z1ScreenCeil > z2ScreenCeil ?
-      z1ScreenCeil : z2ScreenCeil;
 
     if (zTop <= zBottomCeil)
       zBottomCeil = zTop; // walls on ceiling and floor met
-
-    if (z1Screen == 0) // TMP: nasty shear bug workaround
-      z1Screen = -1;
 
     // draw floor until wall
 
@@ -892,25 +898,30 @@ void _columnFunction(HitResult *hits, uint16_t hitCount, uint16_t x, Ray ray)
     p.depth = dist;
     p.isFloor = 1;
 
-    int_maybe32_t iTo = y2 < zTop ? zTop : y2;
+    int_maybe32_t iTo;
 
-    for (int_maybe32_t i = z1Screen < y ? z1Screen : y; i >= iTo; --i)
+    if (!skipFloorWall)
     {
-      p.position.y = i;
-      p.hit = hit;
+      iTo = y2 < zTop ? zTop : y2;
 
-      if (_computeTextureCoords)
-        p.textureCoordY = UNITS_PER_SQUARE - 1 - ((z1ScreenNoClamp - i) *
-          UNITS_PER_SQUARE) / wallScreenHeightNoClamp;
+      for (int_maybe32_t i = z1Screen < y ? z1Screen : y; i >= iTo; --i)
+      {
+        p.position.y = i;
+        p.hit = hit;
 
-      _pixelFunction(&p);
+        if (_computeTextureCoords)
+          p.textureCoordY = UNITS_PER_SQUARE - 1 - ((z1ScreenNoClamp - i) *
+            UNITS_PER_SQUARE) / wallScreenHeightNoClamp;
+
+        _pixelFunction(&p);
+      }
     }
 
     // draw ceiling wall
 
     p.isFloor = 0;
 
-    if (_ceilFunction != 0)
+    if (!skipCeilingWall)
     {
       iTo = y > zBottomCeil ? zBottomCeil : y;
 
