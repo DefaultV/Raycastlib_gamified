@@ -271,10 +271,12 @@ void renderSimple(Camera cam, ArrayFunction floorHeightFunc,
                        ceiling functions won't be used and the camera will
                        only collide horizontally with walls (good for simpler
                        game, also faster)
+  @param force if true, forces to recompute collision even if position doesn't
+               change
 */
 void moveCameraWithCollision(Camera *camera, Vector2D planeOffset,
   Unit heightOffset, ArrayFunction floorHeightFunc,
-  ArrayFunction ceilingHeightFunc, int8_t computeHeight);
+  ArrayFunction ceilingHeightFunc, int8_t computeHeight, int8_t force);
 
 //=============================================================================
 // privates
@@ -1165,14 +1167,14 @@ Unit perspectiveScale(Unit originalSize, Unit distance)
 
 void moveCameraWithCollision(Camera *camera, Vector2D planeOffset,
   Unit heightOffset, ArrayFunction floorHeightFunc,
-  ArrayFunction ceilingHeightFunc, int8_t computeHeight)
+  ArrayFunction ceilingHeightFunc, int8_t computeHeight, int8_t force)
 {
   // TODO: have the cam coll parameters precomputed as macros? => faster
 
   int8_t movesInPlane = planeOffset.x != 0 || planeOffset.y != 0;
   int16_t xSquareNew, ySquareNew;
 
-  if (movesInPlane)
+  if (movesInPlane || force)
   {
     Vector2D corner; // BBox corner in the movement direction
     Vector2D cornerNew;
@@ -1267,7 +1269,7 @@ void moveCameraWithCollision(Camera *camera, Vector2D planeOffset,
     camera->position.y = cornerNew.y - yDir * CAMERA_COLL_RADIUS;
   }
 
-  if (computeHeight && (movesInPlane || heightOffset != 0))
+  if (computeHeight && (movesInPlane || heightOffset != 0 || force))
   {
     camera->height += heightOffset;
 
