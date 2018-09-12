@@ -11,11 +11,12 @@
   version: 0.1
 
   - Game field's bottom left corner is at [0,0].
-  - X axis goes right.
-  - Y axis goes up.
-  - Each game square is UNITS_PER_SQUARE * UNITS_PER_SQUARE.
+  - X axis goes right in the ground plane.
+  - Y axis goes up in the ground plane.
+  - Height means the Z (vertical) coordinate.
+  - Each game square is UNITS_PER_SQUARE * UNITS_PER_SQUARE points.
   - Angles are in Units, 0 means pointing right (x+) and positively rotates
-    clockwise, a full angle has UNITS_PER_SQUARE Units.
+    clockwise. A full angle has UNITS_PER_SQUARE Units.
 */
 
 #include <stdint.h>
@@ -35,6 +36,14 @@
   #define UNIT_INFINITY 32767;
   typedef int16_t int_maybe32_t;
   typedef uint16_t uint_maybe32_t;
+#endif
+
+#ifndef USE_COS_LUT
+#define USE_COS_LUT 0 /**< type of look up table for cos function:
+                           0: none (compute)
+                           1: 64 items
+                           2: 128 items
+                        */
 #endif
 
 #ifndef VERTICAL_FOV
@@ -366,6 +375,29 @@ Unit divRoundDown(Unit value, Unit divisor)
   (UNITS_PER_SQUARE / 2 * UNITS_PER_SQUARE / 2 - 4 * (x) * (x)) /\
   (UNITS_PER_SQUARE / 2 * UNITS_PER_SQUARE / 2 + (x) * (x)))
 
+
+#if USE_COS_LUT == 1
+const Unit cosLUT[64] =
+{
+  1024,1019,1004,979,946,903,851,791,724,649,568,482,391,297,199,100,0,-100,
+  -199,-297,-391,-482,-568,-649,-724,-791,-851,-903,-946,-979,-1004,-1019,
+  -1023,-1019,-1004,-979,-946,-903,-851,-791,-724,-649,-568,-482,-391,-297,
+  -199,-100,0,100,199,297,391,482,568,649,724,791,851,903,946,979,1004,1019
+};
+#elif USE_COS_LUT == 2
+const Unit cosLUT[128] =
+{
+  1024,1022,1019,1012,1004,993,979,964,946,925,903,878,851,822,791,758,724,
+  687,649,609,568,526,482,437,391,344,297,248,199,150,100,50,0,-50,-100,-150,
+  -199,-248,-297,-344,-391,-437,-482,-526,-568,-609,-649,-687,-724,-758,-791,
+  -822,-851,-878,-903,-925,-946,-964,-979,-993,-1004,-1012,-1019,-1022,-1023,
+  -1022,-1019,-1012,-1004,-993,-979,-964,-946,-925,-903,-878,-851,-822,-791,
+  -758,-724,-687,-649,-609,-568,-526,-482,-437,-391,-344,-297,-248,-199,-150,
+  -100,-50,0,50,100,150,199,248,297,344,391,437,482,526,568,609,649,687,724,
+  758,791,822,851,878,903,925,946,964,979,993,1004,1012,1019,1022
+};
+#endif
+
 Unit cosInt(Unit input)
 {
   profileCall(cosInt);
@@ -374,6 +406,11 @@ Unit cosInt(Unit input)
 
   input = wrap(input,UNITS_PER_SQUARE);
 
+#if USE_COS_LUT == 1
+  return cosLUT[input / 16];
+#elif USE_COS_LUT == 2
+  return cosLUT[input / 8];
+#else
   if (input < UNITS_PER_SQUARE / 4)
     return trigHelper(input);
   else if (input < UNITS_PER_SQUARE / 2)
@@ -382,6 +419,7 @@ Unit cosInt(Unit input)
     return -1 * trigHelper(input - UNITS_PER_SQUARE / 2);
   else
     return trigHelper(UNITS_PER_SQUARE - input);
+#endif
 }
 
 #undef trigHelper
