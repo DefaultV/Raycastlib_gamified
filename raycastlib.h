@@ -470,35 +470,37 @@ int8_t pointIsLeftOfRay(Vector2D point, Ray ray)
 /**
   Casts a ray within a single square, to collide with the square borders.  
 */
-void castRaySquare(Ray localRay, Vector2D *nextCellOff, Vector2D *collOff)
+void castRaySquare(Ray *localRay, Vector2D *nextCellOff, Vector2D *collOff)
 {
   profileCall(castRaySquare);
 
   nextCellOff->x = 0;
   nextCellOff->y = 0;
 
-  Ray criticalLine = localRay;
+  Ray criticalLine;
+  criticalLine.start = localRay->start;
+  criticalLine.direction = localRay->direction;
 
   #define helper(c1,c2,n)\
     {\
       nextCellOff->c1 = n;\
-      collOff->c1 = criticalLine.start.c1 - localRay.start.c1;\
+      collOff->c1 = criticalLine.start.c1 - localRay->start.c1;\
       collOff->c2 = \
-        (((int_maybe32_t) collOff->c1) * localRay.direction.c2) /\
-        ((localRay.direction.c1 == 0) ? 1 : localRay.direction.c1);\
+        (((int_maybe32_t) collOff->c1) * localRay->direction.c2) /\
+        ((localRay->direction.c1 == 0) ? 1 : localRay->direction.c1);\
     }
 
   #define helper2(n1,n2,c)\
-    if (pointIsLeftOfRay(localRay.start,criticalLine) == c)\
+    if (pointIsLeftOfRay(localRay->start,criticalLine) == c)\
       helper(y,x,n1)\
     else\
       helper(x,y,n2)
       
-  if (localRay.direction.x > 0)
+  if (localRay->direction.x > 0)
   {
     criticalLine.start.x = UNITS_PER_SQUARE - 1;
 
-    if (localRay.direction.y > 0)
+    if (localRay->direction.y > 0)
     {
       // top right
       criticalLine.start.y = UNITS_PER_SQUARE - 1;
@@ -515,7 +517,7 @@ void castRaySquare(Ray localRay, Vector2D *nextCellOff, Vector2D *collOff)
   {
     criticalLine.start.x = 0;
 
-    if (localRay.direction.y > 0)
+    if (localRay->direction.y > 0)
     {
       // top left
       criticalLine.start.y = UNITS_PER_SQUARE - 1;
@@ -615,7 +617,7 @@ void castRayMultiHit(Ray ray, ArrayFunction arrayFunc, ArrayFunction typeFunc,
     ray.start.x = wrap(currentPos.x,UNITS_PER_SQUARE);
     ray.start.y = wrap(currentPos.y,UNITS_PER_SQUARE);
 
-    castRaySquare(ray,&no,&co);
+    castRaySquare(&ray,&no,&co);
 
     currentSquare.x += no.x;
     currentSquare.y += no.y;
@@ -704,7 +706,7 @@ Unit _floorCeilFunction(int16_t x, int16_t y)
   return ((f & 0x0000ffff) << 16) | (c & 0x0000ffff);
 }
 
-Unit adjustDistance(Unit distance, Camera camera, Ray ray)
+Unit adjustDistance(Unit distance, Camera *camera, Ray *ray)
 {
   /* FIXME/TODO: The adjusted (=orthogonal, camera-space) distance could
      possibly be computed more efficiently by not computing Euclidean
@@ -713,7 +715,7 @@ Unit adjustDistance(Unit distance, Camera camera, Ray ray)
 
   Unit result =
     (distance *
-     vectorsAngleCos(angleToDirection(camera.direction),ray.direction)) /
+     vectorsAngleCos(angleToDirection(camera->direction),ray->direction)) /
      UNITS_PER_SQUARE;
 
   return result == 0 ? 1 : result;
@@ -738,7 +740,7 @@ void _columnFunction(HitResult *hits, uint16_t hitCount, uint16_t x, Ray ray)
   {
     HitResult hit = hits[j];
 
-    Unit dist = adjustDistance(hit.distance,_camera,ray);
+    Unit dist = adjustDistance(hit.distance,&_camera,&ray);
 
     Unit wallHeight = _floorFunction(hit.square.x,hit.square.y);
 
@@ -955,7 +957,7 @@ void _columnFunctionSimple(HitResult *hits, uint16_t hitCount, uint16_t x,
   {
     HitResult hit = hits[0];
     p.hit = hit;
-    dist = adjustDistance(hit.distance,_camera,ray);
+    dist = adjustDistance(hit.distance,&_camera,&ray);
     int16_t wallHeightWorld = _floorFunction(hit.square.x,hit.square.y);
     wallScreenHeight = perspectiveScale((wallHeightWorld *
       _camera.resolution.y) / UNITS_PER_SQUARE,dist);
