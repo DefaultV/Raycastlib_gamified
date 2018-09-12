@@ -21,8 +21,8 @@
 #define LEVEL_X_RES 29
 #define LEVEL_Y_RES 21
 
-#define SCREEN_WIDTH 640
-#define SCREEN_HEIGHT 480
+#define SCREEN_WIDTH 320
+#define SCREEN_HEIGHT 240
 #define MIDDLE_ROW (SCREEN_HEIGHT / 2)
 
 #define TRANSPARENT_COLOR 0b00000111
@@ -48,6 +48,7 @@ Unit zBuffer[SCREEN_WIDTH]; ///< 1D z-buffer for visibility determination.
 Camera camera;
 
 uint32_t pixels[SCREEN_WIDTH * SCREEN_HEIGHT];
+uint32_t pixelCounter[SCREEN_WIDTH * SCREEN_HEIGHT];
 
 typedef struct
 {
@@ -697,6 +698,28 @@ const unsigned char sprite3[] =
 
 const unsigned char *textures[] = {texture1, texture2, texture3, texture4};
 
+void clearPixelCounter()
+{
+  memset(pixelCounter,0,SCREEN_WIDTH * SCREEN_HEIGHT * sizeof(uint32_t));
+}
+
+void writePixelCounter()
+{
+  printf("\npixel counter:\n");
+
+  for (int y = 0; y < SCREEN_HEIGHT; ++y)
+  {
+    for (int x = 0; x < SCREEN_WIDTH; ++x)
+    {
+      uint32_t count = pixelCounter[y * SCREEN_WIDTH + x];      
+
+      if (count != 1) // each pixel should have been rendered only once
+        printf("error: pixel %d %d rendered %d times!\n",x,y,count);
+    }
+
+  }   
+}
+
 uint8_t rgbToIndex(uint8_t r, uint8_t g, uint8_t b)
 {
   return (r & 0b00000111) | ((g & 0b00000111) << 3) | ((b & 0b00000011) << 6);
@@ -860,7 +883,10 @@ void pixelFunc(PixelInfo *pixel)
   b = b > 0 ? b : 0;
   b = b << 8;
 
-  pixels[pixel->position.y * SCREEN_WIDTH + pixel->position.x] = r | g | b;
+  int32_t index = pixel->position.y * SCREEN_WIDTH + pixel->position.x;
+
+  pixels[index] = r | g | b;
+  pixelCounter[index]++;
 }
 
 void draw()
@@ -945,9 +971,22 @@ int main()
   SDL_Event event;
   int running = 1;
 
+  int counter = 0;
+
   while (running)
   {
+    if (counter <= 0)
+      clearPixelCounter();
+
     draw();
+
+    if (counter <= 0)
+    {
+      writePixelCounter();
+      counter = 256;
+    }
+    else
+      counter--;
 
     SDL_UpdateTexture(texture,NULL,pixels,SCREEN_WIDTH * sizeof(uint32_t));
 

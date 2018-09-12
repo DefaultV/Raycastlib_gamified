@@ -242,6 +242,8 @@ void castRaysMultiHit(Camera cam, ArrayFunction arrayFunc,
 /**
   Using provided functions, renders a complete complex camera view.
 
+  This function should render each screen pixel exactly once.
+
   @param cam camera whose view to render
   @param floorHeightFunc function that returns floor height (in Units)
   @param ceilingHeightFunc same as floorHeightFunc but for ceiling, can also be
@@ -261,6 +263,8 @@ void render(Camera cam, ArrayFunction floorHeightFunc,
   with simple 1-intersection raycasting. The render(...) function can give more
   accurate results than this function, so it's to be considered even for simple
   scenes.
+
+  This function should render each screen pixel exactly once.
 */
 void renderSimple(Camera cam, ArrayFunction floorHeightFunc,
   ArrayFunction typeFunc, PixelFunction pixelFunc, RayConstraints constraints);
@@ -888,8 +892,8 @@ void _columnFunction(HitResult *hits, uint16_t hitCount, uint16_t x, Ray ray)
         _pixelFunction(&p);  
       }
 
-if (z1ScreenCeil > y2)
-  y2 = z1ScreenCeil;
+      if (z1ScreenCeil > y2)
+        y2 = z1ScreenCeil;
     }
 
     // draw floor wall
