@@ -29,13 +29,15 @@
 
 #define max(a,b) ((a) > (b) ? (a) : (b))
 
-#define KEYS 6
+#define KEYS 8
 #define KEY_UP 0
 #define KEY_RIGHT 1
 #define KEY_DOWN 2
 #define KEY_LEFT 3
 #define KEY_Q 4
 #define KEY_W 5
+#define KEY_A 6
+#define KEY_S 7
 
 int keys[KEYS];
 
@@ -963,6 +965,8 @@ int main()
             case SDL_SCANCODE_LEFT: keyIndex = KEY_LEFT; break;
             case SDL_SCANCODE_Q: keyIndex = KEY_Q; break;
             case SDL_SCANCODE_W: keyIndex = KEY_W; break;
+            case SDL_SCANCODE_A: keyIndex = KEY_A; break;
+            case SDL_SCANCODE_S: keyIndex = KEY_S; break;
             default: break;
           }
           break;
@@ -1007,6 +1011,13 @@ int main()
       camera.direction += step2;
     else if (keys[KEY_LEFT])
       camera.direction -= step2;
+
+    const int shearAdd = 10;
+
+    if (keys[KEY_A])
+      camera.shear = camera.shear + shearAdd <= SCREEN_HEIGHT ? camera.shear + shearAdd : SCREEN_HEIGHT;
+    else if (keys[KEY_S])
+      camera.shear = camera.shear - shearAdd >= -1 * SCREEN_HEIGHT ? camera.shear - shearAdd : -1 * SCREEN_HEIGHT;
 
     SDL_RenderClear(renderer);
     SDL_RenderCopy(renderer,texture,NULL,NULL);
