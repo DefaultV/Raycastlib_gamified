@@ -838,7 +838,7 @@ void _columnFunction(HitResult *hits, uint16_t hitCount, uint16_t x, Ray ray)
         pref##PosY = limit;
 
     p.isWall = 0;
-    p.isHorizon = 0;
+    p.isHorizon = drawingHorizon;
 
     // draw floor until wall
     p.isFloor = 1;
