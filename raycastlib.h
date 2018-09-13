@@ -863,8 +863,9 @@ for (uint_maybe32_t j = 0; j <= hitCount; ++j)
     #define drawVertical(pref,l1,l2,comp,inc)\
       {\
         limit = clamp(pref##Z2Screen,l1,l2);\
-        Unit wallLength = pref##Z2Screen - pref##Z1Screen;\
-        Unit wallPosition = absVal(pref##Z1Screen - pref##PosY);\
+        Unit wallLength = pref##Z2Screen - pref##Z1Screen - 1;\
+        wallLength = wallLength != 0 ? wallLength : 1;\
+        Unit wallPosition = absVal(pref##Z1Screen - pref##PosY) + 1;\
         for (i = pref##PosY inc 1; i comp##= limit; inc##inc i)\
         {\
           p.position.y = i;\
