@@ -855,6 +855,10 @@ void drawSpriteSquare(const unsigned char *sprite, int16_t x, int16_t y, Unit de
 */
 void pixelFunc(PixelInfo *pixel)
 {
+  if (pixel->position.x < 0 || pixel->position.x >= SCREEN_WIDTH ||
+      pixel->position.y < 0 || pixel->position.y >= SCREEN_HEIGHT)
+    printf("error: writing outside screen! %d %d\n",pixel->position.x,pixel->position.y);
+
   if (pixel->position.y == MIDDLE_ROW)
     zBuffer[pixel->position.x] = pixel->depth;
 
