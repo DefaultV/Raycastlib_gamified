@@ -27,15 +27,10 @@
                              units in a square's length. This effectively
                              serves the purpose of a fixed-point arithmetic. */
   #define UNIT_INFINITY 5000000;
-
-  typedef int32_t int_maybe32_t;
-  typedef uint32_t uint_maybe32_t;
 #else
   #define UNITS_PER_SQUARE 64
   typedef int16_t Unit;
   #define UNIT_INFINITY 32767;
-  typedef int16_t int_maybe32_t;
-  typedef uint16_t uint_maybe32_t;
 #endif
 
 #ifndef USE_COS_LUT
@@ -218,7 +213,7 @@ Vector2D normalize(Vector2D v);
 /// Computes a cos of an angle between two vectors.
 Unit vectorsAngleCos(Vector2D v1, Vector2D v2);
 
-uint16_t sqrtInt(uint_maybe32_t value);
+uint16_t sqrtInt(Unit value);
 Unit dist(Vector2D p1, Vector2D p2);
 Unit len(Vector2D v);
 
@@ -445,17 +440,17 @@ Vector2D angleToDirection(Unit angle)
   return result;
 }
 
-uint16_t sqrtInt(uint_maybe32_t value)
+uint16_t sqrtInt(Unit value)
 {
   profileCall(sqrtInt);
 
-  uint_maybe32_t result = 0;
-  uint_maybe32_t a = value;
+  Unit result = 0;
+  Unit a = value;
 
 #ifdef RAYCAST_TINY
-  uint_maybe32_t b = 1u << 14;
+  Unit b = 1u << 14;
 #else
-  uint_maybe32_t b = 1u << 30;
+  Unit b = 1u << 30;
 #endif
 
   while (b > a)
@@ -480,13 +475,13 @@ Unit dist(Vector2D p1, Vector2D p2)
 {
   profileCall(dist);
 
-  int_maybe32_t dx = p2.x - p1.x;
-  int_maybe32_t dy = p2.y - p1.y;
+  Unit dx = p2.x - p1.x;
+  Unit dy = p2.y - p1.y;
 
   dx = dx * dx;
   dy = dy * dy;
 
-  return sqrtInt((uint_maybe32_t) (dx + dy));
+  return sqrtInt((Unit) (dx + dy));
 }
 
 Unit len(Vector2D v)
@@ -496,7 +491,7 @@ Unit len(Vector2D v)
   v.x *= v.x;
   v.y *= v.y;
 
-  return sqrtInt(((uint_maybe32_t) v.x) + ((uint_maybe32_t) v.y));
+  return sqrtInt(((Unit) v.x) + ((Unit) v.y));
 }
 
 int8_t pointIsLeftOfRay(Vector2D point, Ray ray)
@@ -528,7 +523,7 @@ void castRaySquare(Ray *localRay, Vector2D *nextCellOff, Vector2D *collOff)
       nextCellOff->c1 = n;\
       collOff->c1 = criticalLine.start.c1 - localRay->start.c1;\
       collOff->c2 = \
-        (((int_maybe32_t) collOff->c1) * localRay->direction.c2) /\
+        (((Unit) collOff->c1) * localRay->direction.c2) /\
         ((localRay->direction.c1 == 0) ? 1 : localRay->direction.c1);\
     }
 
@@ -722,7 +717,7 @@ Camera _camera;
 Unit _horizontalDepthStep = 0; 
 Unit _startFloorHeight = 0;
 Unit _startCeilHeight = 0;
-int_maybe32_t _camResYLimit = 0;
+Unit _camResYLimit = 0;
 Unit _middleRow = 0;
 ArrayFunction _floorFunction = 0;
 ArrayFunction _ceilFunction = 0;
@@ -767,8 +762,8 @@ Unit adjustDistance(Unit distance, Camera *camera, Ray *ray)
 void _columnFunction(HitResult *hits, uint16_t hitCount, uint16_t x, Ray ray)
 {
   // last written Y position, can never go backwards
-  int_maybe32_t fPosY = _camera.resolution.y;
-  int_maybe32_t cPosY = -1;
+  Unit fPosY = _camera.resolution.y;
+  Unit cPosY = -1;
 
   // world coordinates
   Unit fZ1World = _startFloorHeight;
@@ -777,10 +772,10 @@ void _columnFunction(HitResult *hits, uint16_t hitCount, uint16_t x, Ray ray)
   PixelInfo p;
   p.position.x = x;
 
-  int_maybe32_t i;
+  Unit i;
 
   // we'll be simulatenously drawing the floor and the ceiling now  
-  for (uint_maybe32_t j = 0; j <= hitCount; ++j)
+  for (Unit j = 0; j <= hitCount; ++j)
   {                          // ^ = add extra iteration for horizon plane
     int8_t drawingHorizon = j == hitCount;
 
