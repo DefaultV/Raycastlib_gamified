@@ -448,9 +448,9 @@ uint16_t sqrtInt(Unit value)
   Unit a = value;
 
 #ifdef RAYCAST_TINY
-  Unit b = 1u << 14;
+  uint32_t b = 1u << 14;
 #else
-  Unit b = 1u << 30;
+  uint32_t b = 1u << 30;
 #endif
 
   while (b > a)
@@ -740,7 +740,11 @@ Unit _floorCeilFunction(int16_t x, int16_t y)
 
   Unit c = _ceilFunction(x,y);
 
+#ifndef RAYCAST_TINY
   return ((f & 0x0000ffff) << 16) | (c & 0x0000ffff);
+#else
+  return ((f & 0x00ff) << 8) | (c & 0x00ff);
+#endif
 }
 
 Unit adjustDistance(Unit distance, Camera *camera, Ray *ray)
