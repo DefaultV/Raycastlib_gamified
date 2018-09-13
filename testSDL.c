@@ -21,8 +21,8 @@
 #define LEVEL_X_RES 29
 #define LEVEL_Y_RES 21
 
-#define SCREEN_WIDTH 320
-#define SCREEN_HEIGHT 240
+#define SCREEN_WIDTH 640
+#define SCREEN_HEIGHT 480
 #define MIDDLE_ROW (SCREEN_HEIGHT / 2)
 
 #define TRANSPARENT_COLOR 0b00000111
@@ -698,6 +698,11 @@ const unsigned char sprite3[] =
 
 const unsigned char *textures[] = {texture1, texture2, texture3, texture4};
 
+void clearScreen()
+{
+  memset(pixels,0,SCREEN_WIDTH * SCREEN_HEIGHT * sizeof(uint32_t));
+}
+
 void clearPixelCounter()
 {
   memset(pixelCounter,0,SCREEN_WIDTH * SCREEN_HEIGHT * sizeof(uint32_t));
@@ -889,12 +894,25 @@ void pixelFunc(PixelInfo *pixel)
 
   int32_t index = pixel->position.y * SCREEN_WIDTH + pixel->position.x;
 
+/*
+int32_t c = 0x00000000;
+
+if (pixel->isWall)
+{
+  c = sampleImage(textures[pixel->hit.type],pixel->hit.textureCoord,pixel->textureCoordY);
+  c = c << 24 | c << 16 | c << 8;
+//  c = pixel->isFloor ? 0xFF000000 : 0xF0000000;
+}
+else
+  c = pixel->isFloor ? 0x00FF0000 : 0x00F00000;
+*/
   pixels[index] = r | g | b;
   pixelCounter[index]++;
 }
 
 void draw()
 {
+clearScreen();
   RayConstraints c;
 
   c.maxHits = 16;
@@ -987,7 +1005,7 @@ int main()
     if (counter <= 0)
     {
       writePixelCounter();
-      counter = 256;
+      counter = 512;
     }
     else
       counter--;
