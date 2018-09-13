@@ -766,6 +766,162 @@ Unit adjustDistance(Unit distance, Camera *camera, Ray *ray)
 
 void _columnFunction(HitResult *hits, uint16_t hitCount, uint16_t x, Ray ray)
 {
+
+#if 1
+
+// last written Y position, can never go backwards
+int_maybe32_t fPosY = _camera.resolution.y;
+int_maybe32_t cPosY = -1;
+
+// world coordinates
+Unit fZ1World = _startFloorHeight;
+Unit cZ1World = _startCeilHeight;
+
+PixelInfo p;
+p.position.x = x;
+
+int_maybe32_t i;
+
+// we'll be simulatenously drawing the floor and the ceiling now  
+for (uint_maybe32_t j = 0; j <= hitCount; ++j)
+{                          // ^ = add extra iteration for horizon plane
+  int8_t drawingHorizon = j == hitCount;
+
+  HitResult hit;
+  Unit distance;
+
+  Unit fWallHeight, cWallHeight;
+  Unit fZ2World,    cZ2World;
+  Unit fZ1Screen,   cZ1Screen;
+  Unit fZ2Screen,   cZ2Screen;
+
+  if (!drawingHorizon)
+  {
+    hit = hits[j];
+    distance = adjustDistance(hit.distance,&_camera,&ray);
+
+    fWallHeight = _floorFunction(hit.square.x,hit.square.y);
+    fZ2World = fWallHeight - _camera.height;
+    fZ1Screen = _middleRow - perspectiveScale(
+      (fZ1World * _camera.resolution.y) / UNITS_PER_SQUARE,distance);
+    fZ2Screen = _middleRow - perspectiveScale(
+      (fZ2World * _camera.resolution.y) / UNITS_PER_SQUARE,distance);
+
+    if (_ceilFunction != 0)
+    {
+      cWallHeight = _ceilFunction(hit.square.x,hit.square.y);
+      cZ2World = cWallHeight - _camera.height;
+      cZ1Screen = _middleRow - perspectiveScale(
+        (cZ1World * _camera.resolution.y) / UNITS_PER_SQUARE,distance);
+      cZ2Screen = _middleRow - perspectiveScale(
+        (cZ2World * _camera.resolution.y) / UNITS_PER_SQUARE,distance);
+    }
+  }
+  else
+  {
+    fZ1Screen = _middleRow;
+    cZ1Screen = _middleRow + 1;
+  }
+
+  int_maybe32_t limit;
+
+  #define drawHorizontal(pref,l1,l2,comp,inc)\
+    limit = clamp(pref##Z1Screen,l1,l2);\
+    for (i = pref##PosY inc 1; i comp##= limit; inc##inc i)\
+    {\
+      p.position.y = i;\
+      _pixelFunction(&p);\
+    }\
+    if (pref##PosY comp limit)\
+      pref##PosY = limit;
+
+  p.isWall = 0;
+  p.isHorizon = 0;
+
+  // draw floor until wall
+  p.isFloor = 1;
+  drawHorizontal(f,cPosY + 1,_camera.resolution.y,>,-)
+                  // ^ purposfully allow outside screen bounds here
+
+  // draw ceiling until wall
+  p.isFloor = 0;
+  drawHorizontal(c,-1,fPosY - 1,<,+)
+                // ^ purposfully allow outside screen bounds here
+
+  if (!drawingHorizon) // don't draw walls for horizon plane
+  {
+    #define drawVertical(pref,l1,l2,comp,inc)\
+      {\
+        limit = clamp(pref##Z2Screen,l1,l2);\
+        Unit wallLength = pref##Z2Screen - pref##Z1Screen;\
+        Unit wallPosition = absVal(pref##Z1Screen - pref##PosY);\
+        for (i = pref##PosY inc 1; i comp##= limit; inc##inc i)\
+        {\
+          p.position.y = i;\
+          p.hit = hit;\
+          p.textureCoordY = (wallPosition * UNITS_PER_SQUARE) / wallLength; \
+          wallPosition++;\
+          _pixelFunction(&p);\
+        }\
+        if (pref##PosY comp limit)\
+          pref##PosY = limit;\
+        pref##Z1World = pref##Z2World; /* for the next iteration */\
+      }
+
+    p.isWall = 1;
+    p.depth = distance;
+    p.isFloor = 1;
+
+    // draw floor wall
+
+    if (fPosY > 0) // still pixels left?
+    {
+      p.isFloor = 1;
+      drawVertical(f,cPosY + 1,_camera.resolution.y,>,-)
+    }               // ^ purposfully allow outside screen bounds here
+
+    // draw ceiling wall
+
+    if (cPosY < _camResYLimit) // still pixels left?
+    {
+      p.isFloor = 0;
+      drawVertical(c,-1,fPosY - 1,<,+)
+    }             // ^ puposfully allow outside screen bounds here 
+  }
+
+  
+
+/*
+  if (fPosY > 0)             // still pixels left undrawn?
+  {
+    // draw floor wall 
+
+    p.isWall = 1;
+    p.depth = dist;
+    p.isFloor = 1;
+
+    limit = clamp(fZ2Screen,0,_camera.resolution.y);
+                            // ^ allow outside screen at bottom 
+
+    for (i = fPosY - 1; i >= limit; --i)
+    {
+      p.position.y = i;
+      p.hit = hit;
+      _pixelFunction(&p);
+    }
+
+    if (limit < fPosY)
+      fPosY = limit;
+
+    fZ1World = fZ2World; // move to the next level for the next iteration
+  }
+*/
+
+}
+
+#else
+
+
   int_maybe32_t y = _camResYLimit; // screen y (for floor), will only go up
   int_maybe32_t y2 = 0;            // screen y (for ceil), will only fo down
 
@@ -989,6 +1145,9 @@ void _columnFunction(HitResult *hits, uint16_t hitCount, uint16_t x, Ray ray)
   }
 
   #undef VERTICAL_DEPTH_MULTIPLY
+
+#endif
+
 }
 
 void _columnFunctionSimple(HitResult *hits, uint16_t hitCount, uint16_t x,
