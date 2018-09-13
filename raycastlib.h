@@ -28,7 +28,7 @@
                              serves the purpose of a fixed-point arithmetic. */
   #define UNIT_INFINITY 5000000;
 #else
-  #define UNITS_PER_SQUARE 64
+  #define UNITS_PER_SQUARE 128
   typedef int16_t Unit;
   #define UNIT_INFINITY 32767;
 #endif
@@ -873,7 +873,7 @@ void _columnFunction(HitResult *hits, uint16_t hitCount, uint16_t x, Ray ray)
           limit = clamp(pref##Z2Screen,l1,l2);\
           Unit wallLength = pref##Z2Screen - pref##Z1Screen - 1;\
           wallLength = wallLength != 0 ? wallLength : 1;\
-          Unit wallPosition = absVal(pref##Z1Screen - pref##PosY) + 1;\
+          Unit wallPosition = absVal(pref##Z1Screen - pref##PosY) inc (-1);\
           for (i = pref##PosY inc 1; i comp##= limit; inc##inc i)\
           {\
             p.position.y = i;\
