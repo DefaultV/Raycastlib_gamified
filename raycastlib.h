@@ -478,10 +478,19 @@ Unit dist(Vector2D p1, Vector2D p2)
   Unit dx = p2.x - p1.x;
   Unit dy = p2.y - p1.y;
 
+#ifdef RAYCAST_TINY
+  // octagonal approximation of Euclidean distance
+
+  dx = absVal(dx);
+  dy = absVal(dy);
+
+  return dy > dx ? dx / 2 + dy : dy / 2 + dx;
+#else
   dx = dx * dx;
   dy = dy * dy;
 
   return sqrtInt((Unit) (dx + dy));
+#endif
 }
 
 Unit len(Vector2D v)
