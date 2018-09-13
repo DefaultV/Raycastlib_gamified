@@ -355,7 +355,7 @@ Unit absVal(Unit value)
 {
   profileCall(absVal);
 
-  return value >= 0 ? value: -1 * value;
+  return value >= 0 ? value : -1 * value;
 }
 
 /// Like mod, but behaves differently for negative values.
@@ -719,7 +719,7 @@ void castRaysMultiHit(Camera cam, ArrayFunction arrayFunc,
 // global helper variables, for precomputing stuff etc.
 PixelFunction _pixelFunction = 0;
 Camera _camera;
-Unit _floorDepthStep = 0; 
+Unit _horizontalDepthStep = 0; 
 Unit _startFloorHeight = 0;
 Unit _startCeilHeight = 0;
 int_maybe32_t _camResYLimit = 0;
@@ -727,8 +727,8 @@ Unit _middleRow = 0;
 ArrayFunction _floorFunction = 0;
 ArrayFunction _ceilFunction = 0;
 uint8_t _computeTextureCoords = 0;
-Unit _fogStartYBottom = 0;
-Unit _fogStartYTop = 0;
+Unit _fHorizontalDepthStart = 0;
+Unit _cHorizontalDepthStart = 0;
 int16_t _cameraHeightScreen = 0;
 
 /**
@@ -823,13 +823,18 @@ for (uint_maybe32_t j = 0; j <= hitCount; ++j)
     cZ1Screen = _middleRow + 1;
   }
 
-  int_maybe32_t limit;
+  Unit limit;
+  Unit verticalDistance;
+
+  #define VERTICAL_DEPTH_MULTIPLY 2
 
   #define drawHorizontal(pref,l1,l2,comp,inc)\
+    p.depth += absVal(pref##Z1World) * VERTICAL_DEPTH_MULTIPLY;\
     limit = clamp(pref##Z1Screen,l1,l2);\
     for (i = pref##PosY inc 1; i comp##= limit; inc##inc i)\
     {\
       p.position.y = i;\
+      p.depth += _horizontalDepthStep;\
       _pixelFunction(&p);\
     }\
     if (pref##PosY comp limit)\
@@ -840,13 +845,18 @@ for (uint_maybe32_t j = 0; j <= hitCount; ++j)
 
   // draw floor until wall
   p.isFloor = 1;
+  p.depth = (_fHorizontalDepthStart - fPosY) * _horizontalDepthStep;
   drawHorizontal(f,cPosY + 1,_camera.resolution.y,>,-)
                   // ^ purposfully allow outside screen bounds here
 
   // draw ceiling until wall
   p.isFloor = 0;
+  p.depth = (cPosY - _cHorizontalDepthStart) * _horizontalDepthStep;
   drawHorizontal(c,-1,fPosY - 1,<,+)
                 // ^ purposfully allow outside screen bounds here
+
+  #undef drawHorizontal
+  #undef VERTICAL_DEPTH_MULTIPLY
 
   if (!drawingHorizon) // don't draw walls for horizon plane
   {
@@ -887,6 +897,8 @@ for (uint_maybe32_t j = 0; j <= hitCount; ++j)
       p.isFloor = 0;
       drawVertical(c,-1,fPosY - 1,<,+)
     }             // ^ puposfully allow outside screen bounds here 
+
+    #undef drawVertical
   }
 
   
@@ -1026,7 +1038,7 @@ for (uint_maybe32_t j = 0; j <= hitCount; ++j)
     for (int_maybe32_t i = y; i > z1Screen; --i)
     {
       p.position.y = i;
-      p.depth = (_fogStartYBottom - i) * _floorDepthStep + floorCameraDiff;
+      p.depth = (_fHorizontalDepthStart - i) * _horizontalDepthStep + floorCameraDiff;
       _pixelFunction(&p);  
     }
 
@@ -1044,7 +1056,7 @@ for (uint_maybe32_t j = 0; j <= hitCount; ++j)
       for (int_maybe32_t i = y2; i < z1ScreenCeil; ++i)
       {
         p.position.y = i;
-        p.depth = (i - _fogStartYTop) * _floorDepthStep + ceilCameraDiff;
+        p.depth = (i - _cHorizontalDepthStart) * _horizontalDepthStep + ceilCameraDiff;
         _pixelFunction(&p);  
       }
 
@@ -1123,7 +1135,7 @@ for (uint_maybe32_t j = 0; j <= hitCount; ++j)
   for (int_maybe32_t i = y; i >= horizon; --i)
   {
     p.position.y = i;
-    p.depth = (_fogStartYBottom - i) * _floorDepthStep + floorCameraDiff;
+    p.depth = (_fHorizontalDepthStart - i) * _horizontalDepthStep + floorCameraDiff;
     _pixelFunction(&p);
   }
 
@@ -1140,7 +1152,7 @@ for (uint_maybe32_t j = 0; j <= hitCount; ++j)
   for (int_maybe32_t i = y2; i < y; ++i)
   {
     p.position.y = i;
-    p.depth = (i - _fogStartYTop) * _floorDepthStep + ceilCameraDiff;
+    p.depth = (i - _cHorizontalDepthStart) * _horizontalDepthStep + ceilCameraDiff;
     _pixelFunction(&p);
   }
 
@@ -1197,7 +1209,7 @@ void _columnFunctionSimple(HitResult *hits, uint16_t hitCount, uint16_t x,
     p.position.y = y;
     _pixelFunction(&p);
     ++y;
-    p.depth += _floorDepthStep;
+    p.depth += _horizontalDepthStep;
   }
 
   // draw wall
@@ -1221,14 +1233,14 @@ void _columnFunctionSimple(HitResult *hits, uint16_t hitCount, uint16_t x,
   // draw floor
 
   p.isWall = 0;
-  p.depth = _middleRow * _floorDepthStep;
+  p.depth = _middleRow * _horizontalDepthStep;
 
   while (y < _camera.resolution.y)
   {
     p.position.y = y;
     _pixelFunction(&p);
     ++y;
-    p.depth -= _floorDepthStep;
+    p.depth -= _horizontalDepthStep;
   }
 }
 
@@ -1246,8 +1258,8 @@ void render(Camera cam, ArrayFunction floorHeightFunc,
 
   _middleRow = halfResY + cam.shear;
 
-  _fogStartYBottom = _middleRow + halfResY;
-  _fogStartYTop = _middleRow - halfResY;
+  _fHorizontalDepthStart = _middleRow + halfResY;
+  _cHorizontalDepthStart = _middleRow - halfResY;
 
   _computeTextureCoords = constraints.computeTextureCoords;
 
@@ -1263,7 +1275,7 @@ void render(Camera cam, ArrayFunction floorHeightFunc,
       : UNIT_INFINITY;
 
   // TODO
-  _floorDepthStep = (12 * UNITS_PER_SQUARE) / cam.resolution.y; 
+  _horizontalDepthStep = (12 * UNITS_PER_SQUARE) / cam.resolution.y; 
 
   castRaysMultiHit(cam,_floorCeilFunction,typeFunction,
     _columnFunction,constraints);
@@ -1284,7 +1296,7 @@ void renderSimple(Camera cam, ArrayFunction floorHeightFunc,
     UNITS_PER_SQUARE;
 
   // TODO
-  _floorDepthStep = (12 * UNITS_PER_SQUARE) / cam.resolution.y; 
+  _horizontalDepthStep = (12 * UNITS_PER_SQUARE) / cam.resolution.y; 
 
   constraints.maxHits = 1;
 
