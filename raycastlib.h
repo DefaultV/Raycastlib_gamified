@@ -34,7 +34,7 @@
 #else
   #define UNITS_PER_SQUARE 128
   typedef int16_t Unit;
-  #define UNIT_INFINITY 32767;
+  #define UNIT_INFINITY 32000;
   #define USE_DIST_APPROX 2
 #endif
 
@@ -516,12 +516,13 @@ Unit dist(Vector2D p1, Vector2D p2)
      b = dy;
   }
 
-  result = (a * 1007) + (b * 441);
+  result = a + (44 * b) / 102;
 
   if (a < (b << 4))
-    result -= (a * 40);
+    result -= (5 * a) / 128;
 
-  return ((result + 512 ) >> 10);
+  return result;
+
 #else
   dx = dx * dx;
   dy = dy * dy;
@@ -534,10 +535,11 @@ Unit len(Vector2D v)
 {
   profileCall(len);
 
-  v.x *= v.x;
-  v.y *= v.y;
+  Vector2D zero;
+  zero.x = 0;
+  zero.y = 0;
 
-  return sqrtInt(((Unit) v.x) + ((Unit) v.y));
+  return dist(zero,v);
 }
 
 int8_t pointIsLeftOfRay(Vector2D point, Ray ray)
@@ -716,7 +718,7 @@ HitResult castRay(Ray ray, ArrayFunction arrayFunc)
   profileCall(castRay);
 
   HitResult result;
-  uint16_t  len;
+  uint16_t len;
   RayConstraints c;
 
   c.maxSteps = 1000;
