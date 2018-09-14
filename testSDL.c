@@ -8,6 +8,10 @@
 #include <SDL2/SDL.h>
 #include <stdio.h>
 
+//#define RAYCAST_TINY
+
+#define USE_DIST_APPROX 2
+
 // redefine some parameters
 #define FPS 40
 #define GRAVITY_ACCELERATION (UNITS_PER_SQUARE * 3)
@@ -874,7 +878,8 @@ void pixelFunc(PixelInfo *pixel)
   else
     c = pixel->isFloor ? 0b00010001 : 0b00001010;
 
-  int intensity = pixel->depth - 8 * UNITS_PER_SQUARE;
+//  int intensity = pixel->depth - 8 * UNITS_PER_SQUARE;
+int intensity = pixel->depth - 8 * UNITS_PER_SQUARE;
   intensity = intensity < 0 ? 0 : intensity;
   intensity = (intensity * 32) / UNITS_PER_SQUARE;
 
@@ -912,11 +917,10 @@ else
 
 void draw()
 {
-clearScreen();
   RayConstraints c;
 
-  c.maxHits = 16;
-  c.maxSteps = 20;
+  c.maxHits = 32;
+  c.maxSteps = 32;
 
   c.computeTextureCoords = 1;
   render(camera,floorHeightAt,ceilingHeightAt,textureAt,pixelFunc,c);
@@ -934,10 +938,11 @@ clearScreen();
 
     PixelInfo pos = mapToScreen(sprites[i].mPosition,sprites[i].mHeight,camera);
 
+/*
     if (pos.depth > 0)
       drawSpriteSquare(sprites[i].mImage,pos.position.x,pos.position.y,
                  pos.depth,perspectiveScale(sprites[i].mPixelSize,pos.depth));
-
+*/
     /* trick: sort the sprites by distance with bubble sort as we draw - the
        order will be correct in a few frames */
     if (i != 0 && pos.depth > previousDepth)
@@ -977,7 +982,6 @@ int main()
   placeSprite(6,sprite3,16,12,1,3000);
 
   #undef placeSprite
-
   camera.position.x = UNITS_PER_SQUARE * 5;
   camera.position.y = UNITS_PER_SQUARE * 4;
   camera.shear = 0;
@@ -1005,6 +1009,12 @@ int main()
     if (counter <= 0)
     {
       writePixelCounter();
+      printf("cam: x = %d, y = %d, z = %d, r = %d, s = %d\n",
+        camera.position.x,
+        camera.position.y,
+        camera.height,
+        camera.direction,
+        camera.shear);
       counter = 512;
     }
     else

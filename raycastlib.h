@@ -32,7 +32,7 @@
                              serves the purpose of a fixed-point arithmetic. */
   #define UNIT_INFINITY 5000000;
 #else
-  #define UNITS_PER_SQUARE 128
+  #define UNITS_PER_SQUARE 16
   typedef int16_t Unit;
   #define UNIT_INFINITY 32000;
   #define USE_DIST_APPROX 2
