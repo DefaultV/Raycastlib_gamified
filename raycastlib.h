@@ -6,6 +6,9 @@
   performance computers, such as Arduino. Only uses integer math and stdint
   standard library.
 
+  Check the defines below to fine-tune accuracy vs performance! Don't forget
+  to compile with optimizations.
+
   author: Miloslav "drummyfish" Ciz
   license: CC0
   version: 0.1
@@ -21,7 +24,8 @@
 
 #include <stdint.h>
 
-#ifndef RAYCAST_TINY
+#ifndef RAYCAST_TINY /** Turns on super efficient version of this library. Only
+                         use if neccesarry, looks ugly. */
   #define UNITS_PER_SQUARE 1024 ///< N. of Units in a side of a spatial square.
   typedef int32_t Unit; /**< Smallest spatial unit, there is UNITS_PER_SQUARE
                              units in a square's length. This effectively
@@ -31,6 +35,7 @@
   #define UNITS_PER_SQUARE 128
   typedef int16_t Unit;
   #define UNIT_INFINITY 32767;
+  #define USE_DIST_APPROX 1
 #endif
 
 #ifndef USE_COS_LUT
@@ -39,6 +44,11 @@
                            1: 64 items
                            2: 128 items
                         */
+#endif
+
+#ifndef USE_DIST_APPROX
+#define USE_DIST_APPROX 0 /** Whether to use distance approximation (1) or
+                              real Euclidean distance (0, slower). */
 #endif
 
 #ifndef VERTICAL_FOV
@@ -478,13 +488,31 @@ Unit dist(Vector2D p1, Vector2D p2)
   Unit dx = p2.x - p1.x;
   Unit dy = p2.y - p1.y;
 
-#ifdef RAYCAST_TINY
-  // octagonal approximation of Euclidean distance
+#if USE_DIST_APPROX == 1
+  // Euclidean distance approximation
 
-  dx = absVal(dx);
-  dy = absVal(dy);
+  Unit a, b, result;
 
-  return dy > dx ? dx / 2 + dy : dy / 2 + dx;
+  dx = dx < 0 ? -1 * dx : dx;
+  dy = dy < 0 ? -1 * dy : dy;
+
+  if (dx < dy)
+  {
+     a = dy;
+     b = dx;
+  }
+  else
+  {
+     a = dx;
+     b = dy;
+  }
+
+  result = (a * 1007) + (b * 441);
+
+  if (a < (b << 4))
+    result -= (a * 40);
+
+  return ((result + 512 ) >> 10);
 #else
   dx = dx * dx;
   dy = dy * dy;
