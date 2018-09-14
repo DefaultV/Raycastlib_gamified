@@ -130,6 +130,7 @@ typedef struct
   Unit     textureCoord; ///< Normalized (0 to UNITS_PER_SQUARE - 1) tex coord.
   Unit     type;         ///< Integer identifying type of square.
   uint8_t  direction;    ///< Direction of hit.
+  Unit     doorRoll;     ///< Holds value of door roll.
 } HitResult;
 
 // TODO: things like FOV could be constants to make them precomp. and faster?
@@ -307,6 +308,22 @@ void moveCameraWithCollision(Camera *camera, Vector2D planeOffset,
 
 //=============================================================================
 // privates
+
+// global helper variables, for precomputing stuff etc.
+PixelFunction _pixelFunction = 0;
+Camera _camera;
+Unit _horizontalDepthStep = 0; 
+Unit _startFloorHeight = 0;
+Unit _startCeilHeight = 0;
+Unit _camResYLimit = 0;
+Unit _middleRow = 0;
+ArrayFunction _floorFunction = 0;
+ArrayFunction _ceilFunction = 0;
+uint8_t _computeTextureCoords = 0;
+Unit _fHorizontalDepthStart = 0;
+Unit _cHorizontalDepthStart = 0;
+int16_t _cameraHeightScreen = 0;
+ArrayFunction _rollFunction = 0; // says door rolling
 
 #ifdef RAYCASTLIB_PROFILE
   // function call counters for profiling
@@ -665,6 +682,8 @@ void castRayMultiHit(Ray ray, ArrayFunction arrayFunc, ArrayFunction typeFunc,
 
       HitResult h;
 
+      h.doorRoll = 0;
+
       h.position = currentPos;
       h.square   = currentSquare;
       h.distance = dist(initialPos,currentPos);
@@ -696,6 +715,9 @@ void castRayMultiHit(Ray ray, ArrayFunction arrayFunc, ArrayFunction typeFunc,
         h.textureCoord = constraints.computeTextureCoords ?
           wrap(currentPos.y,UNITS_PER_SQUARE) : 0;
       }
+
+      if (_rollFunction != 0)
+        h.doorRoll = _rollFunction(currentSquare.x,currentSquare.y);
 
       hitResults[*hitResultsLen] = h;
 
@@ -766,22 +788,6 @@ void castRaysMultiHit(Camera cam, ArrayFunction arrayFunc,
     columnFunc(hits,hitCount,i,r);
   }
 }
-
-// global helper variables, for precomputing stuff etc.
-PixelFunction _pixelFunction = 0;
-Camera _camera;
-Unit _horizontalDepthStep = 0; 
-Unit _startFloorHeight = 0;
-Unit _startCeilHeight = 0;
-Unit _camResYLimit = 0;
-Unit _middleRow = 0;
-ArrayFunction _floorFunction = 0;
-ArrayFunction _ceilFunction = 0;
-uint8_t _computeTextureCoords = 0;
-Unit _fHorizontalDepthStart = 0;
-Unit _cHorizontalDepthStart = 0;
-int16_t _cameraHeightScreen = 0;
-ArrayFunction _rollFunction = 0; // says door rolling
 
 /**
   Helper function that determines intersection with both ceiling and floor.
@@ -990,7 +996,7 @@ void _columnFunctionSimple(HitResult *hits, uint16_t hitCount, uint16_t x,
 
     if (_rollFunction != 0)
     {
-      Unit doorRoll = _rollFunction(hit.square.x,hit.square.y);
+      Unit doorRoll = hit.doorRoll;
 
       int8_t unrolled = doorRoll >= 0 ?
         doorRoll > hit.textureCoord :
