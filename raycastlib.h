@@ -35,20 +35,21 @@
   #define UNITS_PER_SQUARE 128
   typedef int16_t Unit;
   #define UNIT_INFINITY 32767;
-  #define USE_DIST_APPROX 1
+  #define USE_DIST_APPROX 2
 #endif
 
 #ifndef USE_COS_LUT
 #define USE_COS_LUT 0 /**< type of look up table for cos function:
                            0: none (compute)
                            1: 64 items
-                           2: 128 items
-                        */
+                           2: 128 items */
 #endif
 
 #ifndef USE_DIST_APPROX
-#define USE_DIST_APPROX 0 /** Whether to use distance approximation (1) or
-                              real Euclidean distance (0, slower). */
+#define USE_DIST_APPROX 0 /** What distance approximation to use:
+                            0: none (compute full Euclidean distance)
+                            1: accurate approximation
+                            2: octagonal approximation (LQ) */
 #endif
 
 #ifndef VERTICAL_FOV
@@ -488,8 +489,15 @@ Unit dist(Vector2D p1, Vector2D p2)
   Unit dx = p2.x - p1.x;
   Unit dy = p2.y - p1.y;
 
-#if USE_DIST_APPROX == 1
-  // Euclidean distance approximation
+#if USE_DIST_APPROX == 2
+  // octagonal approximation
+
+  dx = absVal(dx);
+  dy = absVal(dy);
+
+  return dy > dx ? dx / 2 + dy : dy / 2 + dx;
+#elif USE_DIST_APPROX == 1
+  // more accurate approximation
 
   Unit a, b, result;
 
