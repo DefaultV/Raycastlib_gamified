@@ -795,6 +795,11 @@ Unit _floorCeilFunction(int16_t x, int16_t y)
 #endif
 }
 
+Unit _floorHeightNotZeroFunction(int16_t x, int16_t y)
+{
+  return _floorFunction(x,y) == 0 ? 0 : UNITS_PER_SQUARE;
+}
+
 Unit adjustDistance(Unit distance, Camera *camera, Ray *ray)
 {
   /* FIXME/TODO: The adjusted (=orthogonal, camera-space) distance could
@@ -955,7 +960,7 @@ void _columnFunctionSimple(HitResult *hits, uint16_t hitCount, uint16_t x,
   Ray ray)
 {
   int16_t y = 0;
-  int16_t wallScreenHeight = 0;
+  int16_t wallHeightScreen = 0;
   int16_t coordHelper = 0;
   int16_t wallStart = _middleRow;
   int16_t wallEnd = _middleRow;
@@ -970,20 +975,27 @@ void _columnFunctionSimple(HitResult *hits, uint16_t hitCount, uint16_t x,
   {
     HitResult hit = hits[0];
     p.hit = hit;
+
     dist = adjustDistance(hit.distance,&_camera,&ray);
+
     int16_t wallHeightWorld = _floorFunction(hit.square.x,hit.square.y);
-    wallScreenHeight = perspectiveScale((wallHeightWorld *
+
+    wallHeightScreen = perspectiveScale((wallHeightWorld *
       _camera.resolution.y) / UNITS_PER_SQUARE,dist);
+
+    int16_t normalizedWallHeight = 
+      (UNITS_PER_SQUARE * wallHeightScreen) / wallHeightWorld;
 
     heightOffset = perspectiveScale(_cameraHeightScreen,dist);
 
-    wallStart = _middleRow - wallScreenHeight / 2 + heightOffset;
+    wallStart = _middleRow - wallHeightScreen + heightOffset +
+                normalizedWallHeight;
 
     coordHelper = -1 * wallStart;
     coordHelper = coordHelper >= 0 ? coordHelper : 0;
 
+    wallEnd = clamp(wallStart + wallHeightScreen,0,_camResYLimit);
     wallStart = clamp(wallStart,0,_camResYLimit);
-    wallEnd = clamp(wallStart + wallScreenHeight,0,_camResYLimit);
   }
 
   // draw ceiling
@@ -1012,9 +1024,10 @@ void _columnFunctionSimple(HitResult *hits, uint16_t hitCount, uint16_t x,
     p.position.y = y;
 
     if (_computeTextureCoords)
-      p.textureCoordY = (coordHelper * UNITS_PER_SQUARE) / wallScreenHeight;
+      p.textureCoordY = (coordHelper * UNITS_PER_SQUARE) / wallHeightScreen;
 
     _pixelFunction(&p);
+
     ++y;
     ++coordHelper;
   }
@@ -1089,8 +1102,8 @@ void renderSimple(Camera cam, ArrayFunction floorHeightFunc,
 
   constraints.maxHits = 1;
 
-  castRaysMultiHit(cam,_floorFunction,typeFunc,_columnFunctionSimple,
-    constraints);
+  castRaysMultiHit(cam,_floorHeightNotZeroFunction,typeFunc,
+    _columnFunctionSimple, constraints);
 }
 
 Vector2D normalize(Vector2D v)
