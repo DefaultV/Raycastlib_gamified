@@ -270,10 +270,18 @@ void render(Camera cam, ArrayFunction floorHeightFunc,
   accurate results than this function, so it's to be considered even for simple
   scenes.
 
+  Additionally this function supports rendering rolling doors.
+
   This function should render each screen pixel exactly once.
+
+  @param rollFunc function that for given square says its door roll in Units
+         (0 = no roll, UNITS_PER_SQUARE = full roll right, -UNITS_PER_SQUARE =
+         full roll left), can be zero (no rolling door, rendering should also
+         be faster as fewer intersections will be tested)
 */
 void renderSimple(Camera cam, ArrayFunction floorHeightFunc,
-  ArrayFunction typeFunc, PixelFunction pixelFunc, RayConstraints constraints);
+  ArrayFunction typeFunc, PixelFunction pixelFunc, ArrayFunction rollFunc,
+  RayConstraints constraints);
 
 /**
   Function that moves given camera and makes it collide with walls and
@@ -773,6 +781,7 @@ uint8_t _computeTextureCoords = 0;
 Unit _fHorizontalDepthStart = 0;
 Unit _cHorizontalDepthStart = 0;
 int16_t _cameraHeightScreen = 0;
+ArrayFunction _rollFunction = 0; // says door rolling
 
 /**
   Helper function that determines intersection with both ceiling and floor.
@@ -797,7 +806,9 @@ Unit _floorCeilFunction(int16_t x, int16_t y)
 
 Unit _floorHeightNotZeroFunction(int16_t x, int16_t y)
 {
-  return _floorFunction(x,y) == 0 ? 0 : UNITS_PER_SQUARE;
+  return _floorFunction(x,y) == 0 ? 0 :
+    (x & 0x00FF) | ((y & 0x00FF) << 8);
+    // ^ this makes collisions between all squares - needed for rolling doors
 }
 
 Unit adjustDistance(Unit distance, Camera *camera, Ray *ray)
@@ -974,28 +985,65 @@ void _columnFunctionSimple(HitResult *hits, uint16_t hitCount, uint16_t x,
   if (hitCount > 0)
   {
     HitResult hit = hits[0];
+
+    uint8_t goOn = 1;
+
+    if (_rollFunction != 0)
+    {
+      Unit doorRoll = _rollFunction(hit.square.x,hit.square.y);
+
+      int8_t unrolled = doorRoll >= 0 ?
+        doorRoll > hit.textureCoord :
+        hit.textureCoord > UNITS_PER_SQUARE + doorRoll;
+
+      if (unrolled)
+      {
+        goOn = 0;
+
+        if (hitCount > 1) /* should probably always be true (hit on square
+                             exit) */
+        {
+          if (hit.direction % 2 != hits[1].direction % 2)
+          {
+            // hit on the inner side
+            hit = hits[1];
+            goOn = 1;
+          }
+          else if (hitCount > 2)
+          {
+            // hit on the opposite side
+            hit = hits[2];
+            goOn = 1;
+          }
+        }
+      }
+    }
+
     p.hit = hit;
 
-    dist = adjustDistance(hit.distance,&_camera,&ray);
+    if (goOn)
+    {
+      dist = adjustDistance(hit.distance,&_camera,&ray);
 
-    int16_t wallHeightWorld = _floorFunction(hit.square.x,hit.square.y);
+      int16_t wallHeightWorld = _floorFunction(hit.square.x,hit.square.y);
 
-    wallHeightScreen = perspectiveScale((wallHeightWorld *
-      _camera.resolution.y) / UNITS_PER_SQUARE,dist);
+      wallHeightScreen = perspectiveScale((wallHeightWorld *
+        _camera.resolution.y) / UNITS_PER_SQUARE,dist);
 
-    int16_t normalizedWallHeight = 
-      (UNITS_PER_SQUARE * wallHeightScreen) / wallHeightWorld;
+      int16_t normalizedWallHeight = 
+        (UNITS_PER_SQUARE * wallHeightScreen) / wallHeightWorld;
 
-    heightOffset = perspectiveScale(_cameraHeightScreen,dist);
+      heightOffset = perspectiveScale(_cameraHeightScreen,dist);
 
-    wallStart = _middleRow - wallHeightScreen + heightOffset +
-                normalizedWallHeight;
+      wallStart = _middleRow - wallHeightScreen + heightOffset +
+                  normalizedWallHeight;
 
-    coordHelper = -1 * wallStart;
-    coordHelper = coordHelper >= 0 ? coordHelper : 0;
+      coordHelper = -1 * wallStart;
+      coordHelper = coordHelper >= 0 ? coordHelper : 0;
 
-    wallEnd = clamp(wallStart + wallHeightScreen,0,_camResYLimit);
-    wallStart = clamp(wallStart,0,_camResYLimit);
+      wallEnd = clamp(wallStart + wallHeightScreen,0,_camResYLimit);
+      wallStart = clamp(wallStart,0,_camResYLimit);
+    }
   }
 
   // draw ceiling
@@ -1084,7 +1132,8 @@ void render(Camera cam, ArrayFunction floorHeightFunc,
 }
 
 void renderSimple(Camera cam, ArrayFunction floorHeightFunc,
-  ArrayFunction typeFunc, PixelFunction pixelFunc, RayConstraints constraints)
+  ArrayFunction typeFunc, PixelFunction pixelFunc, ArrayFunction rollFunc,
+  RayConstraints constraints)
 {
   _pixelFunction = pixelFunc;
   _floorFunction = floorHeightFunc;
@@ -1092,6 +1141,7 @@ void renderSimple(Camera cam, ArrayFunction floorHeightFunc,
   _camResYLimit = cam.resolution.y - 1;
   _middleRow = cam.resolution.y / 2;
   _computeTextureCoords = constraints.computeTextureCoords;
+  _rollFunction = rollFunc;
 
   _cameraHeightScreen =
     (_camera.resolution.y * (_camera.height - UNITS_PER_SQUARE)) /
@@ -1100,7 +1150,11 @@ void renderSimple(Camera cam, ArrayFunction floorHeightFunc,
   // TODO
   _horizontalDepthStep = (12 * UNITS_PER_SQUARE) / cam.resolution.y; 
 
-  constraints.maxHits = 1;
+  constraints.maxHits = 
+
+  _rollFunction == 0 ?
+    1 : // no door => 1 hit is enough 
+    3;  // for correctly rendering rolling doors we'll need 3 hits (NOT 2)
 
   castRaysMultiHit(cam,_floorHeightNotZeroFunction,typeFunc,
     _columnFunctionSimple, constraints);
