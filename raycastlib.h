@@ -455,12 +455,13 @@ uint16_t sqrtInt(Unit value)
 {
   profileCall(sqrtInt);
 
-  Unit result = 0;
-  Unit a = value;
-
 #ifdef RAYCAST_TINY
-  uint32_t b = 1u << 14;
+  uint16_t result = 0;
+  uint16_t a = value;
+  uint16_t b = 1u << 14;
 #else
+  uint32_t result = 0;
+  uint32_t a = value;
   uint32_t b = 1u << 30;
 #endif
 
