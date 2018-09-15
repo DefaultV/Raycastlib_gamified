@@ -880,10 +880,10 @@ void _columnFunction(HitResult *hits, uint16_t hitCount, uint16_t x, Ray ray)
     HitResult hit;
     Unit distance;
 
-    Unit fWallHeight, cWallHeight;
-    Unit fZ2World,    cZ2World;
-    Unit fZ1Screen,   cZ1Screen;
-    Unit fZ2Screen,   cZ2Screen;
+    Unit fWallHeight = 0, cWallHeight = 0;
+    Unit fZ2World = 0,    cZ2World = 0;
+    Unit fZ1Screen = 0,   cZ1Screen = 0;
+    Unit fZ2Screen = 0,   cZ2Screen = 0;
 
     if (!drawingHorizon)
     {
@@ -914,7 +914,6 @@ void _columnFunction(HitResult *hits, uint16_t hitCount, uint16_t x, Ray ray)
     }
 
     Unit limit;
-    Unit verticalDistance;
 
     #define VERTICAL_DEPTH_MULTIPLY 2
 
@@ -1346,7 +1345,9 @@ void moveCameraWithCollision(Camera *camera, Vector2D planeOffset,
     // check a collision against non-diagonal square
     #define collCheckOrtho(dir,dir2,s1,s2,x)\
     if (dir##SquareNew != dir##Square)\
+    {\
       collCheck(dir,s1,s2)\
+    }\
     if (!dir##Collides)\
     { /* now also check for coll on the neighbouring square */ \
       int16_t dir2##Square2 = divRoundDown(corner.dir2 - dir2##Dir *\
