@@ -126,9 +126,12 @@ typedef struct
   Vector2D square;       ///< Collided square coordinates.
   Vector2D position;     ///< Exact collision position in Units.
   Unit     distance;     /**< Euclidean distance to the hit position, or -1 if
-                            no collision happened. */
+                              no collision happened. */
   Unit     textureCoord; ///< Normalized (0 to UNITS_PER_SQUARE - 1) tex coord.
-  Unit     type;         ///< Integer identifying type of square.
+  Unit     arrayValue;   /**  Value returned by array function (most often this
+                              will be the floor height). */
+  Unit     type;         /**< Integer identifying type of square (number
+                              returned by type function, e.g. texture index).*/
   uint8_t  direction;    ///< Direction of hit.
   Unit     doorRoll;     ///< Holds value of door roll.
 } HitResult;
@@ -203,6 +206,21 @@ PixelInfo mapToScreen(Vector2D worldPosition, Unit height, Camera camera);
 
 /**
   Casts a single ray and returns a list of collisions.
+
+  @param ray ray to be cast
+  @param arrayFunc function that will be used to determine collisions (hits)
+         with the ray (squares for which this function returns different values
+         are considered to have a collision between them), this will typically
+         be a function returning floor height
+  @param typeFunc optional (can be 0) function - if provided, it will be used
+         to mark the hit result with the number returned by this function
+         (it can be e.g. a texture index)
+  @param hitResults array in which the hit results will be stored (has to be
+         preallocated with at space for at least as many hit results as
+         maxHits specified with the constraints parameter)
+  @param hitResultsLen in this variable the number of hit results will be
+         returned
+  @param constraints specifies constraints for the ray cast
 */
 void castRayMultiHit(Ray ray, ArrayFunction arrayFunc, ArrayFunction typeFunc, 
   HitResult *hitResults, uint16_t *hitResultsLen, RayConstraints constraints);
@@ -682,8 +700,8 @@ void castRayMultiHit(Ray ray, ArrayFunction arrayFunc, ArrayFunction typeFunc,
 
       HitResult h;
 
+      h.arrayValue = currentType;
       h.doorRoll = 0;
-
       h.position = currentPos;
       h.square   = currentSquare;
       h.distance = dist(initialPos,currentPos);
@@ -996,30 +1014,44 @@ void _columnFunctionSimple(HitResult *hits, uint16_t hitCount, uint16_t x,
 
     if (_rollFunction != 0)
     {
-      Unit doorRoll = hit.doorRoll;
-
-      int8_t unrolled = doorRoll >= 0 ?
-        doorRoll > hit.textureCoord :
-        hit.textureCoord > UNITS_PER_SQUARE + doorRoll;
-
-      if (unrolled)
+      if (hit.arrayValue == 0)
       {
-        goOn = 0;
+        // standing inside door square, looking out => move to the next hit
 
-        if (hitCount > 1) /* should probably always be true (hit on square
-                             exit) */
+        if (hitCount > 1)
+          hit = hits[1];
+        else
+          goOn = 0;
+      }
+      else
+      {
+        // normal hit, check the door roll
+
+        Unit doorRoll = hit.doorRoll;
+
+        int8_t unrolled = doorRoll >= 0 ?
+          doorRoll > hit.textureCoord :
+          hit.textureCoord > UNITS_PER_SQUARE + doorRoll;
+
+        if (unrolled)
         {
-          if (hit.direction % 2 != hits[1].direction % 2)
+          goOn = 0;
+
+          if (hitCount > 1) /* should probably always be true (hit on square
+                               exit) */
           {
-            // hit on the inner side
-            hit = hits[1];
-            goOn = 1;
-          }
-          else if (hitCount > 2)
-          {
-            // hit on the opposite side
-            hit = hits[2];
-            goOn = 1;
+            if (hit.direction % 2 != hits[1].direction % 2)
+            {
+              // hit on the inner side
+              hit = hits[1];
+              goOn = 1;
+            }
+            else if (hitCount > 2)
+            {
+              // hit on the opposite side
+              hit = hits[2];
+              goOn = 1;
+            }
           }
         }
       }
