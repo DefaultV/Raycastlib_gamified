@@ -330,6 +330,9 @@ void moveCameraWithCollision(Camera *camera, Vector2D planeOffset,
   Unit heightOffset, ArrayFunction floorHeightFunc,
   ArrayFunction ceilingHeightFunc, int8_t computeHeight, int8_t force);
 
+void initCamera(Camera *camera);
+void initRayConstraints(RayConstraints *constraints);
+
 //=============================================================================
 // privates
 
@@ -1068,6 +1071,9 @@ void _columnFunctionSimple(HitResult *hits, uint16_t hitCount, uint16_t x,
 
       int16_t wallHeightWorld = _floorFunction(hit.square.x,hit.square.y);
 
+      wallHeightWorld = wallHeightWorld != 0 ? wallHeightWorld : 1;
+      // ^ prevent division by zero
+
       wallHeightScreen = perspectiveScale((wallHeightWorld *
         _camera.resolution.y) / UNITS_PER_SQUARE,dist);
 
@@ -1440,6 +1446,24 @@ void moveCameraWithCollision(Camera *camera, Vector2D planeOffset,
       topLimit - CAMERA_COLL_HEIGHT_ABOVE);
     #undef checkSquares
   }
+}
+
+void initCamera(Camera *camera)
+{
+  camera->position.x = 0;
+  camera->position.y = 0;
+  camera->direction = 0;
+  camera->resolution.x = 20;
+  camera->resolution.y = 15;
+  camera->shear = 0;
+  camera->height = UNITS_PER_SQUARE;
+}
+
+void initRayConstraints(RayConstraints *constraints)
+{
+  constraints->maxHits = 1;
+  constraints->maxSteps = 20;
+  constraints->computeTextureCoords = 1;
 }
 
 #endif
