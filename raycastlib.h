@@ -1071,14 +1071,11 @@ void _columnFunctionSimple(HitResult *hits, uint16_t hitCount, uint16_t x,
 
       int16_t wallHeightWorld = _floorFunction(hit.square.x,hit.square.y);
 
-      wallHeightWorld = wallHeightWorld != 0 ? wallHeightWorld : 1;
-      // ^ prevent division by zero
-
       wallHeightScreen = perspectiveScale((wallHeightWorld *
         _camera.resolution.y) / UNITS_PER_SQUARE,dist);
 
-      int16_t normalizedWallHeight = 
-        (UNITS_PER_SQUARE * wallHeightScreen) / wallHeightWorld;
+      int16_t normalizedWallHeight = wallHeightWorld != 0 ?
+        ((UNITS_PER_SQUARE * wallHeightScreen) / wallHeightWorld) : 0;
 
       heightOffset = perspectiveScale(_cameraHeightScreen,dist);
 
