@@ -437,15 +437,23 @@ Unit divRoundDown(Unit value, Unit divisor)
   (UNITS_PER_SQUARE / 2 * UNITS_PER_SQUARE / 2 - 4 * (x) * (x)) /\
   (UNITS_PER_SQUARE / 2 * UNITS_PER_SQUARE / 2 + (x) * (x)))
 
-
 #if USE_COS_LUT == 1
-const Unit cosLUT[64] =
-{
-  1024,1019,1004,979,946,903,851,791,724,649,568,482,391,297,199,100,0,-100,
-  -199,-297,-391,-482,-568,-649,-724,-791,-851,-903,-946,-979,-1004,-1019,
-  -1023,-1019,-1004,-979,-946,-903,-851,-791,-724,-649,-568,-482,-391,-297,
-  -199,-100,0,100,199,297,391,482,568,649,724,791,851,903,946,979,1004,1019
-};
+
+  #ifdef RAYCAST_TINY
+  const Unit cosLUT[64] =
+  {
+    16,14,11,6,0,-6,-11,-14,-15,-14,-11,-6,0,6,11,14
+  };
+  #else
+  const Unit cosLUT[64] =
+  {
+    1024,1019,1004,979,946,903,851,791,724,649,568,482,391,297,199,100,0,-100,
+    -199,-297,-391,-482,-568,-649,-724,-791,-851,-903,-946,-979,-1004,-1019,
+    -1023,-1019,-1004,-979,-946,-903,-851,-791,-724,-649,-568,-482,-391,-297,
+    -199,-100,0,100,199,297,391,482,568,649,724,791,851,903,946,979,1004,1019
+  };
+  #endif
+
 #elif USE_COS_LUT == 2
 const Unit cosLUT[128] =
 {
@@ -469,7 +477,13 @@ Unit cosInt(Unit input)
   input = wrap(input,UNITS_PER_SQUARE);
 
 #if USE_COS_LUT == 1
-  return cosLUT[input / 16];
+
+  #ifdef RAYCAST_TINY
+    return cosLUT[input];
+  #else
+    return cosLUT[input / 16];
+  #endif
+
 #elif USE_COS_LUT == 2
   return cosLUT[input / 8];
 #else
@@ -805,7 +819,7 @@ void castRaysMultiHit(Camera cam, ArrayFunction arrayFunc,
   Ray r;
   r.start = cam.position;
 
-  for (uint16_t i = 0; i < cam.resolution.x; ++i)
+  for (int16_t i = 0; i < cam.resolution.x; ++i)
   {
     r.direction.x = dir1.x + (dX * i) / cam.resolution.x;
     r.direction.y = dir1.y + (dY * i) / cam.resolution.x;
