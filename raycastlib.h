@@ -819,14 +819,20 @@ void castRaysMultiHit(Camera cam, ArrayFunction arrayFunc,
   Ray r;
   r.start = cam.position;
 
+  Unit currentDX = 0;
+  Unit currentDY = 0;
+
   for (int16_t i = 0; i < cam.resolution.x; ++i)
   {
-    r.direction.x = dir1.x + (dX * i) / cam.resolution.x;
-    r.direction.y = dir1.y + (dY * i) / cam.resolution.x;
+    r.direction.x = dir1.x + currentDX / cam.resolution.x;
+    r.direction.y = dir1.y + currentDY / cam.resolution.x;
 
     castRayMultiHit(r,arrayFunc,typeFunction,hits,&hitCount,constraints);
 
     columnFunc(hits,hitCount,i,r);
+
+    currentDX += dX;
+    currentDY += dY;
   }
 }
 
