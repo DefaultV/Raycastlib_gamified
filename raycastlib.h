@@ -117,8 +117,8 @@
 /// Position in 2D space.
 typedef struct
 {
-  Unit y;
   Unit x;
+  Unit y;
 } Vector2D;
 
 typedef struct
@@ -129,16 +129,16 @@ typedef struct
 
 typedef struct
 {
-  Vector2D square;       ///< Collided square coordinates.
-  Vector2D position;     ///< Exact collision position in Units.
   Unit     distance;     /**< Euclidean distance to the hit position, or -1 if
                               no collision happened. */
+  uint8_t  direction;    ///< Direction of hit.
   Unit     textureCoord; ///< Normalized (0 to UNITS_PER_SQUARE - 1) tex coord.
+  Vector2D square;       ///< Collided square coordinates.
+  Vector2D position;     ///< Exact collision position in Units.
   Unit     arrayValue;   /**  Value returned by array function (most often this
                               will be the floor height). */
   Unit     type;         /**< Integer identifying type of square (number
                               returned by type function, e.g. texture index).*/
-  uint8_t  direction;    ///< Direction of hit.
   Unit     doorRoll;     ///< Holds value of door roll.
 } HitResult;
 
