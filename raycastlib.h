@@ -46,10 +46,16 @@
 #endif
 
 #ifndef USE_DIST_APPROX
-#define USE_DIST_APPROX 0 /** What distance approximation to use:
+#define USE_DIST_APPROX 0 /**< What distance approximation to use:
                             0: none (compute full Euclidean distance)
                             1: accurate approximation
                             2: octagonal approximation (LQ) */
+#endif
+
+#ifndef ROLL_TEXTURE_COORDS
+#define ROLL_TEXTURE_COORDS 1 /**< Says whether rolling doors should also roll
+                                   the texture coordinates along (mostly
+                                   desired for doors). */
 #endif
 
 #ifndef VERTICAL_FOV
@@ -1027,11 +1033,9 @@ void _columnFunctionSimple(HitResult *hits, uint16_t hitCount, uint16_t x,
       {
         // normal hit, check the door roll
 
-        Unit doorRoll = hit.doorRoll;
-
-        int8_t unrolled = doorRoll >= 0 ?
-          doorRoll > hit.textureCoord :
-          hit.textureCoord > UNITS_PER_SQUARE + doorRoll;
+        int8_t unrolled = hit.doorRoll >= 0 ?
+          hit.doorRoll > hit.textureCoord :
+          hit.textureCoord > UNITS_PER_SQUARE + hit.doorRoll;
 
         if (unrolled)
         {
@@ -1104,6 +1108,10 @@ void _columnFunctionSimple(HitResult *hits, uint16_t hitCount, uint16_t x,
   p.isWall = 1;
   p.isFloor = 1;
   p.depth = dist;
+
+#if ROLL_TEXTURE_COORDS == 1 
+  p.hit.textureCoord -= p.hit.doorRoll;
+#endif
 
   while (y < wallEnd)
   {
