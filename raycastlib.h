@@ -88,6 +88,13 @@
 #define CAMERA_COLL_STEP_HEIGHT (UNITS_PER_SQUARE / 2)
 #endif
 
+#ifndef MIN_TEXTURE_STEP
+#define MIN_TEXTURE_STEP 12 /**< Specifies the minimum step in pixels that can
+                                 be used to compute texture coordinates in a
+                                 fast way. Smallet step will trigger a more
+                                 expensive way of computing texture coords. */
+#endif
+
 #define logVector2D(v)\
   printf("[%d,%d]\n",v.x,v.y);
 
@@ -113,7 +120,6 @@
   logVector2D(p.position);\
   printf("  depth: %d\n", p.depth);\
   printf("  wall: %d\n", p.isWall);\
-  printf("  textCoordY: %d\n", p.textureCoordY);\
   printf("  hit: ");\
   logHitResult(p.hit);\
   }\
@@ -170,7 +176,8 @@ typedef struct
   int8_t isHorizon;   ///< Whether the pixel is floor going towards horizon.
   Unit depth;         ///< Corrected depth.
   HitResult hit;      ///< Corresponding ray hit.
-  Unit textureCoordY; ///< Normalized (0 to UNITS_PER_SQUARE - 1) tex coord.
+  Vector2D texCoords; /**< Normalized (0 to UNITS_PER_SQUARE - 1) texture
+                           coordinates. */
 } PixelInfo;
 
 typedef struct
@@ -902,6 +909,8 @@ void _columnFunction(HitResult *hits, uint16_t hitCount, uint16_t x, Ray ray)
 
   PixelInfo p;
   p.position.x = x;
+  p.texCoords.x = 0;
+  p.texCoords.y = 0;
 
   Unit i;
 
@@ -995,7 +1004,11 @@ void _columnFunction(HitResult *hits, uint16_t hitCount, uint16_t x, Ray ray)
           {\
             p.position.y = i;\
             p.hit = hit;\
-            p.textureCoordY = (wallPosition * UNITS_PER_SQUARE) / wallLength; \
+            if (COMPUTE_WALL_TEXCOORDS == 1)\
+            {\
+              p.texCoords.x = hit.textureCoord;\
+              p.texCoords.y = (wallPosition * UNITS_PER_SQUARE) / wallLength;\
+            }\
             wallPosition++;\
             _pixelFunction(&p);\
           }\
@@ -1145,18 +1158,44 @@ void _columnFunctionSimple(HitResult *hits, uint16_t hitCount, uint16_t x,
   p.hit.textureCoord -= p.hit.doorRoll;
 #endif
 
-  while (y < wallEnd)
-  {
-    p.position.y = y;
+Unit coordStep = 1;
 
 #if COMPUTE_WALL_TEXCOORDS == 1
-    p.textureCoordY = (coordHelper * UNITS_PER_SQUARE) / wallHeightScreen;
+  p.texCoords.x = p.hit.textureCoord;
+  coordStep = UNITS_PER_SQUARE / wallHeightScreen;
+  p.texCoords.y = coordStep * coordHelper;
 #endif
 
-    _pixelFunction(&p);
+  if (coordStep < MIN_TEXTURE_STEP) /* instead of branching inside a critical
+                                       loop, have two versions of the loop and
+                                       branch early (here) */
+  {
+    while (y < wallEnd)
+    {
+      // more expensive and accurate version of texture coords computation
 
-    ++y;
-    ++coordHelper;
+      p.position.y = y;
+#if COMPUTE_WALL_TEXCOORDS == 1
+      p.texCoords.y = (UNITS_PER_SQUARE * coordHelper) / wallHeightScreen;
+#endif
+      _pixelFunction(&p);
+      ++coordHelper;
+      ++y;
+    }
+  }
+  else
+  {
+    while (y < wallEnd)
+    {
+      // cheaper texture coord computation
+
+      p.position.y = y;
+      _pixelFunction(&p);
+#if COMPUTE_WALL_TEXCOORDS == 1
+      p.texCoords.y += coordStep;
+#endif
+      ++y;
+    }
   }
 
   // draw floor
