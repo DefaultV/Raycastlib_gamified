@@ -1000,8 +1000,10 @@ void _columnFunction(HitResult *hits, uint16_t hitCount, uint16_t x, Ray ray)
           Unit wallLength = pref##Z2Screen - pref##Z1Screen - 1;\
           wallLength = wallLength != 0 ? wallLength : 1;\
           Unit wallPosition = absVal(pref##Z1Screen - pref##PosY) inc (-1);\
-          Unit coordStep = UNITS_PER_SQUARE / wallLength;\
-          p.texCoords.y = wallPosition * coordStep;\
+          Unit coordStep = COMPUTE_WALL_TEXCOORDS ? \
+            UNITS_PER_SQUARE / wallLength : 1;\
+          p.texCoords.y = COMPUTE_WALL_TEXCOORDS ?\
+            wallPosition * coordStep : 0;\
           if (coordStep < MIN_TEXTURE_STEP) /* two versions of the loop */ \
             for (i = pref##PosY inc 1; i comp##= limit; inc##inc i)\
             { /* more expensive texture coord computing */\
