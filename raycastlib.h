@@ -38,6 +38,10 @@
   #define USE_DIST_APPROX 2
 #endif
 
+#ifndef COMPUTE_WALL_TEXCOORDS
+#define COMPUTE_WALL_TEXCOORDS 1
+#endif
+
 #ifndef USE_COS_LUT
 #define USE_COS_LUT 0 /**< type of look up table for cos function:
                            0: none (compute)
@@ -173,7 +177,6 @@ typedef struct
 {
   uint16_t maxHits;
   uint16_t maxSteps;
-  uint8_t computeTextureCoords; ///< Turns texture coords on/off.
 } RayConstraints;
 
 /**
@@ -346,7 +349,6 @@ Unit _camResYLimit = 0;
 Unit _middleRow = 0;
 ArrayFunction _floorFunction = 0;
 ArrayFunction _ceilFunction = 0;
-uint8_t _computeTextureCoords = 0;
 Unit _fHorizontalDepthStart = 0;
 Unit _cHorizontalDepthStart = 0;
 int16_t _cameraHeightScreen = 0;
@@ -735,30 +737,38 @@ void castRayMultiHit(Ray ray, ArrayFunction arrayFunc, ArrayFunction typeFunc,
       if (no.y > 0)
       {
         h.direction = 0;
-        h.textureCoord = constraints.computeTextureCoords ?
-          wrap(currentPos.x,UNITS_PER_SQUARE) : 0;
+#if COMPUTE_WALL_TEXCOORDS == 1
+        h.textureCoord = wrap(currentPos.x,UNITS_PER_SQUARE);
+#endif
       }
       else if (no.x > 0)
       {
         h.direction = 1;
-        h.textureCoord = constraints.computeTextureCoords ?
-          wrap(UNITS_PER_SQUARE - currentPos.y,UNITS_PER_SQUARE) : 0;
+#if COMPUTE_WALL_TEXCOORDS == 1
+        h.textureCoord =
+          wrap(UNITS_PER_SQUARE - currentPos.y,UNITS_PER_SQUARE);
+#endif
       }
       else if (no.y < 0)
       {
         h.direction = 2;
-        h.textureCoord = constraints.computeTextureCoords ?
-          wrap(UNITS_PER_SQUARE - currentPos.x,UNITS_PER_SQUARE) : 0;
+#if COMPUTE_WALL_TEXCOORDS == 1
+        h.textureCoord =
+          wrap(UNITS_PER_SQUARE - currentPos.x,UNITS_PER_SQUARE);
+#endif
       }
       else
       {
         h.direction = 3;
-        h.textureCoord = constraints.computeTextureCoords ?
-          wrap(currentPos.y,UNITS_PER_SQUARE) : 0;
+#if COMPUTE_WALL_TEXCOORDS == 1
+        h.textureCoord = wrap(currentPos.y,UNITS_PER_SQUARE);
+#endif
       }
 
+#if COMPUTE_WALL_TEXCOORDS == 1
       if (_rollFunction != 0)
         h.doorRoll = _rollFunction(currentSquare.x,currentSquare.y);
+#endif
 
       hitResults[*hitResultsLen] = h;
 
@@ -1040,7 +1050,7 @@ void _columnFunctionSimple(HitResult *hits, uint16_t hitCount, uint16_t x,
 
     uint8_t goOn = 1;
 
-    if (_rollFunction != 0)
+    if (_rollFunction != 0 && COMPUTE_WALL_TEXCOORDS == 1)
     {
       if (hit.arrayValue == 0)
       {
@@ -1131,7 +1141,7 @@ void _columnFunctionSimple(HitResult *hits, uint16_t hitCount, uint16_t x,
   p.isFloor = 1;
   p.depth = dist;
 
-#if ROLL_TEXTURE_COORDS == 1 
+#if ROLL_TEXTURE_COORDS == 1 && COMPUTE_WALL_TEXCOORDS == 1 
   p.hit.textureCoord -= p.hit.doorRoll;
 #endif
 
@@ -1139,8 +1149,9 @@ void _columnFunctionSimple(HitResult *hits, uint16_t hitCount, uint16_t x,
   {
     p.position.y = y;
 
-    if (_computeTextureCoords)
-      p.textureCoordY = (coordHelper * UNITS_PER_SQUARE) / wallHeightScreen;
+#if COMPUTE_WALL_TEXCOORDS == 1
+    p.textureCoordY = (coordHelper * UNITS_PER_SQUARE) / wallHeightScreen;
+#endif
 
     _pixelFunction(&p);
 
@@ -1179,8 +1190,6 @@ void render(Camera cam, ArrayFunction floorHeightFunc,
   _fHorizontalDepthStart = _middleRow + halfResY;
   _cHorizontalDepthStart = _middleRow - halfResY;
 
-  _computeTextureCoords = constraints.computeTextureCoords;
-
   _startFloorHeight = floorHeightFunc(
     divRoundDown(cam.position.x,UNITS_PER_SQUARE),
     divRoundDown(cam.position.y,UNITS_PER_SQUARE)) -1 * cam.height;
@@ -1208,7 +1217,6 @@ void renderSimple(Camera cam, ArrayFunction floorHeightFunc,
   _camera = cam;
   _camResYLimit = cam.resolution.y - 1;
   _middleRow = cam.resolution.y / 2;
-  _computeTextureCoords = constraints.computeTextureCoords;
   _rollFunction = rollFunc;
 
   _cameraHeightScreen =
@@ -1480,7 +1488,6 @@ void initRayConstraints(RayConstraints *constraints)
 {
   constraints->maxHits = 1;
   constraints->maxSteps = 20;
-  constraints->computeTextureCoords = 1;
 }
 
 #endif
