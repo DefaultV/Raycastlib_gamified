@@ -1000,18 +1000,33 @@ void _columnFunction(HitResult *hits, uint16_t hitCount, uint16_t x, Ray ray)
           Unit wallLength = pref##Z2Screen - pref##Z1Screen - 1;\
           wallLength = wallLength != 0 ? wallLength : 1;\
           Unit wallPosition = absVal(pref##Z1Screen - pref##PosY) inc (-1);\
-          for (i = pref##PosY inc 1; i comp##= limit; inc##inc i)\
-          {\
-            p.position.y = i;\
-            p.hit = hit;\
-            if (COMPUTE_WALL_TEXCOORDS == 1)\
-            {\
-              p.texCoords.x = hit.textureCoord;\
-              p.texCoords.y = (wallPosition * UNITS_PER_SQUARE) / wallLength;\
+          Unit coordStep = UNITS_PER_SQUARE / wallLength;\
+          p.texCoords.y = wallPosition * coordStep;\
+          if (coordStep < MIN_TEXTURE_STEP) /* two versions of the loop */ \
+            for (i = pref##PosY inc 1; i comp##= limit; inc##inc i)\
+            { /* more expensive texture coord computing */\
+              p.position.y = i;\
+              p.hit = hit;\
+              if (COMPUTE_WALL_TEXCOORDS == 1)\
+              {\
+                p.texCoords.x = hit.textureCoord;\
+                p.texCoords.y = (wallPosition * UNITS_PER_SQUARE)/wallLength;\
+              }\
+              wallPosition++;\
+              _pixelFunction(&p);\
             }\
-            wallPosition++;\
-            _pixelFunction(&p);\
-          }\
+          else\
+            for (i = pref##PosY inc 1; i comp##= limit; inc##inc i)\
+            { /* cheaper texture coord computing */\
+              p.position.y = i;\
+              p.hit = hit;\
+              if (COMPUTE_WALL_TEXCOORDS == 1)\
+              {\
+                p.texCoords.x = hit.textureCoord;\
+                p.texCoords.y += coordStep;\
+              }\
+              _pixelFunction(&p);\
+            }\
           if (pref##PosY comp limit)\
             pref##PosY = limit;\
           pref##Z1World = pref##Z2World; /* for the next iteration */\
