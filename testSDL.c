@@ -10,17 +10,17 @@
 
 //#define RAYCAST_TINY
 
-#define USE_DIST_APPROX 2
+#define RCL_USE_DIST_APPROX 2
 
 // redefine some parameters
 #define FPS 40
-#define GRAVITY_ACCELERATION (UNITS_PER_SQUARE * 3)
+#define GRAVITY_ACCELERATION (RCL_UNITS_PER_SQUARE * 3)
 #define PLAYER_JUMP_SPEED 700
-#define CAMERA_COLL_HEIGHT_BELOW ((3 * UNITS_PER_SQUARE) / 2)
-#define HORIZONTAL_FOV (UNITS_PER_SQUARE / 5)
-#define VERTICAL_FOV UNITS_PER_SQUARE // redefine camera vertical FOV
+#define RCL_CAMERA_COLL_HEIGHT_BELOW ((3 * RCL_UNITS_PER_SQUARE) / 2)
+#define RCL_HORIZONTAL_FOV (RCL_UNITS_PER_SQUARE / 5)
+#define RCL_VERTICAL_FOV RCL_UNITS_PER_SQUARE // redefine camera vertical FOV
 
-#define PIXEL_FUNCTION pixelFunc 
+#define RCL_PIXEL_FUNCTION pixelFunc 
 
 #include "raycastlib.h"
 
@@ -49,9 +49,9 @@ int keys[KEYS];
 
 unsigned long frame = 0;
 
-Unit zBuffer[SCREEN_WIDTH]; ///< 1D z-buffer for visibility determination.
+RCL_Unit zBuffer[SCREEN_WIDTH]; ///< 1D z-buffer for visibility determination.
 
-Camera camera;
+RCL_Camera camera;
 
 uint32_t pixels[SCREEN_WIDTH * SCREEN_HEIGHT];
 uint32_t pixelCounter[SCREEN_WIDTH * SCREEN_HEIGHT];
@@ -59,15 +59,15 @@ uint32_t pixelCounter[SCREEN_WIDTH * SCREEN_HEIGHT];
 typedef struct
 {
   unsigned char *mImage;
-  Vector2D mPosition;
-  Unit mHeight;
-  Unit mPixelSize;
+  RCL_Vector2D mPosition;
+  RCL_Unit mHeight;
+  RCL_Unit mPixelSize;
 } Sprite;
 
 uint32_t palette[256];
 
 #define SPRITES 7
-#define SPRITE_MAX_DISTANCE 5 * UNITS_PER_SQUARE
+#define SPRITE_MAX_DISTANCE 5 * RCL_UNITS_PER_SQUARE
 
 Sprite sprites[SPRITES];
 
@@ -736,16 +736,16 @@ uint8_t rgbToIndex(uint8_t r, uint8_t g, uint8_t b)
   return (r & 0b00000111) | ((g & 0b00000111) << 3) | ((b & 0b00000011) << 6);
 }
 
-uint8_t sampleImage(const unsigned char *image, Unit x, Unit y)
+uint8_t sampleImage(const unsigned char *image, RCL_Unit x, RCL_Unit y)
 {
   // TODO: optimize
 
-  x = wrap(x,UNITS_PER_SQUARE);
-  y = wrap(y,UNITS_PER_SQUARE);
+  x = RCL_wrap(x,RCL_UNITS_PER_SQUARE);
+  y = RCL_wrap(y,RCL_UNITS_PER_SQUARE);
 
   int32_t index =
-    image[1] * ((image[0] * x) / UNITS_PER_SQUARE) + (image[0] * y) /
-    UNITS_PER_SQUARE;
+    image[1] * ((image[0] * x) / RCL_UNITS_PER_SQUARE) + (image[0] * y) /
+    RCL_UNITS_PER_SQUARE;
 
   return image[2 + index];
 }
@@ -779,7 +779,7 @@ uint8_t addIntensity(uint8_t color, int16_t intensity)
   return rgbToIndex(r,g,b);
 }
 
-Unit textureAt(int16_t x, int16_t y)
+RCL_Unit textureAt(int16_t x, int16_t y)
 {
   if (x >= 0 && x < LEVEL_X_RES && y >= 0 && y < LEVEL_Y_RES)
     return levelTexture[(LEVEL_Y_RES - y -1) * LEVEL_X_RES + x]; 
@@ -787,35 +787,35 @@ Unit textureAt(int16_t x, int16_t y)
   return 0;
 }
 
-Unit floorHeightAt(int16_t x, int16_t y)
+RCL_Unit floorHeightAt(int16_t x, int16_t y)
 {
   if (x == 6 && (y == 13 || y == 14)) // moving lift
-    return ((absVal(-1 * (frame % 64) + 32)) * UNITS_PER_SQUARE) / 8; 
+    return ((RCL_absVal(-1 * (frame % 64) + 32)) * RCL_UNITS_PER_SQUARE) / 8; 
 
   if (x >= 0 && x < LEVEL_X_RES && y >= 0 && y < LEVEL_Y_RES)
-    return (levelFloor[(LEVEL_Y_RES - y -1) * LEVEL_X_RES + x] * UNITS_PER_SQUARE) / 8; 
+    return (levelFloor[(LEVEL_Y_RES - y -1) * LEVEL_X_RES + x] * RCL_UNITS_PER_SQUARE) / 8; 
 
-  int a = absVal(x - LEVEL_X_RES / 2) - LEVEL_X_RES / 2;
-  int b = absVal(y - LEVEL_Y_RES / 2) - LEVEL_Y_RES / 2;
+  int a = RCL_absVal(x - LEVEL_X_RES / 2) - LEVEL_X_RES / 2;
+  int b = RCL_absVal(y - LEVEL_Y_RES / 2) - LEVEL_Y_RES / 2;
 
-  return (a > b ? a : b) * UNITS_PER_SQUARE;
+  return (a > b ? a : b) * RCL_UNITS_PER_SQUARE;
 }
 
-Unit ceilingHeightAt(int16_t x, int16_t y)
+RCL_Unit ceilingHeightAt(int16_t x, int16_t y)
 {
   int v = 1024;
 
   if (x >= 0 && x < LEVEL_X_RES && y >= 0 && y < LEVEL_Y_RES)
     v = levelCeiling[(LEVEL_Y_RES - y -1) * LEVEL_X_RES + x]; 
 
-  return (v * UNITS_PER_SQUARE) / 8;
+  return (v * RCL_UNITS_PER_SQUARE) / 8;
 }
 
 /**
   Draws a scaled sprite on screen in an optimized way. The sprite has to be
   square in resolution.
 */
-void drawSpriteSquare(const unsigned char *sprite, int16_t x, int16_t y, Unit depth, int16_t size)
+void drawSpriteSquare(const unsigned char *sprite, int16_t x, int16_t y, RCL_Unit depth, int16_t size)
 {
   if (size < 0 || size > 512 || // let's not mess up with the incoming array
       sprite[0] != sprite[1])    // only draw square sprites
@@ -825,20 +825,20 @@ void drawSpriteSquare(const unsigned char *sprite, int16_t x, int16_t y, Unit de
 
   // optimization: precompute the indices
 
-  for (Unit i = 0; i < size; ++i)
+  for (RCL_Unit i = 0; i < size; ++i)
     samplingIndices[i] = (i * sprite[0]) / size;
 
   x -= size / 2;
   y -= size / 2;
 
-  Unit step = UNITS_PER_SQUARE / size;
+  RCL_Unit step = RCL_UNITS_PER_SQUARE / size;
 
   uint8_t c;
 
   int16_t jTo = size - max(0,y + size - SCREEN_HEIGHT);
   int16_t iTo = size - max(0,x + size - SCREEN_WIDTH);
 
-  for (Unit i = max(-1 * x,0); i < iTo; ++i)
+  for (RCL_Unit i = max(-1 * x,0); i < iTo; ++i)
   {
     int16_t xPos = x + i;
 
@@ -847,7 +847,7 @@ void drawSpriteSquare(const unsigned char *sprite, int16_t x, int16_t y, Unit de
 
     int16_t columnLocation = 2 + samplingIndices[i] * sprite[0];
 
-    for (Unit j = max(-1 * y,0); j < jTo; ++j)
+    for (RCL_Unit j = max(-1 * y,0); j < jTo; ++j)
     {
       c = sprite[columnLocation + samplingIndices[j]];
      
@@ -864,7 +864,7 @@ void drawSpriteSquare(const unsigned char *sprite, int16_t x, int16_t y, Unit de
   Function for drawing a single pixel (like fragment shader). Bottleneck =>
   should be as fast as possible.
 */
-void pixelFunc(PixelInfo *pixel)
+void pixelFunc(RCL_PixelInfo *pixel)
 {
   if (pixel->position.x < 0 || pixel->position.x >= SCREEN_WIDTH ||
       pixel->position.y < 0 || pixel->position.y >= SCREEN_HEIGHT)
@@ -880,10 +880,10 @@ void pixelFunc(PixelInfo *pixel)
   else
     c = pixel->isFloor ? 0b00010001 : 0b00001010;
 
-//  int intensity = pixel->depth - 8 * UNITS_PER_SQUARE;
-int intensity = pixel->depth - 8 * UNITS_PER_SQUARE;
+//  int intensity = pixel->depth - 8 * RCL_UNITS_PER_SQUARE;
+int intensity = pixel->depth - 8 * RCL_UNITS_PER_SQUARE;
   intensity = intensity < 0 ? 0 : intensity;
-  intensity = (intensity * 32) / UNITS_PER_SQUARE;
+  intensity = (intensity * 32) / RCL_UNITS_PER_SQUARE;
 
   int32_t color = palette[c];
 
@@ -919,25 +919,25 @@ else
 
 void draw()
 {
-  RayConstraints c;
+  RCL_RayConstraints c;
 
   c.maxHits = 32;
   c.maxSteps = 32;
 
-  render(camera,floorHeightAt,ceilingHeightAt,textureAt,c);
+  RCL_render(camera,floorHeightAt,ceilingHeightAt,textureAt,c);
 
-  Unit previousDepth;
+  RCL_Unit previousDepth;
 
   for (uint8_t i = 0; i < SPRITES; ++i)
   {
     // use Chebyshew distance instead Euclidean, it's faster
-    if (absVal(sprites[i].mPosition.x - camera.position.x) > SPRITE_MAX_DISTANCE)
+    if (RCL_absVal(sprites[i].mPosition.x - camera.position.x) > SPRITE_MAX_DISTANCE)
       continue;
 
-    if (absVal(sprites[i].mPosition.y - camera.position.y) > SPRITE_MAX_DISTANCE)
+    if (RCL_absVal(sprites[i].mPosition.y - camera.position.y) > SPRITE_MAX_DISTANCE)
       continue;
 
-    PixelInfo pos = mapToScreen(sprites[i].mPosition,sprites[i].mHeight,camera);
+    RCL_PixelInfo pos = RCL_mapToScreen(sprites[i].mPosition,sprites[i].mHeight,camera);
 
 /*
     if (pos.depth > 0)
@@ -969,9 +969,9 @@ int main()
 
   #define placeSprite(i,s,X,Y,z,n)\
     sprites[i].mImage = s;\
-    sprites[i].mPosition.x = X * UNITS_PER_SQUARE + UNITS_PER_SQUARE / 2;\
-    sprites[i].mPosition.y = Y * UNITS_PER_SQUARE + UNITS_PER_SQUARE / 2;\
-    sprites[i].mHeight = z * UNITS_PER_SQUARE + UNITS_PER_SQUARE / 2;\
+    sprites[i].mPosition.x = X * RCL_UNITS_PER_SQUARE + RCL_UNITS_PER_SQUARE / 2;\
+    sprites[i].mPosition.y = Y * RCL_UNITS_PER_SQUARE + RCL_UNITS_PER_SQUARE / 2;\
+    sprites[i].mHeight = z * RCL_UNITS_PER_SQUARE + RCL_UNITS_PER_SQUARE / 2;\
     sprites[i].mPixelSize = n;
 
   placeSprite(0,sprite1,10,5,1,1000);
@@ -983,11 +983,11 @@ int main()
   placeSprite(6,sprite3,16,12,1,3000);
 
   #undef placeSprite
-  camera.position.x = UNITS_PER_SQUARE * 5;
-  camera.position.y = UNITS_PER_SQUARE * 4;
+  camera.position.x = RCL_UNITS_PER_SQUARE * 5;
+  camera.position.y = RCL_UNITS_PER_SQUARE * 4;
   camera.shear = 0;
   camera.direction = 0;
-  camera.height = UNITS_PER_SQUARE * 2;
+  camera.height = RCL_UNITS_PER_SQUARE * 2;
   camera.resolution.x = SCREEN_WIDTH;
   camera.resolution.y = SCREEN_HEIGHT;
 
@@ -1063,7 +1063,7 @@ int main()
     int step = 1;
     int step2 = 5;
 
-    Vector2D direction = angleToDirection(camera.direction);
+    RCL_Vector2D direction = RCL_angleToDirection(camera.direction);
 
     direction.x /= 10;
     direction.y /= 10;

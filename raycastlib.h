@@ -2,168 +2,174 @@
 #define RAYCASTLIB_H
 
 /**
-  raycastlib - Small C header-only raycasting library for embedded and low
-  performance computers, such as Arduino. Only uses integer math and stdint
+  raycastlib (RCL) - Small C header-only raycasting library for embedded and
+  low performance computers, such as Arduino. Only uses integer math and stdint
   standard library.
 
   Check the defines below to fine-tune accuracy vs performance! Don't forget
   to compile with optimizations.
 
-  Before includinf the library efine PIXEL_FUNCTION to the name of the
-  function (with PixelFunction signature) that will render your pixels!
+  Before including the library define RCL_PIXEL_FUNCTION to the name of the
+  function (with RCL_PixelFunction signature) that will render your pixels!
 
-  author: Miloslav "drummyfish" Ciz
-  license: CC0
-  version: 0.1
-
+  - All public (and most private) library identifiers start with RCL_.
   - Game field's bottom left corner is at [0,0].
   - X axis goes right in the ground plane.
   - Y axis goes up in the ground plane.
   - Height means the Z (vertical) coordinate.
-  - Each game square is UNITS_PER_SQUARE * UNITS_PER_SQUARE points.
-  - Angles are in Units, 0 means pointing right (x+) and positively rotates
-    clockwise. A full angle has UNITS_PER_SQUARE Units.
+  - Each game square is RCL_UNITS_PER_SQUARE * RCL_UNITS_PER_SQUARE points.
+  - Angles are in RCL_Units, 0 means pointing right (x+) and positively rotates
+    clockwise. A full angle has RCL_UNITS_PER_SQUARE RCL_Units.
+
+  author: Miloslav "drummyfish" Ciz
+  license: CC0
+  version: 0.1
 */
 
 #include <stdint.h>
 
-#ifndef RAYCAST_TINY /** Turns on super efficient version of this library. Only
-                         use if neccesarry, looks ugly. */
-  #define UNITS_PER_SQUARE 1024 ///< N. of Units in a side of a spatial square.
-  typedef int32_t Unit; /**< Smaller spatial unit, there is UNITS_PER_SQUARE
-                             units in a square's length. This effectively
-                             serves the purpose of a fixed-point arithmetic. */
-  #define UNIT_INFINITY 5000000;
+#ifndef RCL_RAYCAST_TINY /** Turns on super efficient version of this library.
+                             Only use if neccesarry, looks ugly. Also not done
+                             yet. */
+  #define RCL_UNITS_PER_SQUARE 1024 /**< Number of RCL_Units in a side of a
+                                         spatial square. */
+  typedef int32_t RCL_Unit; /**< Smallest spatial unit, there is
+                                 RCL_UNITS_PER_SQUARE units in a square's
+                                 length. This effectively serves the purpose of
+                                 a fixed-point arithmetic. */
+  #define RCL_INFINITY 5000000;
 #else
-  #define UNITS_PER_SQUARE 32
-  typedef int16_t Unit;
-  #define UNIT_INFINITY 32000;
-  #define USE_DIST_APPROX 2
+  #define RCL_UNITS_PER_SQUARE 32
+  typedef int16_t RCL_Unit;
+  #define RCL_INFINITY 32000;
+  #define RCL_USE_DIST_APPROX 2
 #endif
 
-#ifndef COMPUTE_WALL_TEXCOORDS
-#define COMPUTE_WALL_TEXCOORDS 1
+#ifndef RCL_COMPUTE_WALL_TEXCOORDS
+#define RCL_COMPUTE_WALL_TEXCOORDS 1
 #endif
 
-#ifndef USE_COS_LUT
-#define USE_COS_LUT 0 /**< type of look up table for cos function:
+#ifndef RCL_USE_COS_LUT
+#define RCL_USE_COS_LUT 0 /**< type of look up table for cos function:
                            0: none (compute)
                            1: 64 items
                            2: 128 items */
 #endif
 
-#ifndef USE_DIST_APPROX
-#define USE_DIST_APPROX 0 /**< What distance approximation to use:
+#ifndef RCL_USE_DIST_APPROX
+#define RCL_USE_DIST_APPROX 0 /**< What distance approximation to use:
                             0: none (compute full Euclidean distance)
                             1: accurate approximation
                             2: octagonal approximation (LQ) */
 #endif
 
-#ifndef ROLL_TEXTURE_COORDS
-#define ROLL_TEXTURE_COORDS 1 /**< Says whether rolling doors should also roll
-                                   the texture coordinates along (mostly
+#ifndef RCL_ROLL_TEXTURE_COORDS
+#define RCL_ROLL_TEXTURE_COORDS 1 /**< Says whether rolling doors should also
+                                   roll the texture coordinates along (mostly
                                    desired for doors). */
 #endif
 
-#ifndef VERTICAL_FOV
-#define VERTICAL_FOV (UNITS_PER_SQUARE / 2)
+#ifndef RCL_VERTICAL_FOV
+#define RCL_VERTICAL_FOV (RCL_UNITS_PER_SQUARE / 2)
 #endif
 
-#ifndef HORIZONTAL_FOV
-#define HORIZONTAL_FOV (UNITS_PER_SQUARE / 4)
+#ifndef RCL_HORIZONTAL_FOV
+#define RCL_HORIZONTAL_FOV (RCL_UNITS_PER_SQUARE / 4)
 #endif
 
-#define HORIZONTAL_FOV_HALF (HORIZONTAL_FOV / 2)
+#define RCL_HORIZONTAL_FOV_HALF (RCL_HORIZONTAL_FOV / 2)
 
-#ifndef CAMERA_COLL_RADIUS
-#define CAMERA_COLL_RADIUS UNITS_PER_SQUARE / 4
+#ifndef RCL_CAMERA_COLL_RADIUS
+#define RCL_CAMERA_COLL_RADIUS RCL_UNITS_PER_SQUARE / 4
 #endif
 
-#ifndef CAMERA_COLL_HEIGHT_BELOW
-#define CAMERA_COLL_HEIGHT_BELOW UNITS_PER_SQUARE
+#ifndef RCL_CAMERA_COLL_HEIGHT_BELOW
+#define RCL_CAMERA_COLL_HEIGHT_BELOW RCL_UNITS_PER_SQUARE
 #endif 
 
-#ifndef CAMERA_COLL_HEIGHT_ABOVE
-#define CAMERA_COLL_HEIGHT_ABOVE (UNITS_PER_SQUARE / 3)
+#ifndef RCL_CAMERA_COLL_HEIGHT_ABOVE
+#define RCL_CAMERA_COLL_HEIGHT_ABOVE (RCL_UNITS_PER_SQUARE / 3)
 #endif
 
-#ifndef CAMERA_COLL_STEP_HEIGHT
-#define CAMERA_COLL_STEP_HEIGHT (UNITS_PER_SQUARE / 2)
+#ifndef RCL_CAMERA_COLL_STEP_HEIGHT
+#define RCL_CAMERA_COLL_STEP_HEIGHT (RCL_UNITS_PER_SQUARE / 2)
 #endif
 
-#ifndef MIN_TEXTURE_STEP
-#define MIN_TEXTURE_STEP 12 /**< Specifies the minimum step in pixels that can
-                                 be used to compute texture coordinates in a
-                                 fast way. Smallet step will trigger a more
+#ifndef RCL_MIN_TEXTURE_STEP
+#define RCL_MIN_TEXTURE_STEP 12 /**< Specifies the minimum step in pixels that
+                                 can be used to compute texture coordinates in
+                                 a fast way. Smallet step will trigger a more
                                  expensive way of computing texture coords. */
 #endif
 
-#define logVector2D(v)\
+#define RCL_logV2D(v)\
   printf("[%d,%d]\n",v.x,v.y);
 
-#define logRay(r){\
+#define RCL_logRay(r){\
   printf("ray:\n");\
   printf("  start: ");\
-  logVector2D(r.start);\
+  RCL_logV2D(r.start);\
   printf("  dir: ");\
-  logVector2D(r.direction);}\
+  RCL_logV2D(r.direction);}\
 
-#define logHitResult(h){\
+#define RCL_logHitResult(h){\
   printf("hit:\n");\
   printf("  sqaure: ");\
-  logVector2D(h.square);\
+  RCL_logV2D(h.square);\
   printf("  pos: ");\
-  logVector2D(h.position);\
+  RCL_logV2D(h.position);\
   printf("  dist: %d\n", h.distance);\
   printf("  texcoord: %d\n", h.textureCoord);}\
 
-#define logPixelInfo(p){\
+#define RCL_logPixelInfo(p){\
   printf("pixel:\n");\
   printf("  position: ");\
-  logVector2D(p.position);\
+  RCL_logV2D(p.position);\
   printf("  depth: %d\n", p.depth);\
   printf("  wall: %d\n", p.isWall);\
   printf("  hit: ");\
-  logHitResult(p.hit);\
+  RCL_logHitResult(p.hit);\
   }\
 
 /// Position in 2D space.
 typedef struct
 {
-  Unit x;
-  Unit y;
-} Vector2D;
+  RCL_Unit x;
+  RCL_Unit y;
+} RCL_Vector2D;
 
 typedef struct
 {
-  Vector2D start;
-  Vector2D direction;
-} Ray;
+  RCL_Vector2D start;
+  RCL_Vector2D direction;
+} RCL_Ray;
 
 typedef struct
 {
-  Unit     distance;     /**< Euclidean distance to the hit position, or -1 if
-                              no collision happened. */
-  uint8_t  direction;    ///< Direction of hit.
-  Unit     textureCoord; ///< Normalized (0 to UNITS_PER_SQUARE - 1) tex coord.
-  Vector2D square;       ///< Collided square coordinates.
-  Vector2D position;     ///< Exact collision position in Units.
-  Unit     arrayValue;   /**  Value returned by array function (most often this
-                              will be the floor height). */
-  Unit     type;         /**< Integer identifying type of square (number
-                              returned by type function, e.g. texture index).*/
-  Unit     doorRoll;     ///< Holds value of door roll.
-} HitResult;
+  RCL_Unit     distance; /**< Euclidean distance to the hit position, or -1
+                              if no collision happened. */
+  uint8_t      direction;    ///< Direction of hit.
+  RCL_Unit     textureCoord; /**< Normalized (0 to RCL_UNITS_PER_SQUARE - 1)
+                                  texture coordinate (horizontal). */
+  RCL_Vector2D square;       ///< Collided square coordinates.
+  RCL_Vector2D position;     ///< Exact collision position in RCL_Units.
+  RCL_Unit     arrayValue;   /**  Value returned by array function (most often
+                                  this will be the floor height). */
+  RCL_Unit     type;         /**< Integer identifying type of square (number
+                                  returned by type function, e.g. texture
+                                  index).*/
+  RCL_Unit     doorRoll;     ///< Holds value of door roll.
+} RCL_HitResult;
 
 typedef struct
 {
-  Vector2D position;
-  Unit direction;
-  Vector2D resolution;
-  int16_t shear; /* Shear offset in pixels (0 => no shear), can simulate
-                    looking up/down. */
-  Unit height;
-} Camera;
+  RCL_Vector2D position;
+  RCL_Unit     direction;
+  RCL_Vector2D resolution;
+  int16_t      shear; /**< Shear offset in pixels (0 => no shear), can simulate
+                           looking up/down. */
+  RCL_Unit     height;
+} RCL_Camera;
 
 /**
   Holds an information about a single rendered pixel (for a pixel function
@@ -171,23 +177,23 @@ typedef struct
 */
 typedef struct
 {
-  Vector2D position;  ///< On-screen position.
-  int8_t isWall;      ///< Whether the pixel is a wall or a floor/ceiling.
-  int8_t isFloor;     ///< Whether the pixel is floor or ceiling.
-  int8_t isHorizon;   ///< Whether the pixel is floor going towards horizon.
-  Unit depth;         ///< Corrected depth.
-  HitResult hit;      ///< Corresponding ray hit.
-  Vector2D texCoords; /**< Normalized (0 to UNITS_PER_SQUARE - 1) texture
-                           coordinates. */
-} PixelInfo;
+  RCL_Vector2D  position;  ///< On-screen position.
+  int8_t        isWall;    ///< Whether the pixel is a wall or a floor/ceiling.
+  int8_t        isFloor;   ///< Whether the pixel is floor or ceiling.
+  int8_t        isHorizon; ///< If the pixel belongs to horizon segment.
+  RCL_Unit      depth;     ///< Corrected depth.
+  RCL_HitResult hit;       ///< Corresponding ray hit.
+  RCL_Vector2D  texCoords; /**< Normalized (0 to RCL_UNITS_PER_SQUARE - 1)
+                                texture coordinates. */
+} RCL_PixelInfo;
 
-void PIXEL_FUNCTION (PixelInfo *p);
+void RCL_PIXEL_FUNCTION (RCL_PixelInfo *pixel);
 
 typedef struct
 {
   uint16_t maxHits;
   uint16_t maxSteps;
-} RayConstraints;
+} RCL_RayConstraints;
 
 /**
   Function used to retrieve some information about cells of the rendered scene.
@@ -198,7 +204,7 @@ typedef struct
   This function should be as fast as possible as it will typically be called
   very often.
 */ 
-typedef Unit (*ArrayFunction)(int16_t x, int16_t y);
+typedef RCL_Unit (*RCL_ArrayFunction)(int16_t x, int16_t y);
 
 /**
   Function that renders a single pixel at the display. It is handed an info
@@ -207,21 +213,23 @@ typedef Unit (*ArrayFunction)(int16_t x, int16_t y);
   This function should be as fast as possible as it will typically be called
   very often.
 */
-typedef void (*PixelFunction)(PixelInfo *info);
+typedef void (*RCL_PixelFunction)(RCL_PixelInfo *info);
 
 typedef void
-  (*ColumnFunction)(HitResult *hits, uint16_t hitCount, uint16_t x, Ray ray);
+  (*RCL_ColumnFunction)(RCL_HitResult *hits, uint16_t hitCount, uint16_t x,
+   RCL_Ray ray);
 
 /**
   Simple-interface function to cast a single ray.
   @return          The first collision result.
 */
-HitResult castRay(Ray ray, ArrayFunction arrayFunc);
+RCL_HitResult RCL_castRay(RCL_Ray ray, RCL_ArrayFunction arrayFunc);
 
 /**
   Maps a single point in the world to the screen (2D position + depth).
 */
-PixelInfo mapToScreen(Vector2D worldPosition, Unit height, Camera camera);
+RCL_PixelInfo RCL_mapToScreen(RCL_Vector2D worldPosition, RCL_Unit height,
+  RCL_Camera camera);
 
 /**
   Casts a single ray and returns a list of collisions.
@@ -241,49 +249,52 @@ PixelInfo mapToScreen(Vector2D worldPosition, Unit height, Camera camera);
          returned
   @param constraints specifies constraints for the ray cast
 */
-void castRayMultiHit(Ray ray, ArrayFunction arrayFunc, ArrayFunction typeFunc, 
-  HitResult *hitResults, uint16_t *hitResultsLen, RayConstraints constraints);
+void RCL_castRayMultiHit(RCL_Ray ray, RCL_ArrayFunction arrayFunc,
+  RCL_ArrayFunction typeFunc, RCL_HitResult *hitResults,
+  uint16_t *hitResultsLen, RCL_RayConstraints constraints);
 
-Vector2D angleToDirection(Unit angle);
+RCL_Vector2D RCL_angleToDirection(RCL_Unit angle);
 
 /**
 Cos function.
 
-@param input to cos in Units (UNITS_PER_SQUARE = 2 * pi = 360 degrees)
-@return normalized output in Units (from -UNITS_PER_SQUARE to UNITS_PER_SQUARE)
+@param  input to cos in RCL_Units (RCL_UNITS_PER_SQUARE = 2 * pi = 360 degrees)
+@return RCL_normalized output in RCL_Units (from -RCL_UNITS_PER_SQUARE to
+        RCL_UNITS_PER_SQUARE)
 */
-Unit cosInt(Unit input);
+RCL_Unit RCL_cosInt(RCL_Unit input);
 
-Unit sinInt(Unit input);
+RCL_Unit RCL_sinInt(RCL_Unit input);
 
-/// Normalizes given vector to have UNITS_PER_SQUARE length.
-Vector2D normalize(Vector2D v);
+/// Normalizes given vector to have RCL_UNITS_PER_SQUARE length.
+RCL_Vector2D RCL_normalize(RCL_Vector2D v);
 
 /// Computes a cos of an angle between two vectors.
-Unit vectorsAngleCos(Vector2D v1, Vector2D v2);
+RCL_Unit RCL_vectorsAngleCos(RCL_Vector2D v1, RCL_Vector2D v2);
 
-uint16_t sqrtInt(Unit value);
-Unit dist(Vector2D p1, Vector2D p2);
-Unit len(Vector2D v);
+uint16_t RCL_sqrtInt(RCL_Unit value);
+RCL_Unit RCL_dist(RCL_Vector2D p1, RCL_Vector2D p2);
+RCL_Unit RCL_len(RCL_Vector2D v);
 
 /**
-  Converts an angle in whole degrees to an angle in Units that this library
+  Converts an angle in whole degrees to an angle in RCL_Units that this library
   uses.
 */   
-Unit degreesToUnitsAngle(int16_t degrees);
+RCL_Unit RCL_degreesToUnitsAngle(int16_t degrees);
 
 ///< Computes the change in size of an object due to perspective.
-Unit perspectiveScale(Unit originalSize, Unit distance);
+RCL_Unit RCL_perspectiveScale(RCL_Unit originalSize, RCL_Unit distance);
 
-Unit perspectiveScaleInverse(Unit originalSize, Unit scaledSize);
+RCL_Unit RCL_perspectiveScaleInverse(RCL_Unit originalSize,
+  RCL_Unit scaledSize);
 
 /**
   Casts rays for given camera view and for each hit calls a user provided
   function.
 */
-void castRaysMultiHit(Camera cam, ArrayFunction arrayFunc,
-  ArrayFunction typeFunction, ColumnFunction columnFunc,
-  RayConstraints constraints);
+void RCL_castRaysMultiHit(RCL_Camera cam, RCL_ArrayFunction arrayFunc,
+  RCL_ArrayFunction typeFunction, RCL_ColumnFunction columnFunc,
+  RCL_RayConstraints constraints);
 
 /**
   Using provided functions, renders a complete complex camera view.
@@ -301,7 +312,7 @@ void castRaysMultiHit(Camera cam, ArrayFunction arrayFunc,
   - rolling door:           no
 
   @param cam camera whose view to render
-  @param floorHeightFunc function that returns floor height (in Units)
+  @param floorHeightFunc function that returns floor height (in RCL_Units)
   @param ceilingHeightFunc same as floorHeightFunc but for ceiling, can also be
                            0 (no ceiling will be rendered)
   @param typeFunction function that says a type of square (e.g. its texture
@@ -309,16 +320,16 @@ void castRaysMultiHit(Camera cam, ArrayFunction arrayFunc,
   @param pixelFunc callback function to draw a single pixel on screen
   @param constraints constraints for each cast ray
 */
-void render(Camera cam, ArrayFunction floorHeightFunc,
-  ArrayFunction ceilingHeightFunc, ArrayFunction typeFunction,
-  RayConstraints constraints);
+void RCL_render(RCL_Camera cam, RCL_ArrayFunction floorHeightFunc,
+  RCL_ArrayFunction ceilingHeightFunc, RCL_ArrayFunction typeFunction,
+  RCL_RayConstraints constraints);
 
 /**
   Renders given camera view, with help of provided functions. This function is
-  simpler and faster than render(...) and is meant to be rendering scenes
-  with simple 1-intersection raycasting. The render(...) function can give more
-  accurate results than this function, so it's to be considered even for simple
-  scenes.
+  simpler and faster than RCL_render(...) and is meant to be rendering scenes
+  with simple 1-intersection raycasting. The RCL_render(...) function can give
+  more accurate results than this function, so it's to be considered even for
+  simple scenes.
 
   function rendering summary:
   - performance:            faster
@@ -334,14 +345,14 @@ void render(Camera cam, ArrayFunction floorHeightFunc,
 
   This function should render each screen pixel exactly once.
 
-  @param rollFunc function that for given square says its door roll in Units
-         (0 = no roll, UNITS_PER_SQUARE = full roll right, -UNITS_PER_SQUARE =
-         full roll left), can be zero (no rolling door, rendering should also
-         be faster as fewer intersections will be tested)
+  @param rollFunc function that for given square says its door roll in
+         RCL_Units (0 = no roll, RCL_UNITS_PER_SQUARE = full roll right,
+         -RCL_UNITS_PER_SQUARE = full roll left), can be zero (no rolling door,
+         rendering should also be faster as fewer intersections will be tested)
 */
-void renderSimple(Camera cam, ArrayFunction floorHeightFunc,
-  ArrayFunction typeFunc, ArrayFunction rollFunc,
-  RayConstraints constraints);
+void RCL_renderSimple(RCL_Camera cam, RCL_ArrayFunction floorHeightFunc,
+  RCL_ArrayFunction typeFunc, RCL_ArrayFunction rollFunc,
+  RCL_RayConstraints constraints);
 
 /**
   Function that moves given camera and makes it collide with walls and
@@ -361,75 +372,75 @@ void renderSimple(Camera cam, ArrayFunction floorHeightFunc,
   @param force if true, forces to recompute collision even if position doesn't
                change
 */
-void moveCameraWithCollision(Camera *camera, Vector2D planeOffset,
-  Unit heightOffset, ArrayFunction floorHeightFunc,
-  ArrayFunction ceilingHeightFunc, int8_t computeHeight, int8_t force);
+void RCL_moveCameraWithCollision(RCL_Camera *camera, RCL_Vector2D planeOffset,
+  RCL_Unit heightOffset, RCL_ArrayFunction floorHeightFunc,
+  RCL_ArrayFunction ceilingHeightFunc, int8_t computeHeight, int8_t force);
 
-void initCamera(Camera *camera);
-void initRayConstraints(RayConstraints *constraints);
+void RCL_initCamera(RCL_Camera *camera);
+void RCL_initRayConstraints(RCL_RayConstraints *constraints);
 
 //=============================================================================
 // privates
 
 // global helper variables, for precomputing stuff etc.
-Camera _camera;
-Unit _horizontalDepthStep = 0; 
-Unit _startFloorHeight = 0;
-Unit _startCeilHeight = 0;
-Unit _camResYLimit = 0;
-Unit _middleRow = 0;
-ArrayFunction _floorFunction = 0;
-ArrayFunction _ceilFunction = 0;
-Unit _fHorizontalDepthStart = 0;
-Unit _cHorizontalDepthStart = 0;
-int16_t _cameraHeightScreen = 0;
-ArrayFunction _rollFunction = 0; // says door rolling
+RCL_Camera _RCL_camera;
+RCL_Unit _RCL_horizontalDepthStep = 0; 
+RCL_Unit _RCL_startFloorHeight = 0;
+RCL_Unit _RCL_startCeil_Height = 0;
+RCL_Unit _RCL_camResYLimit = 0;
+RCL_Unit _RCL_middleRow = 0;
+RCL_ArrayFunction _RCL_floorFunction = 0;
+RCL_ArrayFunction _RCL_ceilFunction = 0;
+RCL_Unit _RCL_fHorizontalDepthStart = 0;
+RCL_Unit _RCL_cHorizontalDepthStart = 0;
+int16_t _RCL_cameraHeightScreen = 0;
+RCL_ArrayFunction _RCL_rollFunction = 0; // says door rolling
 
 #ifdef RAYCASTLIB_PROFILE
   // function call counters for profiling
-  uint32_t profile_sqrtInt = 0;
-  uint32_t profile_clamp = 0;
-  uint32_t profile_cosInt = 0;
-  uint32_t profile_angleToDirection = 0;
-  uint32_t profile_dist = 0;
-  uint32_t profile_len = 0;
-  uint32_t profile_pointIsLeftOfRay = 0;
-  uint32_t profile_castRaySquare = 0;
-  uint32_t profile_castRayMultiHit = 0; 
-  uint32_t profile_castRay = 0;
-  uint32_t profile_absVal = 0;
-  uint32_t profile_normalize = 0;
-  uint32_t profile_vectorsAngleCos = 0;
-  uint32_t profile_perspectiveScale = 0;
-  uint32_t profile_wrap = 0;
-  uint32_t profile_divRoundDown = 0;
-  #define profileCall(c) profile_##c += 1
+  uint32_t profile_RCL_sqrtInt = 0;
+  uint32_t profile_RCL_clamp = 0;
+  uint32_t profile_RCL_cosInt = 0;
+  uint32_t profile_RCL_angleToDirection = 0;
+  uint32_t profile_RCL_dist = 0;
+  uint32_t profile_RCL_len = 0;
+  uint32_t profile_RCL_pointIsLeftOfRCL_Ray = 0;
+  uint32_t profile_RCL_castRaySquare = 0;
+  uint32_t profile_RCL_castRayMultiHit = 0; 
+  uint32_t profile_RCL_castRay = 0;
+  uint32_t profile_RCL_absVal = 0;
+  uint32_t profile_RCL_normalize = 0;
+  uint32_t profile_RCL_vectorsAngleCos = 0;
+  uint32_t profile_RCL_perspectiveScale = 0;
+  uint32_t profile_RCL_wrap = 0;
+  uint32_t profile_RCL_divRoundDown = 0;
+  #define RCL_profileCall(c) profile_##c += 1
 
   #define printProfile() {\
     printf("profile:\n");\
-    printf("  sqrtInt: %d\n",profile_sqrtInt);\
-    printf("  clamp: %d\n",profile_clamp);\
-    printf("  cosInt: %d\n",profile_cosInt);\
-    printf("  angleToDirection: %d\n",profile_angleToDirection);\
-    printf("  dist: %d\n",profile_dist);\
-    printf("  len: %d\n",profile_len);\
-    printf("  pointIsLeftOfRay: %d\n",profile_pointIsLeftOfRay);\
-    printf("  castRaySquare: %d\n",profile_castRaySquare);\
-    printf("  castRayMultiHit : %d\n",profile_castRayMultiHit);\
-    printf("  castRay: %d\n",profile_castRay);\
-    printf("  normalize: %d\n",profile_normalize);\
-    printf("  vectorsAngleCos: %d\n",profile_vectorsAngleCos);\
-    printf("  absVal: %d\n",profile_absVal);\
-    printf("  perspectiveScale: %d\n",profile_perspectiveScale);\
-    printf("  wrap: %d\n",profile_wrap);\
-    printf("  divRoundDown: %d\n",profile_divRoundDown); }
+    printf("  RCL_sqrtInt: %d\n",profile_RCL_sqrtInt);\
+    printf("  RCL_clamp: %d\n",profile_RCL_clamp);\
+    printf("  RCL_cosInt: %d\n",profile_RCL_cosInt);\
+    printf("  RCL_angleToDirection: %d\n",profile_RCL_angleToDirection);\
+    printf("  RCL_dist: %d\n",profile_RCL_dist);\
+    printf("  RCL_len: %d\n",profile_RCL_len);\
+    printf("  RCL_pointIsLeftOfRCL_Ray: %d\n",profile_RCL_pointIsLeftOfRCL_Ray);\
+    printf("  RCL_castRaySquare: %d\n",profile_RCL_castRaySquare);\
+    printf("  RCL_castRayMultiHit : %d\n",profile_RCL_castRayMultiHit);\
+    printf("  RCL_castRay: %d\n",profile_RCL_castRay);\
+    printf("  RCL_normalize: %d\n",profile_RCL_normalize);\
+    printf("  RCL_vectorsAngleCos: %d\n",profile_RCL_vectorsAngleCos);\
+    printf("  RCL_absVal: %d\n",profile_RCL_absVal);\
+    printf("  RCL_perspectiveScale: %d\n",profile_RCL_perspectiveScale);\
+    printf("  RCL_wrap: %d\n",profile_RCL_wrap);\
+    printf("  RCL_divRoundDown: %d\n",profile_RCL_divRoundDown); }
 #else
-  #define profileCall(c)
+  #define RCL_profileCall(c)
 #endif
 
-Unit clamp(Unit value, Unit valueMin, Unit valueMax)
+RCL_Unit RCL_clamp(RCL_Unit value, RCL_Unit valueMin, RCL_Unit valueMax)
 {
-  profileCall(clamp);
+  RCL_profileCall(RCL_clamp);
 
   if (value >= valueMin)
   {
@@ -442,43 +453,43 @@ Unit clamp(Unit value, Unit valueMin, Unit valueMax)
     return valueMin;
 }
 
-static inline Unit absVal(Unit value)
+static inline RCL_Unit RCL_absVal(RCL_Unit value)
 {
-  profileCall(absVal);
+  RCL_profileCall(RCL_absVal);
 
   return value >= 0 ? value : -1 * value;
 }
 
 /// Like mod, but behaves differently for negative values.
-static inline Unit wrap(Unit value, Unit mod)
+static inline RCL_Unit RCL_wrap(RCL_Unit value, RCL_Unit mod)
 {
-  profileCall(wrap);
+  RCL_profileCall(RCL_wrap);
 
   return value >= 0 ? (value % mod) : (mod + (value % mod) - 1);
 }
 
 /// Performs division, rounding down, NOT towards zero.
-static inline Unit divRoundDown(Unit value, Unit divisor)
+static inline RCL_Unit RCL_divRoundDown(RCL_Unit value, RCL_Unit divisor)
 {
-  profileCall(divRoundDown);
+  RCL_profileCall(RCL_divRoundDown);
 
   return value / divisor - ((value >= 0) ? 0 : 1);
 }
 
 // Bhaskara's cosine approximation formula
-#define trigHelper(x) (((Unit) UNITS_PER_SQUARE) *\
-  (UNITS_PER_SQUARE / 2 * UNITS_PER_SQUARE / 2 - 4 * (x) * (x)) /\
-  (UNITS_PER_SQUARE / 2 * UNITS_PER_SQUARE / 2 + (x) * (x)))
+#define trigHelper(x) (((RCL_Unit) RCL_UNITS_PER_SQUARE) *\
+  (RCL_UNITS_PER_SQUARE / 2 * RCL_UNITS_PER_SQUARE / 2 - 4 * (x) * (x)) /\
+  (RCL_UNITS_PER_SQUARE / 2 * RCL_UNITS_PER_SQUARE / 2 + (x) * (x)))
 
-#if USE_COS_LUT == 1
+#if RCL_USE_COS_LUT == 1
 
-  #ifdef RAYCAST_TINY
-  const Unit cosLUT[64] =
+  #ifdef RCL_RAYCAST_TINY
+  const RCL_Unit cosLUT[64] =
   {
     16,14,11,6,0,-6,-11,-14,-15,-14,-11,-6,0,6,11,14
   };
   #else
-  const Unit cosLUT[64] =
+  const RCL_Unit cosLUT[64] =
   {
     1024,1019,1004,979,946,903,851,791,724,649,568,482,391,297,199,100,0,-100,
     -199,-297,-391,-482,-568,-649,-724,-791,-851,-903,-946,-979,-1004,-1019,
@@ -487,8 +498,8 @@ static inline Unit divRoundDown(Unit value, Unit divisor)
   };
   #endif
 
-#elif USE_COS_LUT == 2
-const Unit cosLUT[128] =
+#elif RCL_USE_COS_LUT == 2
+const RCL_Unit cosLUT[128] =
 {
   1024,1022,1019,1012,1004,993,979,964,946,925,903,878,851,822,791,758,724,
   687,649,609,568,526,482,437,391,344,297,248,199,150,100,50,0,-50,-100,-150,
@@ -501,60 +512,60 @@ const Unit cosLUT[128] =
 };
 #endif
 
-Unit cosInt(Unit input)
+RCL_Unit RCL_cosInt(RCL_Unit input)
 {
-  profileCall(cosInt);
+  RCL_profileCall(RCL_cosInt);
 
   // TODO: could be optimized with LUT
 
-  input = wrap(input,UNITS_PER_SQUARE);
+  input = RCL_wrap(input,RCL_UNITS_PER_SQUARE);
 
-#if USE_COS_LUT == 1
+#if RCL_USE_COS_LUT == 1
 
-  #ifdef RAYCAST_TINY
+  #ifdef RCL_RAYCAST_TINY
     return cosLUT[input];
   #else
     return cosLUT[input / 16];
   #endif
 
-#elif USE_COS_LUT == 2
+#elif RCL_USE_COS_LUT == 2
   return cosLUT[input / 8];
 #else
-  if (input < UNITS_PER_SQUARE / 4)
+  if (input < RCL_UNITS_PER_SQUARE / 4)
     return trigHelper(input);
-  else if (input < UNITS_PER_SQUARE / 2)
-    return -1 * trigHelper(UNITS_PER_SQUARE / 2 - input);
-  else if (input < 3 * UNITS_PER_SQUARE / 4)
-    return -1 * trigHelper(input - UNITS_PER_SQUARE / 2);
+  else if (input < RCL_UNITS_PER_SQUARE / 2)
+    return -1 * trigHelper(RCL_UNITS_PER_SQUARE / 2 - input);
+  else if (input < 3 * RCL_UNITS_PER_SQUARE / 4)
+    return -1 * trigHelper(input - RCL_UNITS_PER_SQUARE / 2);
   else
-    return trigHelper(UNITS_PER_SQUARE - input);
+    return trigHelper(RCL_UNITS_PER_SQUARE - input);
 #endif
 }
 
 #undef trigHelper
 
-Unit sinInt(Unit input)
+RCL_Unit RCL_sinInt(RCL_Unit input)
 {
-  return cosInt(input - UNITS_PER_SQUARE / 4);
+  return RCL_cosInt(input - RCL_UNITS_PER_SQUARE / 4);
 }
 
-Vector2D angleToDirection(Unit angle)
+RCL_Vector2D RCL_angleToDirection(RCL_Unit angle)
 {
-  profileCall(angleToDirection);
+  RCL_profileCall(RCL_angleToDirection);
 
-  Vector2D result;
+  RCL_Vector2D result;
 
-  result.x = cosInt(angle);
-  result.y = -1 * sinInt(angle);
+  result.x = RCL_cosInt(angle);
+  result.y = -1 * RCL_sinInt(angle);
 
   return result;
 }
 
-uint16_t sqrtInt(Unit value)
+uint16_t RCL_sqrtInt(RCL_Unit value)
 {
-  profileCall(sqrtInt);
+  RCL_profileCall(RCL_sqrtInt);
 
-#ifdef RAYCAST_TINY
+#ifdef RCL_RAYCAST_TINY
   uint16_t result = 0;
   uint16_t a = value;
   uint16_t b = 1u << 14;
@@ -582,24 +593,24 @@ uint16_t sqrtInt(Unit value)
   return result;
 }
 
-Unit dist(Vector2D p1, Vector2D p2)
+RCL_Unit RCL_dist(RCL_Vector2D p1, RCL_Vector2D p2)
 {
-  profileCall(dist);
+  RCL_profileCall(RCL_dist);
 
-  Unit dx = p2.x - p1.x;
-  Unit dy = p2.y - p1.y;
+  RCL_Unit dx = p2.x - p1.x;
+  RCL_Unit dy = p2.y - p1.y;
 
-#if USE_DIST_APPROX == 2
+#if RCL_USE_DIST_APPROX == 2
   // octagonal approximation
 
-  dx = absVal(dx);
-  dy = absVal(dy);
+  dx = RCL_absVal(dx);
+  dy = RCL_absVal(dy);
 
   return dy > dx ? dx / 2 + dy : dy / 2 + dx;
-#elif USE_DIST_APPROX == 1
+#elif RCL_USE_DIST_APPROX == 1
   // more accurate approximation
 
-  Unit a, b, result;
+  RCL_Unit a, b, result;
 
   dx = dx < 0 ? -1 * dx : dx;
   dy = dy < 0 ? -1 * dy : dy;
@@ -621,32 +632,31 @@ Unit dist(Vector2D p1, Vector2D p2)
     result -= (5 * a) / 128;
 
   return result;
-
 #else
   dx = dx * dx;
   dy = dy * dy;
 
-  return sqrtInt((Unit) (dx + dy));
+  return RCL_sqrtInt((RCL_Unit) (dx + dy));
 #endif
 }
 
-Unit len(Vector2D v)
+RCL_Unit RCL_len(RCL_Vector2D v)
 {
-  profileCall(len);
+  RCL_profileCall(RCL_len);
 
-  Vector2D zero;
+  RCL_Vector2D zero;
   zero.x = 0;
   zero.y = 0;
 
-  return dist(zero,v);
+  return RCL_dist(zero,v);
 }
 
-static inline int8_t pointIsLeftOfRay(Vector2D point, Ray ray)
+static inline int8_t RCL_pointIsLeftOfRCL_Ray(RCL_Vector2D point, RCL_Ray ray)
 {
-  profileCall(pointIsLeftOfRay);
+  RCL_profileCall(RCL_pointIsLeftOfRCL_Ray);
 
-  Unit dX    = point.x - ray.start.x;
-  Unit dY    = point.y - ray.start.y;
+  RCL_Unit dX    = point.x - ray.start.x;
+  RCL_Unit dY    = point.y - ray.start.y;
   return (ray.direction.x * dY - ray.direction.y * dX) > 0;
          // ^ Z component of cross-product
 }
@@ -654,14 +664,15 @@ static inline int8_t pointIsLeftOfRay(Vector2D point, Ray ray)
 /**
   Casts a ray within a single square, to collide with the square borders.  
 */
-void castRaySquare(Ray *localRay, Vector2D *nextCellOff, Vector2D *collOff)
+void RCL_castRaySquare(RCL_Ray *localRay, RCL_Vector2D *nextCellOff,
+  RCL_Vector2D *collOff)
 {
-  profileCall(castRaySquare);
+  RCL_profileCall(RCL_castRaySquare);
 
   nextCellOff->x = 0;
   nextCellOff->y = 0;
 
-  Ray criticalLine;
+  RCL_Ray criticalLine;
   criticalLine.start = localRay->start;
   criticalLine.direction = localRay->direction;
 
@@ -670,24 +681,24 @@ void castRaySquare(Ray *localRay, Vector2D *nextCellOff, Vector2D *collOff)
       nextCellOff->c1 = n;\
       collOff->c1 = criticalLine.start.c1 - localRay->start.c1;\
       collOff->c2 = \
-        (((Unit) collOff->c1) * localRay->direction.c2) /\
+        (((RCL_Unit) collOff->c1) * localRay->direction.c2) /\
         ((localRay->direction.c1 == 0) ? 1 : localRay->direction.c1);\
     }
 
   #define helper2(n1,n2,c)\
-    if (pointIsLeftOfRay(localRay->start,criticalLine) == c)\
+    if (RCL_pointIsLeftOfRCL_Ray(localRay->start,criticalLine) == c)\
       helper(y,x,n1)\
     else\
       helper(x,y,n2)
       
   if (localRay->direction.x > 0)
   {
-    criticalLine.start.x = UNITS_PER_SQUARE - 1;
+    criticalLine.start.x = RCL_UNITS_PER_SQUARE - 1;
 
     if (localRay->direction.y > 0)
     {
       // top right
-      criticalLine.start.y = UNITS_PER_SQUARE - 1;
+      criticalLine.start.y = RCL_UNITS_PER_SQUARE - 1;
       helper2(1,1,1)
     }
     else
@@ -704,7 +715,7 @@ void castRaySquare(Ray *localRay, Vector2D *nextCellOff, Vector2D *collOff)
     if (localRay->direction.y > 0)
     {
       // top left
-      criticalLine.start.y = UNITS_PER_SQUARE - 1;
+      criticalLine.start.y = RCL_UNITS_PER_SQUARE - 1;
       helper2(1,-1,0)
     }
     else
@@ -722,45 +733,46 @@ void castRaySquare(Ray *localRay, Vector2D *nextCellOff, Vector2D *collOff)
   collOff->y += nextCellOff->y;
 }
 
-void castRayMultiHit(Ray ray, ArrayFunction arrayFunc, ArrayFunction typeFunc, 
-  HitResult *hitResults, uint16_t *hitResultsLen, RayConstraints constraints)
+void RCL_castRayMultiHit(RCL_Ray ray, RCL_ArrayFunction arrayFunc,
+  RCL_ArrayFunction typeFunc, RCL_HitResult *hitResults,
+  uint16_t *hitResultsLen, RCL_RayConstraints constraints)
 {
-  profileCall(castRayMultiHit);
+  RCL_profileCall(RCL_castRayMultiHit);
 
-  Vector2D initialPos = ray.start;
-  Vector2D currentPos = ray.start;
+  RCL_Vector2D initialPos = ray.start;
+  RCL_Vector2D currentPos = ray.start;
 
-  Vector2D currentSquare;
+  RCL_Vector2D currentSquare;
 
-  currentSquare.x = divRoundDown(ray.start.x, UNITS_PER_SQUARE);
-  currentSquare.y = divRoundDown(ray.start.y,UNITS_PER_SQUARE);
+  currentSquare.x = RCL_divRoundDown(ray.start.x, RCL_UNITS_PER_SQUARE);
+  currentSquare.y = RCL_divRoundDown(ray.start.y,RCL_UNITS_PER_SQUARE);
 
   *hitResultsLen = 0;
 
-  Unit squareType = arrayFunc(currentSquare.x,currentSquare.y);
+  RCL_Unit squareType = arrayFunc(currentSquare.x,currentSquare.y);
 
-  Vector2D no, co; // next cell offset, collision offset
+  RCL_Vector2D no, co; // next cell offset, collision offset
 
-  no.x = 0;        // just to supress a warning
+  no.x = 0;            // just to supress a warning
   no.y = 0;
   co.x = 0;
   co.y = 0;
 
   for (uint16_t i = 0; i < constraints.maxSteps; ++i)
   {
-    Unit currentType = arrayFunc(currentSquare.x,currentSquare.y);
+    RCL_Unit currentType = arrayFunc(currentSquare.x,currentSquare.y);
 
     if (currentType != squareType)
     {
       // collision
 
-      HitResult h;
+      RCL_HitResult h;
 
       h.arrayValue = currentType;
       h.doorRoll = 0;
       h.position = currentPos;
       h.square   = currentSquare;
-      h.distance = dist(initialPos,currentPos);
+      h.distance = RCL_dist(initialPos,currentPos);
 
       if (typeFunc != 0)
         h.type = typeFunc(currentSquare.x,currentSquare.y);
@@ -768,37 +780,37 @@ void castRayMultiHit(Ray ray, ArrayFunction arrayFunc, ArrayFunction typeFunc,
       if (no.y > 0)
       {
         h.direction = 0;
-#if COMPUTE_WALL_TEXCOORDS == 1
-        h.textureCoord = wrap(currentPos.x,UNITS_PER_SQUARE);
+#if RCL_COMPUTE_WALL_TEXCOORDS == 1
+        h.textureCoord = RCL_wrap(currentPos.x,RCL_UNITS_PER_SQUARE);
 #endif
       }
       else if (no.x > 0)
       {
         h.direction = 1;
-#if COMPUTE_WALL_TEXCOORDS == 1
+#if RCL_COMPUTE_WALL_TEXCOORDS == 1
         h.textureCoord =
-          wrap(UNITS_PER_SQUARE - currentPos.y,UNITS_PER_SQUARE);
+          RCL_wrap(RCL_UNITS_PER_SQUARE - currentPos.y,RCL_UNITS_PER_SQUARE);
 #endif
       }
       else if (no.y < 0)
       {
         h.direction = 2;
-#if COMPUTE_WALL_TEXCOORDS == 1
+#if RCL_COMPUTE_WALL_TEXCOORDS == 1
         h.textureCoord =
-          wrap(UNITS_PER_SQUARE - currentPos.x,UNITS_PER_SQUARE);
+          RCL_wrap(RCL_UNITS_PER_SQUARE - currentPos.x,RCL_UNITS_PER_SQUARE);
 #endif
       }
       else
       {
         h.direction = 3;
-#if COMPUTE_WALL_TEXCOORDS == 1
-        h.textureCoord = wrap(currentPos.y,UNITS_PER_SQUARE);
+#if RCL_COMPUTE_WALL_TEXCOORDS == 1
+        h.textureCoord = RCL_wrap(currentPos.y,RCL_UNITS_PER_SQUARE);
 #endif
       }
 
-#if COMPUTE_WALL_TEXCOORDS == 1
-      if (_rollFunction != 0)
-        h.doorRoll = _rollFunction(currentSquare.x,currentSquare.y);
+#if RCL_COMPUTE_WALL_TEXCOORDS == 1
+      if (_RCL_rollFunction != 0)
+        h.doorRoll = _RCL_rollFunction(currentSquare.x,currentSquare.y);
 #endif
 
       hitResults[*hitResultsLen] = h;
@@ -811,10 +823,10 @@ void castRayMultiHit(Ray ray, ArrayFunction arrayFunc, ArrayFunction typeFunc,
         break;
     }
 
-    ray.start.x = wrap(currentPos.x,UNITS_PER_SQUARE);
-    ray.start.y = wrap(currentPos.y,UNITS_PER_SQUARE);
+    ray.start.x = RCL_wrap(currentPos.x,RCL_UNITS_PER_SQUARE);
+    ray.start.y = RCL_wrap(currentPos.y,RCL_UNITS_PER_SQUARE);
 
-    castRaySquare(&ray,&no,&co);
+    RCL_castRaySquare(&ray,&no,&co);
 
     currentSquare.x += no.x;
     currentSquare.y += no.y;
@@ -825,50 +837,53 @@ void castRayMultiHit(Ray ray, ArrayFunction arrayFunc, ArrayFunction typeFunc,
   }
 }
 
-HitResult castRay(Ray ray, ArrayFunction arrayFunc)
+RCL_HitResult RCL_castRay(RCL_Ray ray, RCL_ArrayFunction arrayFunc)
 {
-  profileCall(castRay);
+  RCL_profileCall(RCL_castRay);
 
-  HitResult result;
-  uint16_t len;
-  RayConstraints c;
+  RCL_HitResult result;
+  uint16_t RCL_len;
+  RCL_RayConstraints c;
 
   c.maxSteps = 1000;
   c.maxHits = 1;
 
-  castRayMultiHit(ray,arrayFunc,0,&result,&len,c);
+  RCL_castRayMultiHit(ray,arrayFunc,0,&result,&RCL_len,c);
 
-  if (len == 0)
+  if (RCL_len == 0)
     result.distance = -1;
 
   return result;
 }
 
-void castRaysMultiHit(Camera cam, ArrayFunction arrayFunc,
-  ArrayFunction typeFunction, ColumnFunction columnFunc,
-  RayConstraints constraints)
+void RCL_castRaysMultiHit(RCL_Camera cam, RCL_ArrayFunction arrayFunc,
+  RCL_ArrayFunction typeFunction, RCL_ColumnFunction columnFunc,
+  RCL_RayConstraints constraints)
 {
-  Vector2D dir1 = angleToDirection(cam.direction - HORIZONTAL_FOV_HALF);
-  Vector2D dir2 = angleToDirection(cam.direction + HORIZONTAL_FOV_HALF);
+  RCL_Vector2D dir1 =
+    RCL_angleToDirection(cam.direction - RCL_HORIZONTAL_FOV_HALF);
 
-  Unit dX = dir2.x - dir1.x;
-  Unit dY = dir2.y - dir1.y;
+  RCL_Vector2D dir2 =
+    RCL_angleToDirection(cam.direction + RCL_HORIZONTAL_FOV_HALF);
 
-  HitResult hits[constraints.maxHits];
+  RCL_Unit dX = dir2.x - dir1.x;
+  RCL_Unit dY = dir2.y - dir1.y;
+
+  RCL_HitResult hits[constraints.maxHits];
   uint16_t hitCount;
 
-  Ray r;
+  RCL_Ray r;
   r.start = cam.position;
 
-  Unit currentDX = 0;
-  Unit currentDY = 0;
+  RCL_Unit currentDX = 0;
+  RCL_Unit currentDY = 0;
 
   for (int16_t i = 0; i < cam.resolution.x; ++i)
   {
     r.direction.x = dir1.x + currentDX / cam.resolution.x;
     r.direction.y = dir1.y + currentDY / cam.resolution.x;
 
-    castRayMultiHit(r,arrayFunc,typeFunction,hits,&hitCount,constraints);
+    RCL_castRayMultiHit(r,arrayFunc,typeFunction,hits,&hitCount,constraints);
 
     columnFunc(hits,hitCount,i,r);
 
@@ -880,117 +895,123 @@ void castRaysMultiHit(Camera cam, ArrayFunction arrayFunc,
 /**
   Helper function that determines intersection with both ceiling and floor.
 */
-Unit _floorCeilFunction(int16_t x, int16_t y)
+RCL_Unit _floorCeilFunction(int16_t x, int16_t y)
 {
-  // TODO: adjust also for RAYCAST_TINY
+  // TODO: adjust also for RCL_RAYCAST_TINY
 
-  Unit f = _floorFunction(x,y);
+  RCL_Unit f = _RCL_floorFunction(x,y);
 
-  if (_ceilFunction == 0)
+  if (_RCL_ceilFunction == 0)
     return f;
 
-  Unit c = _ceilFunction(x,y);
+  RCL_Unit c = _RCL_ceilFunction(x,y);
 
-#ifndef RAYCAST_TINY
+#ifndef RCL_RAYCAST_TINY
   return ((f & 0x0000ffff) << 16) | (c & 0x0000ffff);
 #else
   return ((f & 0x00ff) << 8) | (c & 0x00ff);
 #endif
 }
 
-Unit _floorHeightNotZeroFunction(int16_t x, int16_t y)
+RCL_Unit _floorHeightNotZeroFunction(int16_t x, int16_t y)
 {
-  return _floorFunction(x,y) == 0 ? 0 :
+  return _RCL_floorFunction(x,y) == 0 ? 0 :
     (x & 0x00FF) | ((y & 0x00FF) << 8);
     // ^ this makes collisions between all squares - needed for rolling doors
 }
 
-Unit adjustDistance(Unit distance, Camera *camera, Ray *ray)
+RCL_Unit RCL_adjustDistance(RCL_Unit distance, RCL_Camera *camera,
+  RCL_Ray *ray)
 {
   /* FIXME/TODO: The adjusted (=orthogonal, camera-space) distance could
      possibly be computed more efficiently by not computing Euclidean
      distance at all, but rather compute the distance of the collision
      point from the projection plane (line). */
 
-  Unit result =
+  RCL_Unit result =
     (distance *
-     vectorsAngleCos(angleToDirection(camera->direction),ray->direction)) /
-     UNITS_PER_SQUARE;
+     RCL_vectorsAngleCos(RCL_angleToDirection(camera->direction),
+     ray->direction)) / RCL_UNITS_PER_SQUARE;
 
   return result == 0 ? 1 : result;
                 // ^ prevent division by zero
 }
 
-void _columnFunction(HitResult *hits, uint16_t hitCount, uint16_t x, Ray ray)
+void _columnFunction(RCL_HitResult *hits, uint16_t hitCount, uint16_t x,
+  RCL_Ray ray)
 {
   // last written Y position, can never go backwards
-  Unit fPosY = _camera.resolution.y;
-  Unit cPosY = -1;
+  RCL_Unit fPosY = _RCL_camera.resolution.y;
+  RCL_Unit cPosY = -1;
 
   // world coordinates
-  Unit fZ1World = _startFloorHeight;
-  Unit cZ1World = _startCeilHeight;
+  RCL_Unit fZ1World = _RCL_startFloorHeight;
+  RCL_Unit cZ1World = _RCL_startCeil_Height;
 
-  PixelInfo p;
+  RCL_PixelInfo p;
   p.position.x = x;
   p.texCoords.x = 0;
   p.texCoords.y = 0;
 
-  Unit i;
+  RCL_Unit i;
 
   // we'll be simulatenously drawing the floor and the ceiling now  
-  for (Unit j = 0; j <= hitCount; ++j)
+  for (RCL_Unit j = 0; j <= hitCount; ++j)
   {                          // ^ = add extra iteration for horizon plane
     int8_t drawingHorizon = j == hitCount;
 
-    HitResult hit;
-    Unit distance;
+    RCL_HitResult hit;
+    RCL_Unit distance;
 
-    Unit fWallHeight = 0, cWallHeight = 0;
-    Unit fZ2World = 0,    cZ2World = 0;
-    Unit fZ1Screen = 0,   cZ1Screen = 0;
-    Unit fZ2Screen = 0,   cZ2Screen = 0;
+    RCL_Unit fWallHeight = 0, cWallHeight = 0;
+    RCL_Unit fZ2World = 0,    cZ2World = 0;
+    RCL_Unit fZ1Screen = 0,   cZ1Screen = 0;
+    RCL_Unit fZ2Screen = 0,   cZ2Screen = 0;
 
     if (!drawingHorizon)
     {
       hit = hits[j];
-      distance = adjustDistance(hit.distance,&_camera,&ray);
+      distance = RCL_adjustDistance(hit.distance,&_RCL_camera,&ray);
 
-      fWallHeight = _floorFunction(hit.square.x,hit.square.y);
-      fZ2World = fWallHeight - _camera.height;
-      fZ1Screen = _middleRow - perspectiveScale(
-        (fZ1World * _camera.resolution.y) / UNITS_PER_SQUARE,distance);
-      fZ2Screen = _middleRow - perspectiveScale(
-        (fZ2World * _camera.resolution.y) / UNITS_PER_SQUARE,distance);
+      fWallHeight = _RCL_floorFunction(hit.square.x,hit.square.y);
+      fZ2World = fWallHeight - _RCL_camera.height;
+      fZ1Screen = _RCL_middleRow - RCL_perspectiveScale(
+        (fZ1World * _RCL_camera.resolution.y) /
+        RCL_UNITS_PER_SQUARE,distance);
+      fZ2Screen = _RCL_middleRow - RCL_perspectiveScale(
+        (fZ2World * _RCL_camera.resolution.y) /
+        RCL_UNITS_PER_SQUARE,distance);
 
-      if (_ceilFunction != 0)
+      if (_RCL_ceilFunction != 0)
       {
-        cWallHeight = _ceilFunction(hit.square.x,hit.square.y);
-        cZ2World = cWallHeight - _camera.height;
-        cZ1Screen = _middleRow - perspectiveScale(
-          (cZ1World * _camera.resolution.y) / UNITS_PER_SQUARE,distance);
-        cZ2Screen = _middleRow - perspectiveScale(
-          (cZ2World * _camera.resolution.y) / UNITS_PER_SQUARE,distance);
+        cWallHeight = _RCL_ceilFunction(hit.square.x,hit.square.y);
+        cZ2World = cWallHeight - _RCL_camera.height;
+        cZ1Screen = _RCL_middleRow - RCL_perspectiveScale(
+          (cZ1World * _RCL_camera.resolution.y) /
+          RCL_UNITS_PER_SQUARE,distance);
+        cZ2Screen = _RCL_middleRow - RCL_perspectiveScale(
+          (cZ2World * _RCL_camera.resolution.y) /
+          RCL_UNITS_PER_SQUARE,distance);
       }
     }
     else
     {
-      fZ1Screen = _middleRow;
-      cZ1Screen = _middleRow + 1;
+      fZ1Screen = _RCL_middleRow;
+      cZ1Screen = _RCL_middleRow + 1;
     }
 
-    Unit limit;
+    RCL_Unit limit;
 
     #define VERTICAL_DEPTH_MULTIPLY 2
 
     #define drawHorizontal(pref,l1,l2,comp,inc)\
-      p.depth += absVal(pref##Z1World) * VERTICAL_DEPTH_MULTIPLY;\
-      limit = clamp(pref##Z1Screen,l1,l2);\
+      p.depth += RCL_absVal(pref##Z1World) * VERTICAL_DEPTH_MULTIPLY;\
+      limit = RCL_clamp(pref##Z1Screen,l1,l2);\
       for (i = pref##PosY inc 1; i comp##= limit; inc##inc i)\
       {\
         p.position.y = i;\
-        p.depth += _horizontalDepthStep;\
-        PIXEL_FUNCTION(&p);\
+        p.depth += _RCL_horizontalDepthStep;\
+        RCL_PIXEL_FUNCTION(&p);\
       }\
       if (pref##PosY comp limit)\
         pref##PosY = limit;
@@ -1000,15 +1021,16 @@ void _columnFunction(HitResult *hits, uint16_t hitCount, uint16_t x, Ray ray)
 
     // draw floor until wall
     p.isFloor = 1;
-    p.depth = (_fHorizontalDepthStart - fPosY) * _horizontalDepthStep;
-    drawHorizontal(f,cPosY + 1,_camera.resolution.y,>,-)
+    p.depth = (_RCL_fHorizontalDepthStart - fPosY) * _RCL_horizontalDepthStep;
+    drawHorizontal(f,cPosY + 1,_RCL_camera.resolution.y,>,-)
                     // ^ purposfully allow outside screen bounds here
 
-    if (_ceilFunction != 0 || drawingHorizon)
+    if (_RCL_ceilFunction != 0 || drawingHorizon)
     {
       // draw ceiling until wall
       p.isFloor = 0;
-      p.depth = (cPosY - _cHorizontalDepthStart) * _horizontalDepthStep;
+      p.depth = (cPosY - _RCL_cHorizontalDepthStart) *
+        _RCL_horizontalDepthStep;
       drawHorizontal(c,-1,fPosY - 1,<,+)
                     // ^ purposfully allow outside screen bounds here
     }
@@ -1020,38 +1042,40 @@ void _columnFunction(HitResult *hits, uint16_t hitCount, uint16_t x, Ray ray)
     {
       #define drawVertical(pref,l1,l2,comp,inc)\
         {\
-          limit = clamp(pref##Z2Screen,l1,l2);\
-          Unit wallLength = pref##Z2Screen - pref##Z1Screen - 1;\
+          limit = RCL_clamp(pref##Z2Screen,l1,l2);\
+          RCL_Unit wallLength = pref##Z2Screen - pref##Z1Screen - 1;\
           wallLength = wallLength != 0 ? wallLength : 1;\
-          Unit wallPosition = absVal(pref##Z1Screen - pref##PosY) inc (-1);\
-          Unit coordStep = COMPUTE_WALL_TEXCOORDS ? \
-            UNITS_PER_SQUARE / wallLength : 1;\
-          p.texCoords.y = COMPUTE_WALL_TEXCOORDS ?\
+          RCL_Unit wallPosition =\
+            RCL_absVal(pref##Z1Screen - pref##PosY) inc (-1);\
+          RCL_Unit coordStep = RCL_COMPUTE_WALL_TEXCOORDS ? \
+            RCL_UNITS_PER_SQUARE / wallLength : 1;\
+          p.texCoords.y = RCL_COMPUTE_WALL_TEXCOORDS ?\
             wallPosition * coordStep : 0;\
-          if (coordStep < MIN_TEXTURE_STEP) /* two versions of the loop */ \
+          if (coordStep < RCL_MIN_TEXTURE_STEP) /* two-version loop */ \
             for (i = pref##PosY inc 1; i comp##= limit; inc##inc i)\
             { /* more expensive texture coord computing */\
               p.position.y = i;\
               p.hit = hit;\
-              if (COMPUTE_WALL_TEXCOORDS == 1)\
+              if (RCL_COMPUTE_WALL_TEXCOORDS == 1)\
               {\
                 p.texCoords.x = hit.textureCoord;\
-                p.texCoords.y = (wallPosition * UNITS_PER_SQUARE)/wallLength;\
+                p.texCoords.y = (wallPosition * RCL_UNITS_PER_SQUARE)\
+                  / wallLength;\
               }\
               wallPosition++;\
-              PIXEL_FUNCTION(&p);\
+              RCL_PIXEL_FUNCTION(&p);\
             }\
           else\
             for (i = pref##PosY inc 1; i comp##= limit; inc##inc i)\
             { /* cheaper texture coord computing */\
               p.position.y = i;\
               p.hit = hit;\
-              if (COMPUTE_WALL_TEXCOORDS == 1)\
+              if (RCL_COMPUTE_WALL_TEXCOORDS == 1)\
               {\
                 p.texCoords.x = hit.textureCoord;\
                 p.texCoords.y += coordStep;\
               }\
-              PIXEL_FUNCTION(&p);\
+              RCL_PIXEL_FUNCTION(&p);\
             }\
           if (pref##PosY comp limit)\
             pref##PosY = limit;\
@@ -1067,12 +1091,12 @@ void _columnFunction(HitResult *hits, uint16_t hitCount, uint16_t x, Ray ray)
       if (fPosY > 0) // still pixels left?
       {
         p.isFloor = 1;
-        drawVertical(f,cPosY + 1,_camera.resolution.y,>,-)
+        drawVertical(f,cPosY + 1,_RCL_camera.resolution.y,>,-)
       }               // ^ purposfully allow outside screen bounds here
 
       // draw ceiling wall
 
-      if (_ceilFunction != 0 && cPosY < _camResYLimit) // still pixels left?
+      if (_RCL_ceilFunction != 0 && cPosY < _RCL_camResYLimit) // pixels left?
       {
         p.isFloor = 0;
         drawVertical(c,-1,fPosY - 1,<,+)
@@ -1083,28 +1107,28 @@ void _columnFunction(HitResult *hits, uint16_t hitCount, uint16_t x, Ray ray)
   }
 }
 
-void _columnFunctionSimple(HitResult *hits, uint16_t hitCount, uint16_t x,
-  Ray ray)
+void _columnFunctionSimple(RCL_HitResult *hits, uint16_t hitCount, uint16_t x,
+  RCL_Ray ray)
 {
   int16_t y = 0;
   int16_t wallHeightScreen = 0;
   int16_t coordHelper = 0;
-  int16_t wallStart = _middleRow;
-  int16_t wallEnd = _middleRow;
+  int16_t wallStart = _RCL_middleRow;
+  int16_t wallEnd = _RCL_middleRow;
   int16_t heightOffset = 0;
 
-  Unit dist = 1;
+  RCL_Unit RCL_dist = 1;
 
-  PixelInfo p;
+  RCL_PixelInfo p;
   p.position.x = x;
 
   if (hitCount > 0)
   {
-    HitResult hit = hits[0];
+    RCL_HitResult hit = hits[0];
 
     uint8_t goOn = 1;
 
-    if (_rollFunction != 0 && COMPUTE_WALL_TEXCOORDS == 1)
+    if (_RCL_rollFunction != 0 && RCL_COMPUTE_WALL_TEXCOORDS == 1)
     {
       if (hit.arrayValue == 0)
       {
@@ -1121,7 +1145,7 @@ void _columnFunctionSimple(HitResult *hits, uint16_t hitCount, uint16_t x,
 
         int8_t unrolled = hit.doorRoll >= 0 ?
           hit.doorRoll > hit.textureCoord :
-          hit.textureCoord > UNITS_PER_SQUARE + hit.doorRoll;
+          hit.textureCoord > RCL_UNITS_PER_SQUARE + hit.doorRoll;
 
         if (unrolled)
         {
@@ -1151,26 +1175,26 @@ void _columnFunctionSimple(HitResult *hits, uint16_t hitCount, uint16_t x,
 
     if (goOn)
     {
-      dist = adjustDistance(hit.distance,&_camera,&ray);
+      RCL_dist = RCL_adjustDistance(hit.distance,&_RCL_camera,&ray);
 
-      int16_t wallHeightWorld = _floorFunction(hit.square.x,hit.square.y);
+      int16_t wallHeightWorld = _RCL_floorFunction(hit.square.x,hit.square.y);
 
-      wallHeightScreen = perspectiveScale((wallHeightWorld *
-        _camera.resolution.y) / UNITS_PER_SQUARE,dist);
+      wallHeightScreen = RCL_perspectiveScale((wallHeightWorld *
+        _RCL_camera.resolution.y) / RCL_UNITS_PER_SQUARE,RCL_dist);
 
-      int16_t normalizedWallHeight = wallHeightWorld != 0 ?
-        ((UNITS_PER_SQUARE * wallHeightScreen) / wallHeightWorld) : 0;
+      int16_t RCL_normalizedWallHeight = wallHeightWorld != 0 ?
+        ((RCL_UNITS_PER_SQUARE * wallHeightScreen) / wallHeightWorld) : 0;
 
-      heightOffset = perspectiveScale(_cameraHeightScreen,dist);
+      heightOffset = RCL_perspectiveScale(_RCL_cameraHeightScreen,RCL_dist);
 
-      wallStart = _middleRow - wallHeightScreen + heightOffset +
-                  normalizedWallHeight;
+      wallStart = _RCL_middleRow - wallHeightScreen + heightOffset +
+                  RCL_normalizedWallHeight;
 
       coordHelper = -1 * wallStart;
       coordHelper = coordHelper >= 0 ? coordHelper : 0;
 
-      wallEnd = clamp(wallStart + wallHeightScreen,0,_camResYLimit);
-      wallStart = clamp(wallStart,0,_camResYLimit);
+      wallEnd = RCL_clamp(wallStart + wallHeightScreen,0,_RCL_camResYLimit);
+      wallStart = RCL_clamp(wallStart,0,_RCL_camResYLimit);
     }
   }
 
@@ -1184,42 +1208,42 @@ void _columnFunctionSimple(HitResult *hits, uint16_t hitCount, uint16_t x,
   while (y < wallStart)
   {
     p.position.y = y;
-    PIXEL_FUNCTION(&p);
+    RCL_PIXEL_FUNCTION(&p);
     ++y;
-    p.depth += _horizontalDepthStep;
+    p.depth += _RCL_horizontalDepthStep;
   }
 
   // draw wall
 
   p.isWall = 1;
   p.isFloor = 1;
-  p.depth = dist;
+  p.depth = RCL_dist;
 
-#if ROLL_TEXTURE_COORDS == 1 && COMPUTE_WALL_TEXCOORDS == 1 
+#if RCL_ROLL_TEXTURE_COORDS == 1 && RCL_COMPUTE_WALL_TEXCOORDS == 1 
   p.hit.textureCoord -= p.hit.doorRoll;
 #endif
 
-Unit coordStep = 1;
+RCL_Unit coordStep = 1;
 
-#if COMPUTE_WALL_TEXCOORDS == 1
+#if RCL_COMPUTE_WALL_TEXCOORDS == 1
   p.texCoords.x = p.hit.textureCoord;
-  coordStep = UNITS_PER_SQUARE / wallHeightScreen;
+  coordStep = RCL_UNITS_PER_SQUARE / wallHeightScreen;
   p.texCoords.y = coordStep * coordHelper;
 #endif
 
-  if (coordStep < MIN_TEXTURE_STEP) /* instead of branching inside a critical
-                                       loop, have two versions of the loop and
-                                       branch early (here) */
+  if (coordStep < RCL_MIN_TEXTURE_STEP) /* instead of branching inside a
+                                           critical loop, have two versions of
+                                           the loop and branch early (here) */
   {
     while (y < wallEnd)
     {
       // more expensive and accurate version of texture coords computation
 
       p.position.y = y;
-#if COMPUTE_WALL_TEXCOORDS == 1
-      p.texCoords.y = (UNITS_PER_SQUARE * coordHelper) / wallHeightScreen;
+#if RCL_COMPUTE_WALL_TEXCOORDS == 1
+      p.texCoords.y = (RCL_UNITS_PER_SQUARE * coordHelper) / wallHeightScreen;
 #endif
-      PIXEL_FUNCTION(&p);
+      RCL_PIXEL_FUNCTION(&p);
       ++coordHelper;
       ++y;
     }
@@ -1231,8 +1255,8 @@ Unit coordStep = 1;
       // cheaper texture coord computation
 
       p.position.y = y;
-      PIXEL_FUNCTION(&p);
-#if COMPUTE_WALL_TEXCOORDS == 1
+      RCL_PIXEL_FUNCTION(&p);
+#if RCL_COMPUTE_WALL_TEXCOORDS == 1
       p.texCoords.y += coordStep;
 #endif
       ++y;
@@ -1242,160 +1266,158 @@ Unit coordStep = 1;
   // draw floor
 
   p.isWall = 0;
-  p.depth = (_camera.resolution.y - y) * _horizontalDepthStep + 1;
+  p.depth = (_RCL_camera.resolution.y - y) * _RCL_horizontalDepthStep + 1;
 
 /* WIP: floor textures
-Unit dx = p.hit.position.x - _camera.position.x;
-Unit dy = p.hit.position.y - _camera.position.y;
-Unit pixPos = y - _middleRow;
+RCL_Unit dx = p.hit.position.x - _RCL_camera.position.x;
+RCL_Unit dy = p.hit.position.y - _RCL_camera.position.y;
+RCL_Unit pixPos = y - _RCL_middleRow;
 */
 
-  while (y < _camera.resolution.y)
+  while (y < _RCL_camera.resolution.y)
   {
 /* WIP: floor textures
-Unit d = perspectiveScaleInverse(_camera.height,pixPos);
-d = (d * UNITS_PER_SQUARE) /
-vectorsAngleCos(angleToDirection(_camera.direction),ray.direction);
-p.texCoords.x = _camera.position.x + ((d * dx) / p.hit.distance) / 32;
-p.texCoords.y = _camera.position.y + ((d * dy) / p.hit.distance) / 32;
+RCL_Unit d = RCL_perspectiveScaleInverse(_RCL_camera.height,pixPos);
+d = (d * RCL_UNITS_PER_SQUARE) /
+RCL_vectorsAngleCos(RCL_angleToDirection(_RCL_camera.direction),ray.direction);
+p.texCoords.x = _RCL_camera.position.x + ((d * dx) / p.hit.distance) / 32;
+p.texCoords.y = _RCL_camera.position.y + ((d * dy) / p.hit.distance) / 32;
 pixPos++;
 */
-
     p.position.y = y;
-    PIXEL_FUNCTION(&p);
+    RCL_PIXEL_FUNCTION(&p);
     ++y;
-    p.depth -= _horizontalDepthStep;
+    p.depth -= _RCL_horizontalDepthStep;
 
     if (p.depth < 0) // just in case
       p.depth = 0;
   }
 }
 
-void render(Camera cam, ArrayFunction floorHeightFunc,
-  ArrayFunction ceilingHeightFunc, ArrayFunction typeFunction,
-  RayConstraints constraints)
+void RCL_render(RCL_Camera cam, RCL_ArrayFunction floorHeightFunc,
+  RCL_ArrayFunction ceilingHeightFunc, RCL_ArrayFunction typeFunction,
+  RCL_RayConstraints constraints)
 {
-  _floorFunction = floorHeightFunc;
-  _ceilFunction = ceilingHeightFunc;
-  _camera = cam;
-  _camResYLimit = cam.resolution.y - 1;
+  _RCL_floorFunction = floorHeightFunc;
+  _RCL_ceilFunction = ceilingHeightFunc;
+  _RCL_camera = cam;
+  _RCL_camResYLimit = cam.resolution.y - 1;
 
   int16_t halfResY = cam.resolution.y / 2;
 
-  _middleRow = halfResY + cam.shear;
+  _RCL_middleRow = halfResY + cam.shear;
 
-  _fHorizontalDepthStart = _middleRow + halfResY;
-  _cHorizontalDepthStart = _middleRow - halfResY;
+  _RCL_fHorizontalDepthStart = _RCL_middleRow + halfResY;
+  _RCL_cHorizontalDepthStart = _RCL_middleRow - halfResY;
 
-  _startFloorHeight = floorHeightFunc(
-    divRoundDown(cam.position.x,UNITS_PER_SQUARE),
-    divRoundDown(cam.position.y,UNITS_PER_SQUARE)) -1 * cam.height;
+  _RCL_startFloorHeight = floorHeightFunc(
+    RCL_divRoundDown(cam.position.x,RCL_UNITS_PER_SQUARE),
+    RCL_divRoundDown(cam.position.y,RCL_UNITS_PER_SQUARE)) -1 * cam.height;
 
-  _startCeilHeight = 
+  _RCL_startCeil_Height = 
     ceilingHeightFunc != 0 ?
       ceilingHeightFunc(
-        divRoundDown(cam.position.x,UNITS_PER_SQUARE),
-        divRoundDown(cam.position.y,UNITS_PER_SQUARE)) -1 * cam.height
-      : UNIT_INFINITY;
+        RCL_divRoundDown(cam.position.x,RCL_UNITS_PER_SQUARE),
+        RCL_divRoundDown(cam.position.y,RCL_UNITS_PER_SQUARE)) -1 * cam.height
+      : RCL_INFINITY;
 
   // TODO
-  _horizontalDepthStep = (12 * UNITS_PER_SQUARE) / cam.resolution.y; 
+  _RCL_horizontalDepthStep = (12 * RCL_UNITS_PER_SQUARE) / cam.resolution.y; 
 
-  castRaysMultiHit(cam,_floorCeilFunction,typeFunction,
+  RCL_castRaysMultiHit(cam,_floorCeilFunction,typeFunction,
     _columnFunction,constraints);
 }
 
-void renderSimple(Camera cam, ArrayFunction floorHeightFunc,
-  ArrayFunction typeFunc, ArrayFunction rollFunc,
-  RayConstraints constraints)
+void RCL_renderSimple(RCL_Camera cam, RCL_ArrayFunction floorHeightFunc,
+  RCL_ArrayFunction typeFunc, RCL_ArrayFunction rollFunc,
+  RCL_RayConstraints constraints)
 {
-  _floorFunction = floorHeightFunc;
-  _camera = cam;
-  _camResYLimit = cam.resolution.y - 1;
-  _middleRow = cam.resolution.y / 2;
-  _rollFunction = rollFunc;
+  _RCL_floorFunction = floorHeightFunc;
+  _RCL_camera = cam;
+  _RCL_camResYLimit = cam.resolution.y - 1;
+  _RCL_middleRow = cam.resolution.y / 2;
+  _RCL_rollFunction = rollFunc;
 
-  _cameraHeightScreen =
-    (_camera.resolution.y * (_camera.height - UNITS_PER_SQUARE)) /
-    UNITS_PER_SQUARE;
+  _RCL_cameraHeightScreen =
+    (_RCL_camera.resolution.y * (_RCL_camera.height - RCL_UNITS_PER_SQUARE)) /
+    RCL_UNITS_PER_SQUARE;
 
   // TODO
-  _horizontalDepthStep = (12 * UNITS_PER_SQUARE) / cam.resolution.y; 
+  _RCL_horizontalDepthStep = (12 * RCL_UNITS_PER_SQUARE) / cam.resolution.y; 
 
   constraints.maxHits = 
 
-  _rollFunction == 0 ?
+  _RCL_rollFunction == 0 ?
     1 : // no door => 1 hit is enough 
     3;  // for correctly rendering rolling doors we'll need 3 hits (NOT 2)
 
-  castRaysMultiHit(cam,_floorHeightNotZeroFunction,typeFunc,
+  RCL_castRaysMultiHit(cam,_floorHeightNotZeroFunction,typeFunc,
     _columnFunctionSimple, constraints);
 }
 
-Vector2D normalize(Vector2D v)
+RCL_Vector2D RCL_normalize(RCL_Vector2D v)
 {
-  profileCall(normalize);
+  RCL_profileCall(RCL_normalize);
 
-  Vector2D result;
-
-  Unit l = len(v);
-
+  RCL_Vector2D result;
+  RCL_Unit l = RCL_len(v);
   l = l != 0 ? l : 1;
 
-  result.x = (v.x * UNITS_PER_SQUARE) / l;
-  result.y = (v.y * UNITS_PER_SQUARE) / l;
+  result.x = (v.x * RCL_UNITS_PER_SQUARE) / l;
+  result.y = (v.y * RCL_UNITS_PER_SQUARE) / l;
 
   return result;
 }
 
-Unit vectorsAngleCos(Vector2D v1, Vector2D v2)
+RCL_Unit RCL_vectorsAngleCos(RCL_Vector2D v1, RCL_Vector2D v2)
 {
-  profileCall(vectorsAngleCos);
+  RCL_profileCall(RCL_vectorsAngleCos);
 
-  v1 = normalize(v1);
-  v2 = normalize(v2);
+  v1 = RCL_normalize(v1);
+  v2 = RCL_normalize(v2);
 
-  return (v1.x * v2.x + v1.y * v2.y) / UNITS_PER_SQUARE;
+  return (v1.x * v2.x + v1.y * v2.y) / RCL_UNITS_PER_SQUARE;
 }
 
-PixelInfo mapToScreen(Vector2D worldPosition, Unit height, Camera camera)
+RCL_PixelInfo RCL_mapToScreen(RCL_Vector2D worldPosition, RCL_Unit height,
+  RCL_Camera camera)
 {
   // TODO: precompute some stuff that's constant in the frame
 
-  PixelInfo result;
+  RCL_PixelInfo result;
 
-  Unit d = dist(worldPosition,camera.position);
+  RCL_Unit d = RCL_dist(worldPosition,camera.position);
 
-  Vector2D toPoint;
+  RCL_Vector2D toPoint;
 
   toPoint.x = worldPosition.x - camera.position.x;
   toPoint.y = worldPosition.y - camera.position.y;
 
-  Vector2D cameraDir = angleToDirection(camera.direction);
+  RCL_Vector2D cameraDir = RCL_angleToDirection(camera.direction);
 
   result.depth = // adjusted distance
-    (d * vectorsAngleCos(cameraDir,toPoint)) / UNITS_PER_SQUARE;
+    (d * RCL_vectorsAngleCos(cameraDir,toPoint)) / RCL_UNITS_PER_SQUARE;
 
   result.position.y = camera.resolution.y / 2 -
     (camera.resolution.y *
-     perspectiveScale(height - camera.height,result.depth)) / UNITS_PER_SQUARE
+     RCL_perspectiveScale(height - camera.height,result.depth)) / RCL_UNITS_PER_SQUARE
     + camera.shear;
 
-  Unit middleColumn = camera.resolution.x / 2;
+  RCL_Unit middleColumn = camera.resolution.x / 2;
 
-  Unit a = sqrtInt(d * d - result.depth * result.depth);
+  RCL_Unit a = RCL_sqrtInt(d * d - result.depth * result.depth);
 
-  Ray r;
+  RCL_Ray r;
   r.start = camera.position;
   r.direction = cameraDir;
 
-  if (!pointIsLeftOfRay(worldPosition,r))
+  if (!RCL_pointIsLeftOfRCL_Ray(worldPosition,r))
     a *= -1;
 
-  Unit cos = cosInt(HORIZONTAL_FOV_HALF);
+  RCL_Unit cos = RCL_cosInt(RCL_HORIZONTAL_FOV_HALF);
 
-  Unit b =
-    (result.depth * sinInt(HORIZONTAL_FOV_HALF)) / (cos == 0 ? 1 : cos);
+  RCL_Unit b = (result.depth * RCL_sinInt(RCL_HORIZONTAL_FOV_HALF)) /
+    (cos == 0 ? 1 : cos);
     // sin/cos = tan
 
   result.position.x = (a * middleColumn) / (b == 0 ? 1 : b);
@@ -1404,32 +1426,33 @@ PixelInfo mapToScreen(Vector2D worldPosition, Unit height, Camera camera)
   return result;
 }
 
-Unit degreesToUnitsAngle(int16_t degrees)
+RCL_Unit RCL_degreesToUnitsAngle(int16_t degrees)
 {
-  return (degrees * UNITS_PER_SQUARE) / 360;
+  return (degrees * RCL_UNITS_PER_SQUARE) / 360;
 }
 
-Unit perspectiveScale(Unit originalSize, Unit distance)
+RCL_Unit RCL_perspectiveScale(RCL_Unit originalSize, RCL_Unit distance)
 {
-  profileCall(perspectiveScale);
+  RCL_profileCall(RCL_perspectiveScale);
 
   return distance != 0 ?
-   (originalSize * UNITS_PER_SQUARE) /
-      ((VERTICAL_FOV * 2 * distance) / UNITS_PER_SQUARE)
+   (originalSize * RCL_UNITS_PER_SQUARE) /
+      ((RCL_VERTICAL_FOV * 2 * distance) / RCL_UNITS_PER_SQUARE)
    : 0;
 }
 
-Unit perspectiveScaleInverse(Unit originalSize, Unit scaledSize)
+RCL_Unit RCL_perspectiveScaleInverse(RCL_Unit originalSize,
+  RCL_Unit scaledSize)
 {
   return scaledSize != 0 ?
-    (originalSize * UNITS_PER_SQUARE) /
-      ((VERTICAL_FOV * 2 * scaledSize) / UNITS_PER_SQUARE)
+    (originalSize * RCL_UNITS_PER_SQUARE) /
+      ((RCL_VERTICAL_FOV * 2 * scaledSize) / RCL_UNITS_PER_SQUARE)
     : 0;
 }
 
-void moveCameraWithCollision(Camera *camera, Vector2D planeOffset,
-  Unit heightOffset, ArrayFunction floorHeightFunc,
-  ArrayFunction ceilingHeightFunc, int8_t computeHeight, int8_t force)
+void RCL_moveCameraWithCollision(RCL_Camera *camera, RCL_Vector2D planeOffset,
+  RCL_Unit heightOffset, RCL_ArrayFunction floorHeightFunc,
+  RCL_ArrayFunction ceilingHeightFunc, int8_t computeHeight, int8_t force)
 {
   // TODO: have the cam coll parameters precomputed as macros? => faster
 
@@ -1438,33 +1461,33 @@ void moveCameraWithCollision(Camera *camera, Vector2D planeOffset,
 
   if (movesInPlane || force)
   {
-    Vector2D corner; // BBox corner in the movement direction
-    Vector2D cornerNew;
+    RCL_Vector2D corner; // BBox corner in the movement direction
+    RCL_Vector2D cornerNew;
 
     int16_t xDir = planeOffset.x > 0 ? 1 : (planeOffset.x < 0 ? -1 : 0);
     int16_t yDir = planeOffset.y > 0 ? 1 : (planeOffset.y < 0 ? -1 : 0);
 
-    corner.x = camera->position.x + xDir * CAMERA_COLL_RADIUS;
-    corner.y = camera->position.y + yDir * CAMERA_COLL_RADIUS;
+    corner.x = camera->position.x + xDir * RCL_CAMERA_COLL_RADIUS;
+    corner.y = camera->position.y + yDir * RCL_CAMERA_COLL_RADIUS;
 
-    int16_t xSquare = divRoundDown(corner.x,UNITS_PER_SQUARE);
-    int16_t ySquare = divRoundDown(corner.y,UNITS_PER_SQUARE);
+    int16_t xSquare = RCL_divRoundDown(corner.x,RCL_UNITS_PER_SQUARE);
+    int16_t ySquare = RCL_divRoundDown(corner.y,RCL_UNITS_PER_SQUARE);
 
     cornerNew.x = corner.x + planeOffset.x;
     cornerNew.y = corner.y + planeOffset.y;
 
-    xSquareNew = divRoundDown(cornerNew.x,UNITS_PER_SQUARE);
-    ySquareNew = divRoundDown(cornerNew.y,UNITS_PER_SQUARE);
+    xSquareNew = RCL_divRoundDown(cornerNew.x,RCL_UNITS_PER_SQUARE);
+    ySquareNew = RCL_divRoundDown(cornerNew.y,RCL_UNITS_PER_SQUARE);
 
-    Unit bottomLimit = camera->height - CAMERA_COLL_HEIGHT_BELOW +
-      CAMERA_COLL_STEP_HEIGHT;
-    Unit topLimit = camera->height + CAMERA_COLL_HEIGHT_ABOVE;
+    RCL_Unit bottomLimit = camera->height - RCL_CAMERA_COLL_HEIGHT_BELOW +
+      RCL_CAMERA_COLL_STEP_HEIGHT;
+    RCL_Unit topLimit = camera->height + RCL_CAMERA_COLL_HEIGHT_ABOVE;
 
     // checks a single square for collision against the camera
     #define collCheck(dir,s1,s2)\
     if (computeHeight)\
     {\
-      Unit height = floorHeightFunc(s1,s2);\
+      RCL_Unit height = floorHeightFunc(s1,s2);\
       if (height > bottomLimit)\
         dir##Collides = 1;\
       else if (ceilingHeightFunc != 0)\
@@ -1475,7 +1498,7 @@ void moveCameraWithCollision(Camera *camera, Vector2D planeOffset,
       }\
     }\
     else\
-      dir##Collides = floorHeightFunc(s1,s2) > CAMERA_COLL_STEP_HEIGHT;
+      dir##Collides = floorHeightFunc(s1,s2) > RCL_CAMERA_COLL_STEP_HEIGHT;
 
     // check a collision against non-diagonal square
     #define collCheckOrtho(dir,dir2,s1,s2,x)\
@@ -1485,8 +1508,8 @@ void moveCameraWithCollision(Camera *camera, Vector2D planeOffset,
     }\
     if (!dir##Collides)\
     { /* now also check for coll on the neighbouring square */ \
-      int16_t dir2##Square2 = divRoundDown(corner.dir2 - dir2##Dir *\
-        CAMERA_COLL_RADIUS * 2,UNITS_PER_SQUARE);\
+      int16_t dir2##Square2 = RCL_divRoundDown(corner.dir2 - dir2##Dir *\
+        RCL_CAMERA_COLL_RADIUS * 2,RCL_UNITS_PER_SQUARE);\
       if (dir2##Square2 != dir2##Square)\
       {\
         if (x)\
@@ -1504,8 +1527,9 @@ void moveCameraWithCollision(Camera *camera, Vector2D planeOffset,
 
     #define collHandle(dir)\
     if (dir##Collides)\
-      cornerNew.dir = (dir##Square) * UNITS_PER_SQUARE + UNITS_PER_SQUARE / 2\
-      + dir##Dir * (UNITS_PER_SQUARE / 2) - dir##Dir;\
+      cornerNew.dir = (dir##Square) * RCL_UNITS_PER_SQUARE +\
+      RCL_UNITS_PER_SQUARE / 2 + dir##Dir * (RCL_UNITS_PER_SQUARE / 2) -\
+      dir##Dir;\
 
     if (!xCollides && !yCollides) /* if non-diagonal collision happend, corner
                                      collision can't happen */
@@ -1529,35 +1553,38 @@ void moveCameraWithCollision(Camera *camera, Vector2D planeOffset,
     #undef collCheck
     #undef collHandle
 
-    camera->position.x = cornerNew.x - xDir * CAMERA_COLL_RADIUS;
-    camera->position.y = cornerNew.y - yDir * CAMERA_COLL_RADIUS;
+    camera->position.x = cornerNew.x - xDir * RCL_CAMERA_COLL_RADIUS;
+    camera->position.y = cornerNew.y - yDir * RCL_CAMERA_COLL_RADIUS;
   }
 
   if (computeHeight && (movesInPlane || heightOffset != 0 || force))
   {
     camera->height += heightOffset;
 
-    int16_t xSquare1 =
-      divRoundDown(camera->position.x - CAMERA_COLL_RADIUS,UNITS_PER_SQUARE);
-    int16_t xSquare2 =
-      divRoundDown(camera->position.x + CAMERA_COLL_RADIUS,UNITS_PER_SQUARE);
-    int16_t ySquare1 =
-      divRoundDown(camera->position.y - CAMERA_COLL_RADIUS,UNITS_PER_SQUARE);
-    int16_t ySquare2 =
-      divRoundDown(camera->position.y + CAMERA_COLL_RADIUS,UNITS_PER_SQUARE);
+    int16_t xSquare1 = RCL_divRoundDown(camera->position.x -
+      RCL_CAMERA_COLL_RADIUS,RCL_UNITS_PER_SQUARE);
 
-    Unit bottomLimit = floorHeightFunc(xSquare1,ySquare1);
-    Unit topLimit = ceilingHeightFunc != 0 ?
-      ceilingHeightFunc(xSquare1,ySquare1) : UNIT_INFINITY;
+    int16_t xSquare2 = RCL_divRoundDown(camera->position.x +
+      RCL_CAMERA_COLL_RADIUS,RCL_UNITS_PER_SQUARE);
 
-    Unit height;
+    int16_t ySquare1 = RCL_divRoundDown(camera->position.y -
+      RCL_CAMERA_COLL_RADIUS,RCL_UNITS_PER_SQUARE);
+
+    int16_t ySquare2 = RCL_divRoundDown(camera->position.y +
+      RCL_CAMERA_COLL_RADIUS,RCL_UNITS_PER_SQUARE);
+
+    RCL_Unit bottomLimit = floorHeightFunc(xSquare1,ySquare1);
+    RCL_Unit topLimit = ceilingHeightFunc != 0 ?
+      ceilingHeightFunc(xSquare1,ySquare1) : RCL_INFINITY;
+
+    RCL_Unit height;
 
     #define checkSquares(s1,s2)\
     {\
       height = floorHeightFunc(xSquare##s1,ySquare##s2);\
       bottomLimit = bottomLimit < height ? height : bottomLimit;\
       height = ceilingHeightFunc != 0 ?\
-        ceilingHeightFunc(xSquare##s1,ySquare##s2) : UNIT_INFINITY;\
+        ceilingHeightFunc(xSquare##s1,ySquare##s2) : RCL_INFINITY;\
       topLimit = topLimit > height ? height : topLimit;\
     }
 
@@ -1570,14 +1597,14 @@ void moveCameraWithCollision(Camera *camera, Vector2D planeOffset,
     if (xSquare2 != xSquare1 && ySquare2 != ySquare1)
       checkSquares(2,2)
 
-    camera->height = clamp(camera->height,
-      bottomLimit + CAMERA_COLL_HEIGHT_BELOW,
-      topLimit - CAMERA_COLL_HEIGHT_ABOVE);
+    camera->height = RCL_clamp(camera->height,
+      bottomLimit + RCL_CAMERA_COLL_HEIGHT_BELOW,
+      topLimit - RCL_CAMERA_COLL_HEIGHT_ABOVE);
     #undef checkSquares
   }
 }
 
-void initCamera(Camera *camera)
+void RCL_initCamera(RCL_Camera *camera)
 {
   camera->position.x = 0;
   camera->position.y = 0;
@@ -1585,10 +1612,10 @@ void initCamera(Camera *camera)
   camera->resolution.x = 20;
   camera->resolution.y = 15;
   camera->shear = 0;
-  camera->height = UNITS_PER_SQUARE;
+  camera->height = RCL_UNITS_PER_SQUARE;
 }
 
-void initRayConstraints(RayConstraints *constraints)
+void RCL_initRayConstraints(RCL_RayConstraints *constraints)
 {
   constraints->maxHits = 1;
   constraints->maxSteps = 20;
