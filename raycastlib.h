@@ -1220,7 +1220,7 @@ Unit coordStep = 1;
   // draw floor
 
   p.isWall = 0;
-  p.depth = _middleRow * _horizontalDepthStep;
+  p.depth = (_middleRow - y) * _horizontalDepthStep;
 
   while (y < _camera.resolution.y)
   {
