@@ -20,6 +20,9 @@
   - Each game square is RCL_UNITS_PER_SQUARE * RCL_UNITS_PER_SQUARE points.
   - Angles are in RCL_Units, 0 means pointing right (x+) and positively rotates
     clockwise. A full angle has RCL_UNITS_PER_SQUARE RCL_Units.
+  - Most things are normalized with RCL_UNITS_PER_SQUARE (sin, cos, vector
+    unit length, texture coordinates etc.).
+  - Screen coordinates are normal: [0,0] = top left, x goes right, y goes down.
 
   author: Miloslav "drummyfish" Ciz
   license: CC0
@@ -310,6 +313,7 @@ void RCL_castRaysMultiHit(RCL_Camera cam, RCL_ArrayFunction arrayFunc,
   - floor geometry:         yes, multilevel
   - ceiling geometry:       yes (optional), multilevel
   - rolling door:           no
+  - rendering order:        left-to-right, not specifically ordered vertically
 
   @param cam camera whose view to render
   @param floorHeightFunc function that returns floor height (in RCL_Units)
@@ -340,6 +344,7 @@ void RCL_render(RCL_Camera cam, RCL_ArrayFunction floorHeightFunc,
   - floor geometry:         no (just flat floor, with depth information)
   - ceiling geometry:       no (just flat ceiling, with depth information)
   - rolling door:           yes
+  - rendering order:        left-to-right, top-to-bottom
 
   Additionally this function supports rendering rolling doors.
 
