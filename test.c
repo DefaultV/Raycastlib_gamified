@@ -6,6 +6,9 @@
 
 #define RAYCASTLIB_PROFILE
 
+#define HORIZONTAL_FOV UNITS_PER_SQUARE / 2
+#define PIXEL_FUNCTION pixelFunc
+
 #include <stdio.h>
 #include "raycastlib.h"
 #include <sys/time.h>
@@ -63,7 +66,7 @@ int testSingleRay(Unit startX, Unit startY, Unit dirX, Unit dirY,
 }
 
 int testSingleMapping(Unit posX, Unit posY, Unit posZ, uint32_t resX,
-  uint32_t resY, Unit camX, Unit camY, Unit camZ, Unit camDir, Unit fov,
+  uint32_t resY, Unit camX, Unit camY, Unit camZ, Unit camDir,
   Unit expectX, Unit expectY, Unit expectZ)
 {
   int result;
@@ -76,7 +79,6 @@ int testSingleMapping(Unit posX, Unit posY, Unit posZ, uint32_t resX,
   c.position.y = camY;
   c.direction = camDir;
   c.height = camZ;
-  c.fovAngle = fov;
 
   Vector2D pos;
   Unit height;
@@ -151,7 +153,6 @@ void benchmarkMapping()
   c.position.y = UNITS_PER_SQUARE * 2;
   c.direction = UNITS_PER_SQUARE / 8;
   c.height = 0;
-  c.fovAngle = UNITS_PER_SQUARE / 2;
 
   PixelInfo p;
 
@@ -172,7 +173,7 @@ void benchmarkMapping()
   }
 }
 
-void pixelFunc(PixelInfo p)
+void pixelFunc(PixelInfo *p)
 {
 } 
 
@@ -186,7 +187,6 @@ void benchmarkRender()
   c.position.y = 12;
   c.direction = 100;
   c.height = 200;
-  c.fovAngle = UNITS_PER_SQUARE / 3;
 
   RayConstraints constraints;
 
@@ -237,6 +237,23 @@ int main()
     16))
     return 1;
 
+  printf("testing perspective scale...\n");
+
+  for (Unit i = 1; i < 100; ++i)
+  {
+    Unit size = i * 3;
+    Unit distance = i * 6 + 200;
+
+    Unit scaled = perspectiveScale(size,distance);
+    Unit distance2 = perspectiveScaleInverse(size,scaled);
+
+    if (absVal(distance - distance2 > 2))
+      printf("ERROR: distance: %d, distance inverse: %d\n",distance,distance2);
+  }
+
+  printf("OK\n");
+
+/*
   if (!testSingleMapping(
     -UNITS_PER_SQUARE,
     0,
@@ -247,13 +264,12 @@ int main()
     0,
     0,
     UNITS_PER_SQUARE / 2,
-    UNITS_PER_SQUARE / 4,
     640,
     0,
     1024
     ))
     return -1;
-
+*/
   printf("benchmark:\n");
 
   long t;

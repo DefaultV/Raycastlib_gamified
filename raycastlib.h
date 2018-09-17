@@ -275,6 +275,8 @@ Unit degreesToUnitsAngle(int16_t degrees);
 ///< Computes the change in size of an object due to perspective.
 Unit perspectiveScale(Unit originalSize, Unit distance);
 
+Unit perspectiveScaleInverse(Unit originalSize, Unit scaledSize);
+
 /**
   Casts rays for given camera view and for each hit calls a user provided
   function.
@@ -1228,6 +1230,9 @@ Unit coordStep = 1;
     PIXEL_FUNCTION(&p);
     ++y;
     p.depth -= _horizontalDepthStep;
+
+    if (p.depth < 0) // just in case
+      p.depth = 0;
   }
 }
 
@@ -1377,6 +1382,14 @@ Unit perspectiveScale(Unit originalSize, Unit distance)
    (originalSize * UNITS_PER_SQUARE) /
       ((VERTICAL_FOV * 2 * distance) / UNITS_PER_SQUARE)
    : 0;
+}
+
+Unit perspectiveScaleInverse(Unit originalSize, Unit scaledSize)
+{
+  return scaledSize != 0 ?
+    (originalSize * UNITS_PER_SQUARE) /
+      ((VERTICAL_FOV * 2 * scaledSize) / UNITS_PER_SQUARE)
+    : 0;
 }
 
 void moveCameraWithCollision(Camera *camera, Vector2D planeOffset,
