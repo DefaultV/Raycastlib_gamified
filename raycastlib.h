@@ -30,7 +30,7 @@
 #ifndef RAYCAST_TINY /** Turns on super efficient version of this library. Only
                          use if neccesarry, looks ugly. */
   #define UNITS_PER_SQUARE 1024 ///< N. of Units in a side of a spatial square.
-  typedef int32_t Unit; /**< Smallest spatial unit, there is UNITS_PER_SQUARE
+  typedef int32_t Unit; /**< Smaller spatial unit, there is UNITS_PER_SQUARE
                              units in a square's length. This effectively
                              serves the purpose of a fixed-point arithmetic. */
   #define UNIT_INFINITY 5000000;
@@ -155,8 +155,6 @@ typedef struct
   Unit     doorRoll;     ///< Holds value of door roll.
 } HitResult;
 
-// TODO: things like FOV could be constants to make them precomp. and faster?
-
 typedef struct
 {
   Vector2D position;
@@ -169,7 +167,7 @@ typedef struct
 
 /**
   Holds an information about a single rendered pixel (for a pixel function
-  that works as a fragment shader.
+  that works as a fragment shader).
 */
 typedef struct
 {
