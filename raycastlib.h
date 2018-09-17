@@ -420,7 +420,7 @@ Unit clamp(Unit value, Unit valueMin, Unit valueMax)
     return valueMin;
 }
 
-Unit absVal(Unit value)
+static inline Unit absVal(Unit value)
 {
   profileCall(absVal);
 
@@ -428,7 +428,7 @@ Unit absVal(Unit value)
 }
 
 /// Like mod, but behaves differently for negative values.
-Unit wrap(Unit value, Unit mod)
+static inline Unit wrap(Unit value, Unit mod)
 {
   profileCall(wrap);
 
@@ -436,7 +436,7 @@ Unit wrap(Unit value, Unit mod)
 }
 
 /// Performs division, rounding down, NOT towards zero.
-Unit divRoundDown(Unit value, Unit divisor)
+static inline Unit divRoundDown(Unit value, Unit divisor)
 {
   profileCall(divRoundDown);
 
@@ -619,7 +619,7 @@ Unit len(Vector2D v)
   return dist(zero,v);
 }
 
-int8_t pointIsLeftOfRay(Vector2D point, Ray ray)
+static inline int8_t pointIsLeftOfRay(Vector2D point, Ray ray)
 {
   profileCall(pointIsLeftOfRay);
 

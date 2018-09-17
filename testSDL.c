@@ -20,6 +20,8 @@
 #define HORIZONTAL_FOV (UNITS_PER_SQUARE / 5)
 #define VERTICAL_FOV UNITS_PER_SQUARE // redefine camera vertical FOV
 
+#define PIXEL_FUNCTION pixelFunc 
+
 #include "raycastlib.h"
 
 #define LEVEL_X_RES 29
@@ -874,7 +876,7 @@ void pixelFunc(PixelInfo *pixel)
   uint8_t c;
 
   if (pixel->isWall)
-    c = sampleImage(textures[pixel->hit.type],pixel->hit.textureCoord,pixel->textureCoordY);
+    c = sampleImage(textures[pixel->hit.type],pixel->texCoords.x,pixel->texCoords.y);
   else
     c = pixel->isFloor ? 0b00010001 : 0b00001010;
 
@@ -922,8 +924,7 @@ void draw()
   c.maxHits = 32;
   c.maxSteps = 32;
 
-  c.computeTextureCoords = 1;
-  render(camera,floorHeightAt,ceilingHeightAt,textureAt,pixelFunc,c);
+  render(camera,floorHeightAt,ceilingHeightAt,textureAt,c);
 
   Unit previousDepth;
 
