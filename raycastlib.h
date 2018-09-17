@@ -290,6 +290,16 @@ void castRaysMultiHit(Camera cam, ArrayFunction arrayFunc,
 
   This function should render each screen pixel exactly once.
 
+  function rendering summary:
+  - performance:            slower
+  - accuracy:               higher
+  - wall textures:          yes
+  - different wall heights: yes
+  - floor/ceiling textures: no
+  - floor geometry:         yes, multilevel
+  - ceiling geometry:       yes (optional), multilevel
+  - rolling door:           no
+
   @param cam camera whose view to render
   @param floorHeightFunc function that returns floor height (in Units)
   @param ceilingHeightFunc same as floorHeightFunc but for ceiling, can also be
@@ -309,6 +319,16 @@ void render(Camera cam, ArrayFunction floorHeightFunc,
   with simple 1-intersection raycasting. The render(...) function can give more
   accurate results than this function, so it's to be considered even for simple
   scenes.
+
+  function rendering summary:
+  - performance:            faster
+  - accuracy:               lower
+  - wall textures:          yes
+  - different wall heights: yes
+  - floor/ceiling textures: no
+  - floor geometry:         no (just flat floor, with depth information)
+  - ceiling geometry:       no (just flat ceiling, with depth information)
+  - rolling door:           yes
 
   Additionally this function supports rendering rolling doors.
 
@@ -1224,8 +1244,23 @@ Unit coordStep = 1;
   p.isWall = 0;
   p.depth = (_camera.resolution.y - y) * _horizontalDepthStep + 1;
 
+/* WIP: floor textures
+Unit dx = p.hit.position.x - _camera.position.x;
+Unit dy = p.hit.position.y - _camera.position.y;
+Unit pixPos = y - _middleRow;
+*/
+
   while (y < _camera.resolution.y)
   {
+/* WIP: floor textures
+Unit d = perspectiveScaleInverse(_camera.height,pixPos);
+d = (d * UNITS_PER_SQUARE) /
+vectorsAngleCos(angleToDirection(_camera.direction),ray.direction);
+p.texCoords.x = _camera.position.x + ((d * dx) / p.hit.distance) / 32;
+p.texCoords.y = _camera.position.y + ((d * dy) / p.hit.distance) / 32;
+pixPos++;
+*/
+
     p.position.y = y;
     PIXEL_FUNCTION(&p);
     ++y;
