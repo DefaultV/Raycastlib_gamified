@@ -9,6 +9,9 @@
   Check the defines below to fine-tune accuracy vs performance! Don't forget
   to compile with optimizations.
 
+  Before includinf the library efine PIXEL_FUNCTION to the name of the
+  function (with PixelFunction signature) that will render your pixels!
+
   author: Miloslav "drummyfish" Ciz
   license: CC0
   version: 0.1
@@ -180,6 +183,8 @@ typedef struct
                            coordinates. */
 } PixelInfo;
 
+void PIXEL_FUNCTION (PixelInfo *p);
+
 typedef struct
 {
   uint16_t maxHits;
@@ -296,7 +301,7 @@ void castRaysMultiHit(Camera cam, ArrayFunction arrayFunc,
 */
 void render(Camera cam, ArrayFunction floorHeightFunc,
   ArrayFunction ceilingHeightFunc, ArrayFunction typeFunction,
-  PixelFunction pixelFunc, RayConstraints constraints);
+  RayConstraints constraints);
 
 /**
   Renders given camera view, with help of provided functions. This function is
@@ -315,7 +320,7 @@ void render(Camera cam, ArrayFunction floorHeightFunc,
          be faster as fewer intersections will be tested)
 */
 void renderSimple(Camera cam, ArrayFunction floorHeightFunc,
-  ArrayFunction typeFunc, PixelFunction pixelFunc, ArrayFunction rollFunc,
+  ArrayFunction typeFunc, ArrayFunction rollFunc,
   RayConstraints constraints);
 
 /**
@@ -347,7 +352,6 @@ void initRayConstraints(RayConstraints *constraints);
 // privates
 
 // global helper variables, for precomputing stuff etc.
-PixelFunction _pixelFunction = 0;
 Camera _camera;
 Unit _horizontalDepthStep = 0; 
 Unit _startFloorHeight = 0;
@@ -966,7 +970,7 @@ void _columnFunction(HitResult *hits, uint16_t hitCount, uint16_t x, Ray ray)
       {\
         p.position.y = i;\
         p.depth += _horizontalDepthStep;\
-        _pixelFunction(&p);\
+        PIXEL_FUNCTION(&p);\
       }\
       if (pref##PosY comp limit)\
         pref##PosY = limit;
@@ -1015,7 +1019,7 @@ void _columnFunction(HitResult *hits, uint16_t hitCount, uint16_t x, Ray ray)
                 p.texCoords.y = (wallPosition * UNITS_PER_SQUARE)/wallLength;\
               }\
               wallPosition++;\
-              _pixelFunction(&p);\
+              PIXEL_FUNCTION(&p);\
             }\
           else\
             for (i = pref##PosY inc 1; i comp##= limit; inc##inc i)\
@@ -1027,7 +1031,7 @@ void _columnFunction(HitResult *hits, uint16_t hitCount, uint16_t x, Ray ray)
                 p.texCoords.x = hit.textureCoord;\
                 p.texCoords.y += coordStep;\
               }\
-              _pixelFunction(&p);\
+              PIXEL_FUNCTION(&p);\
             }\
           if (pref##PosY comp limit)\
             pref##PosY = limit;\
@@ -1160,7 +1164,7 @@ void _columnFunctionSimple(HitResult *hits, uint16_t hitCount, uint16_t x,
   while (y < wallStart)
   {
     p.position.y = y;
-    _pixelFunction(&p);
+    PIXEL_FUNCTION(&p);
     ++y;
     p.depth += _horizontalDepthStep;
   }
@@ -1195,7 +1199,7 @@ Unit coordStep = 1;
 #if COMPUTE_WALL_TEXCOORDS == 1
       p.texCoords.y = (UNITS_PER_SQUARE * coordHelper) / wallHeightScreen;
 #endif
-      _pixelFunction(&p);
+      PIXEL_FUNCTION(&p);
       ++coordHelper;
       ++y;
     }
@@ -1207,7 +1211,7 @@ Unit coordStep = 1;
       // cheaper texture coord computation
 
       p.position.y = y;
-      _pixelFunction(&p);
+      PIXEL_FUNCTION(&p);
 #if COMPUTE_WALL_TEXCOORDS == 1
       p.texCoords.y += coordStep;
 #endif
@@ -1223,7 +1227,7 @@ Unit coordStep = 1;
   while (y < _camera.resolution.y)
   {
     p.position.y = y;
-    _pixelFunction(&p);
+    PIXEL_FUNCTION(&p);
     ++y;
     p.depth -= _horizontalDepthStep;
   }
@@ -1231,9 +1235,8 @@ Unit coordStep = 1;
 
 void render(Camera cam, ArrayFunction floorHeightFunc,
   ArrayFunction ceilingHeightFunc, ArrayFunction typeFunction,
-  PixelFunction pixelFunc, RayConstraints constraints)
+  RayConstraints constraints)
 {
-  _pixelFunction = pixelFunc;
   _floorFunction = floorHeightFunc;
   _ceilFunction = ceilingHeightFunc;
   _camera = cam;
@@ -1265,10 +1268,9 @@ void render(Camera cam, ArrayFunction floorHeightFunc,
 }
 
 void renderSimple(Camera cam, ArrayFunction floorHeightFunc,
-  ArrayFunction typeFunc, PixelFunction pixelFunc, ArrayFunction rollFunc,
+  ArrayFunction typeFunc, ArrayFunction rollFunc,
   RayConstraints constraints)
 {
-  _pixelFunction = pixelFunc;
   _floorFunction = floorHeightFunc;
   _camera = cam;
   _camResYLimit = cam.resolution.y - 1;
