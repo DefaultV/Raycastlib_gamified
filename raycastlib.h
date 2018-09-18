@@ -313,10 +313,11 @@ void RCL_castRaysMultiHit(RCL_Camera cam, RCL_ArrayFunction arrayFunc,
   - accuracy:               higher
   - wall textures:          yes
   - different wall heights: yes
-  - floor/ceiling textures: yes
+  - floor/ceiling textures: no
   - floor geometry:         yes, multilevel
   - ceiling geometry:       yes (optional), multilevel
   - rolling door:           no
+  - camera shearing:        yes
   - rendering order:        left-to-right, not specifically ordered vertically
 
   @param cam camera whose view to render
@@ -344,10 +345,11 @@ void RCL_render(RCL_Camera cam, RCL_ArrayFunction floorHeightFunc,
   - accuracy:               lower
   - wall textures:          yes
   - different wall heights: yes
-  - floor/ceiling textures: no
+  - floor/ceiling textures: yes (only floor, you can mirror it for ceiling)
   - floor geometry:         no (just flat floor, with depth information)
   - ceiling geometry:       no (just flat ceiling, with depth information)
   - rolling door:           yes
+  - camera shearing:        no
   - rendering order:        left-to-right, top-to-bottom
 
   Additionally this function supports rendering rolling doors.
