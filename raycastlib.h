@@ -1273,7 +1273,8 @@ RCL_Unit coordStep = 1;
   p.isWall = 0;
   p.depth = (_RCL_camera.resolution.y - y) * _RCL_horizontalDepthStep + 1;
 
-/* WIP: floor textures
+/*
+//WIP: floor textures
 RCL_Unit dx = p.hit.position.x - _RCL_camera.position.x;
 RCL_Unit dy = p.hit.position.y - _RCL_camera.position.y;
 RCL_Unit pixPos = y - _RCL_middleRow;
@@ -1281,14 +1282,21 @@ RCL_Unit pixPos = y - _RCL_middleRow;
 
   while (y < _RCL_camera.resolution.y)
   {
-/* WIP: floor textures
-RCL_Unit d = RCL_perspectiveScaleInverse(_RCL_camera.height,pixPos);
+
+/*
+// WIP: floor textures
+RCL_Unit d = RCL_perspectiveScaleInverse( (_RCL_camera.height * _RCL_camera.resolution.y) / RCL_UNITS_PER_SQUARE   ,pixPos);
+if (x == 17)
+  printf("y = %d: %d %d %d %d\n",y,p.texCoords.x,p.texCoords.y,d,p.hit.distance);
 d = (d * RCL_UNITS_PER_SQUARE) /
 RCL_vectorsAngleCos(RCL_angleToDirection(_RCL_camera.direction),ray.direction);
-p.texCoords.x = _RCL_camera.position.x + ((d * dx) / p.hit.distance) / 32;
-p.texCoords.y = _RCL_camera.position.y + ((d * dy) / p.hit.distance) / 32;
+
+p.texCoords.x = _RCL_camera.position.x + ((d * dx) / (p.hit.distance));
+p.texCoords.y = _RCL_camera.position.y + ((d * dy) / (p.hit.distance));
+
 pixPos++;
 */
+
     p.position.y = y;
     RCL_PIXEL_FUNCTION(&p);
     ++y;
