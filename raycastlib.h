@@ -25,7 +25,7 @@
   - Screen coordinates are normal: [0,0] = top left, x goes right, y goes down.
 
   author: Miloslav "drummyfish" Ciz
-  license: CC0
+  license: CC0 1.0
   version: 0.1
 */
 
@@ -1283,7 +1283,7 @@ RCL_Unit coordStep = 1;
 #if RCL_COMPUTE_FLOOR_TEXCOORDS == 1
   RCL_Unit dx = p.hit.position.x - _RCL_camera.position.x;
   RCL_Unit dy = p.hit.position.y - _RCL_camera.position.y;
-  RCL_Unit pixPos = y - _RCL_middleRow + 1;
+  RCL_Unit pixPos = y - _RCL_middleRow;
 
   RCL_Unit rayCameraCos = RCL_vectorsAngleCos(  
     RCL_angleToDirection(_RCL_camera.direction),ray.direction);
