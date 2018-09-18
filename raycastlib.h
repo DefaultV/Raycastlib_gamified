@@ -1220,7 +1220,10 @@ void _columnFunctionSimple(RCL_HitResult *hits, uint16_t hitCount, uint16_t x,
   p.isHorizon = 1;
   p.depth = 1;
 
-  while (y < wallStart)
+  RCL_Unit limit = wallStart < _RCL_middleRow ? wallStart : _RCL_middleRow;
+  // ^ in case there is no wall
+
+  while (y < limit)
   {
     p.position.y = y;
     RCL_PIXEL_FUNCTION(&p);
@@ -1286,7 +1289,7 @@ RCL_Unit coordStep = 1;
 #if RCL_COMPUTE_FLOOR_TEXCOORDS == 1
   RCL_Unit dx = p.hit.position.x - _RCL_camera.position.x;
   RCL_Unit dy = p.hit.position.y - _RCL_camera.position.y;
-  RCL_Unit pixPos = y - _RCL_middleRow;
+  RCL_Unit pixPos = y - _RCL_middleRow - 1;
 
   RCL_Unit rayCameraCos = RCL_vectorsAngleCos(  
     RCL_angleToDirection(_RCL_camera.direction),ray.direction);
