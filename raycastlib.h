@@ -1205,7 +1205,10 @@ void _columnFunctionSimple(RCL_HitResult *hits, uint16_t hitCount, uint16_t x,
       coordHelper = -1 * wallStart;
       coordHelper = coordHelper >= 0 ? coordHelper : 0;
 
-      wallEnd = RCL_clamp(wallStart + wallHeightScreen,0,_RCL_camResYLimit);
+      wallEnd = RCL_clamp(wallStart + wallHeightScreen,0,
+        _RCL_camera.resolution.y);
+        // ^ intentionally allow outside screen
+
       wallStart = RCL_clamp(wallStart,0,_RCL_camResYLimit);
     }
   }
@@ -1306,7 +1309,9 @@ RCL_Unit coordStep = 1;
 
     p.position.y = y;
     RCL_PIXEL_FUNCTION(&p);
+
     ++y;
+
     p.depth -= _RCL_horizontalDepthStep;
 
     if (p.depth < 0) // just in case
