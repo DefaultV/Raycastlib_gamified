@@ -313,7 +313,7 @@ void RCL_castRaysMultiHit(RCL_Camera cam, RCL_ArrayFunction arrayFunc,
   - accuracy:               higher
   - wall textures:          yes
   - different wall heights: yes
-  - floor/ceiling textures: no
+  - floor/ceiling textures: yes
   - floor geometry:         yes, multilevel
   - ceiling geometry:       yes (optional), multilevel
   - rolling door:           no
