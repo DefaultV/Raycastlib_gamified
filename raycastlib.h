@@ -52,6 +52,10 @@
 #define RCL_COMPUTE_WALL_TEXCOORDS 1
 #endif
 
+#ifndef RCL_COMPUTE_FLOOR_TEXCOORDS
+#define RCL_COMPUTE_FLOOR_TEXCOORDS 0
+#endif
+
 #ifndef RCL_USE_COS_LUT
 #define RCL_USE_COS_LUT 0 /**< type of look up table for cos function:
                            0: none (compute)
@@ -400,6 +404,7 @@ RCL_Unit _RCL_fHorizontalDepthStart = 0;
 RCL_Unit _RCL_cHorizontalDepthStart = 0;
 int16_t _RCL_cameraHeightScreen = 0;
 RCL_ArrayFunction _RCL_rollFunction = 0; // says door rolling
+RCL_Unit *_RCL_floorPixelDistances = 0;
 
 #ifdef RAYCASTLIB_PROFILE
   // function call counters for profiling
@@ -1273,29 +1278,29 @@ RCL_Unit coordStep = 1;
   p.isWall = 0;
   p.depth = (_RCL_camera.resolution.y - y) * _RCL_horizontalDepthStep + 1;
 
-/*
-//WIP: floor textures
-RCL_Unit dx = p.hit.position.x - _RCL_camera.position.x;
-RCL_Unit dy = p.hit.position.y - _RCL_camera.position.y;
-RCL_Unit pixPos = y - _RCL_middleRow;
-*/
+#if RCL_COMPUTE_FLOOR_TEXCOORDS == 1
+  RCL_Unit dx = p.hit.position.x - _RCL_camera.position.x;
+  RCL_Unit dy = p.hit.position.y - _RCL_camera.position.y;
+  RCL_Unit pixPos = y - _RCL_middleRow + 1;
+
+  RCL_Unit rayCameraCos = RCL_vectorsAngleCos(  
+    RCL_angleToDirection(_RCL_camera.direction),ray.direction);
+#endif
 
   while (y < _RCL_camera.resolution.y)
   {
 
-/*
-// WIP: floor textures
-RCL_Unit d = RCL_perspectiveScaleInverse( (_RCL_camera.height * _RCL_camera.resolution.y) / RCL_UNITS_PER_SQUARE   ,pixPos);
-if (x == 17)
-  printf("y = %d: %d %d %d %d\n",y,p.texCoords.x,p.texCoords.y,d,p.hit.distance);
-d = (d * RCL_UNITS_PER_SQUARE) /
-RCL_vectorsAngleCos(RCL_angleToDirection(_RCL_camera.direction),ray.direction);
+#if RCL_COMPUTE_FLOOR_TEXCOORDS == 1
+    RCL_Unit d = _RCL_floorPixelDistances[pixPos];
 
-p.texCoords.x = _RCL_camera.position.x + ((d * dx) / (p.hit.distance));
-p.texCoords.y = _RCL_camera.position.y + ((d * dy) / (p.hit.distance));
+    d = (d * RCL_UNITS_PER_SQUARE) / rayCameraCos;
+    //  ^ inverse of RCL_adjustDistance(...)
 
-pixPos++;
-*/
+    p.texCoords.x = _RCL_camera.position.x + ((d * dx) / (p.hit.distance));
+    p.texCoords.y = _RCL_camera.position.y + ((d * dy) / (p.hit.distance));
+
+    pixPos++;
+#endif
 
     p.position.y = y;
     RCL_PIXEL_FUNCTION(&p);
@@ -1364,8 +1369,30 @@ void RCL_renderSimple(RCL_Camera cam, RCL_ArrayFunction floorHeightFunc,
     1 : // no door => 1 hit is enough 
     3;  // for correctly rendering rolling doors we'll need 3 hits (NOT 2)
 
+#if RCL_COMPUTE_FLOOR_TEXCOORDS == 1
+  uint16_t halfResY = cam.resolution.y / 2;
+
+  RCL_Unit floorPixelDistances[halfResY]; /* for each vertical floor pixel,
+                                             this will contain precomputed
+                                             distance to the camera */
+  RCL_Unit camHeightScreenSize =
+    (((cam.height >> 6) << 6) * // prevent weird floor movement with rounding
+    cam.resolution.y) / RCL_UNITS_PER_SQUARE;
+
+  for (uint16_t i = 0; i < halfResY; ++i) // precompute the distances
+    floorPixelDistances[i] =
+      RCL_perspectiveScaleInverse(camHeightScreenSize,i);
+
+  // pass to _columnFunctionSimple
+  _RCL_floorPixelDistances = floorPixelDistances;
+#endif
+
   RCL_castRaysMultiHit(cam,_floorHeightNotZeroFunction,typeFunc,
     _columnFunctionSimple, constraints);
+
+#if RCL_COMPUTE_FLOOR_TEXCOORDS == 1
+  _RCL_floorPixelDistances = 0;
+#endif
 }
 
 RCL_Vector2D RCL_normalize(RCL_Vector2D v)
