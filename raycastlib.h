@@ -109,6 +109,10 @@
                                  expensive way of computing texture coords. */
 #endif
 
+#define HORIZON_DEPTH (12 * RCL_UNITS_PER_SQUARE) /**< What depth the horizon
+                                                   has (the floor depth is only
+                                                   approximated with the help
+                                                   of this constant). */
 #define RCL_logV2D(v)\
   printf("[%d,%d]\n",v.x,v.y);
 
@@ -1349,8 +1353,7 @@ void RCL_render(RCL_Camera cam, RCL_ArrayFunction floorHeightFunc,
         RCL_divRoundDown(cam.position.y,RCL_UNITS_PER_SQUARE)) -1 * cam.height
       : RCL_INFINITY;
 
-  // TODO
-  _RCL_horizontalDepthStep = (12 * RCL_UNITS_PER_SQUARE) / cam.resolution.y; 
+  _RCL_horizontalDepthStep = HORIZON_DEPTH / cam.resolution.y; 
 
   RCL_castRaysMultiHit(cam,_floorCeilFunction,typeFunction,
     _columnFunction,constraints);
