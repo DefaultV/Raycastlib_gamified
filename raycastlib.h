@@ -1514,8 +1514,8 @@ void RCL_moveCameraWithCollision(RCL_Camera *camera, RCL_Vector2D planeOffset,
     RCL_Vector2D corner; // BBox corner in the movement direction
     RCL_Vector2D cornerNew;
 
-    int16_t xDir = planeOffset.x > 0 ? 1 : (planeOffset.x < 0 ? -1 : 0);
-    int16_t yDir = planeOffset.y > 0 ? 1 : (planeOffset.y < 0 ? -1 : 0);
+    int16_t xDir = planeOffset.x > 0 ? 1 : -1;
+    int16_t yDir = planeOffset.y > 0 ? 1 : -1;
 
     corner.x = camera->position.x + xDir * RCL_CAMERA_COLL_RADIUS;
     corner.y = camera->position.y + yDir * RCL_CAMERA_COLL_RADIUS;
@@ -1529,9 +1529,16 @@ void RCL_moveCameraWithCollision(RCL_Camera *camera, RCL_Vector2D planeOffset,
     xSquareNew = RCL_divRoundDown(cornerNew.x,RCL_UNITS_PER_SQUARE);
     ySquareNew = RCL_divRoundDown(cornerNew.y,RCL_UNITS_PER_SQUARE);
 
-    RCL_Unit bottomLimit = camera->height - RCL_CAMERA_COLL_HEIGHT_BELOW +
-      RCL_CAMERA_COLL_STEP_HEIGHT;
-    RCL_Unit topLimit = camera->height + RCL_CAMERA_COLL_HEIGHT_ABOVE;
+    RCL_Unit bottomLimit = -1 * RCL_INFINITY;
+    RCL_Unit topLimit = RCL_INFINITY;
+
+    if (computeHeight)
+    {
+      bottomLimit = camera->height - RCL_CAMERA_COLL_HEIGHT_BELOW +
+        RCL_CAMERA_COLL_STEP_HEIGHT;
+
+      topLimit = camera->height + RCL_CAMERA_COLL_HEIGHT_ABOVE;
+    }
 
     // checks a single square for collision against the camera
     #define collCheck(dir,s1,s2)\
