@@ -532,8 +532,6 @@ RCL_Unit RCL_cosInt(RCL_Unit input)
 {
   RCL_profileCall(RCL_cosInt);
 
-  // TODO: could be optimized with LUT
-
   input = RCL_wrap(input,RCL_UNITS_PER_SQUARE);
 
 #if RCL_USE_COS_LUT == 1
@@ -913,8 +911,6 @@ void RCL_castRaysMultiHit(RCL_Camera cam, RCL_ArrayFunction arrayFunc,
 */
 RCL_Unit _floorCeilFunction(int16_t x, int16_t y)
 {
-  // TODO: adjust also for RCL_RAYCAST_TINY
-
   RCL_Unit f = _RCL_floorFunction(x,y);
 
   if (_RCL_ceilFunction == 0)
@@ -1373,8 +1369,7 @@ void RCL_renderSimple(RCL_Camera cam, RCL_ArrayFunction floorHeightFunc,
     (_RCL_camera.resolution.y * (_RCL_camera.height - RCL_UNITS_PER_SQUARE)) /
     RCL_UNITS_PER_SQUARE;
 
-  // TODO
-  _RCL_horizontalDepthStep = (12 * RCL_UNITS_PER_SQUARE) / cam.resolution.y; 
+  _RCL_horizontalDepthStep = HORIZON_DEPTH / cam.resolution.y; 
 
   constraints.maxHits = 
 
@@ -1435,8 +1430,6 @@ RCL_Unit RCL_vectorsAngleCos(RCL_Vector2D v1, RCL_Vector2D v2)
 RCL_PixelInfo RCL_mapToScreen(RCL_Vector2D worldPosition, RCL_Unit height,
   RCL_Camera camera)
 {
-  // TODO: precompute some stuff that's constant in the frame
-
   RCL_PixelInfo result;
 
   RCL_Unit d = RCL_dist(worldPosition,camera.position);
@@ -1507,8 +1500,6 @@ void RCL_moveCameraWithCollision(RCL_Camera *camera, RCL_Vector2D planeOffset,
   RCL_Unit heightOffset, RCL_ArrayFunction floorHeightFunc,
   RCL_ArrayFunction ceilingHeightFunc, int8_t computeHeight, int8_t force)
 {
-  // TODO: have the cam coll parameters precomputed as macros? => faster
-
   int8_t movesInPlane = planeOffset.x != 0 || planeOffset.y != 0;
   int16_t xSquareNew, ySquareNew;
 
