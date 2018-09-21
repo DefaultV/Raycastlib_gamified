@@ -70,6 +70,17 @@
                             2: octagonal approximation (LQ) */
 #endif
 
+#ifndef RCL_COMPUTE_FLOOR_DEPTH
+#define RCL_COMPUTE_FLOOR_DEPTH 1 /**< Whether depth should be computed for
+                                   floor pixels - turns this off if not
+                                   needed. */
+#endif
+
+#ifndef RCL_COMPUTE_CEILING_DEPTH
+#define RCL_COMPUTE_CEILING_DEPTH 1 /**< AS RCL_COMPUTE_FLOOR_DEPTH but for
+                                     ceiling. */
+#endif
+
 #ifndef RCL_ROLL_TEXTURE_COORDS
 #define RCL_ROLL_TEXTURE_COORDS 1 /**< Says whether rolling doors should also
                                    roll the texture coordinates along (mostly
@@ -308,7 +319,8 @@ void RCL_castRaysMultiHit(RCL_Camera cam, RCL_ArrayFunction arrayFunc,
   RCL_RayConstraints constraints);
 
 /**
-  Using provided functions, renders a complete complex camera view.
+  Using provided functions, renders a complete complex (multilevel) camera
+  view.
 
   This function should render each screen pixel exactly once.
 
@@ -333,16 +345,14 @@ void RCL_castRaysMultiHit(RCL_Camera cam, RCL_ArrayFunction arrayFunc,
   @param pixelFunc callback function to draw a single pixel on screen
   @param constraints constraints for each cast ray
 */
-void RCL_render(RCL_Camera cam, RCL_ArrayFunction floorHeightFunc,
+void RCL_renderComplex(RCL_Camera cam, RCL_ArrayFunction floorHeightFunc,
   RCL_ArrayFunction ceilingHeightFunc, RCL_ArrayFunction typeFunction,
   RCL_RayConstraints constraints);
 
 /**
   Renders given camera view, with help of provided functions. This function is
-  simpler and faster than RCL_render(...) and is meant to be rendering scenes
-  with simple 1-intersection raycasting. The RCL_render(...) function can give
-  more accurate results than this function, so it's to be considered even for
-  simple scenes.
+  simpler and faster than RCL_renderComplex(...) and is meant to be rendering
+  flat levels.
 
   function rendering summary:
   - performance:            faster
@@ -949,7 +959,7 @@ RCL_Unit RCL_adjustDistance(RCL_Unit distance, RCL_Camera *camera,
                 // ^ prevent division by zero
 }
 
-void _columnFunction(RCL_HitResult *hits, uint16_t hitCount, uint16_t x,
+void _columnFunctionComplex(RCL_HitResult *hits, uint16_t hitCount, uint16_t x,
   RCL_Ray ray)
 {
   // last written Y position, can never go backwards
@@ -1016,13 +1026,15 @@ void _columnFunction(RCL_HitResult *hits, uint16_t hitCount, uint16_t x,
 
     #define VERTICAL_DEPTH_MULTIPLY 2
 
-    #define drawHorizontal(pref,l1,l2,comp,inc)\
-      p.depth += RCL_absVal(pref##Z1World) * VERTICAL_DEPTH_MULTIPLY;\
+    #define drawHorizontal(pref,l1,l2,comp,inc,compDepth)\
+      if (compDepth)\
+        p.depth += RCL_absVal(pref##Z1World) * VERTICAL_DEPTH_MULTIPLY;\
       limit = RCL_clamp(pref##Z1Screen,l1,l2);\
       for (i = pref##PosY inc 1; i comp##= limit; inc##inc i)\
       {\
         p.position.y = i;\
-        p.depth += _RCL_horizontalDepthStep;\
+        if (compDepth)\
+          p.depth += _RCL_horizontalDepthStep;\
         RCL_PIXEL_FUNCTION(&p);\
       }\
       if (pref##PosY comp limit)\
@@ -1033,17 +1045,27 @@ void _columnFunction(RCL_HitResult *hits, uint16_t hitCount, uint16_t x,
 
     // draw floor until wall
     p.isFloor = 1;
+
+#if RCL_COMPUTE_FLOOR_DEPTH == 1
     p.depth = (_RCL_fHorizontalDepthStart - fPosY) * _RCL_horizontalDepthStep;
-    drawHorizontal(f,cPosY + 1,_RCL_camera.resolution.y,>,-)
-                    // ^ purposfully allow outside screen bounds here
+#else
+    p.depth = 0;
+#endif
+
+    drawHorizontal(f,cPosY + 1,_RCL_camera.resolution.y,>,-,
+      RCL_COMPUTE_FLOOR_DEPTH) // ^ purposfully allow outside screen bounds
 
     if (_RCL_ceilFunction != 0 || drawingHorizon)
     {
       // draw ceiling until wall
       p.isFloor = 0;
+
+#if RCL_COMPUTE_CEILING_DEPTH == 1
       p.depth = (cPosY - _RCL_cHorizontalDepthStart) *
         _RCL_horizontalDepthStep;
-      drawHorizontal(c,-1,fPosY - 1,<,+)
+#endif
+
+      drawHorizontal(c,-1,fPosY - 1,<,+,RCL_COMPUTE_CEILING_DEPTH)
                     // ^ purposfully allow outside screen bounds here
     }
 
@@ -1228,7 +1250,10 @@ void _columnFunctionSimple(RCL_HitResult *hits, uint16_t hitCount, uint16_t x,
     p.position.y = y;
     RCL_PIXEL_FUNCTION(&p);
     ++y;
+
+#if RCL_COMPUTE_CEILING_DEPTH == 1
     p.depth += _RCL_horizontalDepthStep;
+#endif
   }
 
   // draw wall
@@ -1284,7 +1309,10 @@ RCL_Unit coordStep = 1;
   // draw floor
 
   p.isWall = 0;
+
+#if RCL_COMPUTE_FLOOR_DEPTH == 1
   p.depth = (_RCL_camera.resolution.y - y) * _RCL_horizontalDepthStep + 1;
+#endif
 
 #if RCL_COMPUTE_FLOOR_TEXCOORDS == 1
   RCL_Unit dx = p.hit.position.x - _RCL_camera.position.x;
@@ -1315,14 +1343,16 @@ RCL_Unit coordStep = 1;
 
     ++y;
 
+#if RCL_COMPUTE_FLOOR_DEPTH == 1
     p.depth -= _RCL_horizontalDepthStep;
+#endif
 
     if (p.depth < 0) // just in case
       p.depth = 0;
   }
 }
 
-void RCL_render(RCL_Camera cam, RCL_ArrayFunction floorHeightFunc,
+void RCL_renderComplex(RCL_Camera cam, RCL_ArrayFunction floorHeightFunc,
   RCL_ArrayFunction ceilingHeightFunc, RCL_ArrayFunction typeFunction,
   RCL_RayConstraints constraints)
 {
@@ -1352,7 +1382,7 @@ void RCL_render(RCL_Camera cam, RCL_ArrayFunction floorHeightFunc,
   _RCL_horizontalDepthStep = HORIZON_DEPTH / cam.resolution.y; 
 
   RCL_castRaysMultiHit(cam,_floorCeilFunction,typeFunction,
-    _columnFunction,constraints);
+    _columnFunctionComplex,constraints);
 }
 
 void RCL_renderSimple(RCL_Camera cam, RCL_ArrayFunction floorHeightFunc,
