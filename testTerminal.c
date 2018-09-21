@@ -86,8 +86,8 @@ void draw()
   c.maxHits = 1;
   c.maxSteps = 40;
 
-  //RCL_renderSimple(camera,heightAt,0,0,c);
-  RCL_renderComplex(camera,heightAt,0,0,c);
+  RCL_renderSimple(camera,heightAt,0,0,c);
+  //RCL_renderComplex(camera,heightAt,0,0,c);
 
   for (int j = 0; j < SCREEN_H; ++j)
   {

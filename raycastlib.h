@@ -1153,7 +1153,7 @@ void _columnFunctionSimple(RCL_HitResult *hits, uint16_t hitCount, uint16_t x,
   int16_t wallEnd = _RCL_middleRow;
   int16_t heightOffset = 0;
 
-  RCL_Unit RCL_dist = 1;
+  RCL_Unit dist = 1;
 
   RCL_PixelInfo p;
   p.position.x = x;
@@ -1211,17 +1211,17 @@ void _columnFunctionSimple(RCL_HitResult *hits, uint16_t hitCount, uint16_t x,
 
     if (goOn)
     {
-      RCL_dist = RCL_adjustDistance(hit.distance,&_RCL_camera,&ray);
+      dist = RCL_adjustDistance(hit.distance,&_RCL_camera,&ray);
 
       int16_t wallHeightWorld = _RCL_floorFunction(hit.square.x,hit.square.y);
 
       wallHeightScreen = RCL_perspectiveScale((wallHeightWorld *
-        _RCL_camera.resolution.y) / RCL_UNITS_PER_SQUARE,RCL_dist);
+        _RCL_camera.resolution.y) / RCL_UNITS_PER_SQUARE,dist);
 
       int16_t RCL_normalizedWallHeight = wallHeightWorld != 0 ?
         ((RCL_UNITS_PER_SQUARE * wallHeightScreen) / wallHeightWorld) : 0;
 
-      heightOffset = RCL_perspectiveScale(_RCL_cameraHeightScreen,RCL_dist);
+      heightOffset = RCL_perspectiveScale(_RCL_cameraHeightScreen,dist);
 
       wallStart = _RCL_middleRow - wallHeightScreen + heightOffset +
                   RCL_normalizedWallHeight;
