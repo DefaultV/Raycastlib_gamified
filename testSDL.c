@@ -10,7 +10,7 @@
 
 //#define RAYCAST_TINY
 
-#define RCL_USE_DIST_APPROX 2
+//#define RCL_USE_DIST_APPROX 2
 
 // redefine some parameters
 #define FPS 40
@@ -924,7 +924,7 @@ void draw()
   c.maxHits = 32;
   c.maxSteps = 32;
 
-  RCL_render(camera,floorHeightAt,ceilingHeightAt,textureAt,c);
+  RCL_renderComplex(camera,floorHeightAt,ceilingHeightAt,textureAt,c);
 
   RCL_Unit previousDepth;
 

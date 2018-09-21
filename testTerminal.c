@@ -1,3 +1,15 @@
+/*
+  Raycasting terminal test.
+
+  author: Miloslav Ciz
+  license: CC0
+*/
+
+#define RCL_PIXEL_FUNCTION pixelFunc
+#define RCL_COMPUTE_WALL_TEXCOORDS 0
+#define RCL_COMPUTE_FLOOR_DEPTH 0
+#define RCL_COMPUTE_CEILING_DEPTH 0
+
 #include <stdio.h>
 #include "raycastlib.h"
 #include <unistd.h>
@@ -10,7 +22,7 @@
 #define SCREEN_H 40
 
 char pixels[SCREEN_W * SCREEN_H];
-Camera camera;
+RCL_Camera camera;
 
 const int8_t level[LEVEL_W * LEVEL_H] =
 {
@@ -33,17 +45,17 @@ const int8_t level[LEVEL_W * LEVEL_H] =
   0,0,0,0,0,1,0,0,0,1,0,0,0,0,1,0,0,0,0,0  // 14
 };
 
-Unit heightAt(int16_t x, int16_t y)
+RCL_Unit heightAt(int16_t x, int16_t y)
 {
   int32_t index = y * LEVEL_W + x;
 
   if (index < 0 || (index >= LEVEL_W * LEVEL_H))
-    return UNITS_PER_SQUARE * 2;
+    return RCL_UNITS_PER_SQUARE * 2;
 
-  return level[y * LEVEL_W + x] * UNITS_PER_SQUARE * 2;
+  return level[y * LEVEL_W + x] * RCL_UNITS_PER_SQUARE * 2;
 }
 
-void pixelFunc(PixelInfo *p)
+void pixelFunc(RCL_PixelInfo *p)
 {
   char c = ' ';
 
@@ -67,17 +79,15 @@ void draw()
   for (int i = 0; i < 10; ++i)
   printf("\n");
 
-  RayConstraints c;
+  RCL_RayConstraints c;
 
-  initRayConstraints(&c);
+  RCL_initRayConstraints(&c);
 
   c.maxHits = 1;
   c.maxSteps = 40;
-  c.computeTextureCoords = 0;
 
-
-  //renderSimple(camera,heightAt,0,pixelFunc,0,c);
-  render(camera,heightAt,0,0,pixelFunc,c);
+  //RCL_renderSimple(camera,heightAt,0,0,c);
+  RCL_renderComplex(camera,heightAt,0,0,c);
 
   for (int j = 0; j < SCREEN_H; ++j)
   {
@@ -95,9 +105,9 @@ int frame = 0;
 
 int main()
 {
-  initCamera(&camera);
-  camera.position.x = 2 * UNITS_PER_SQUARE;
-  camera.position.y = 2 * UNITS_PER_SQUARE;
+  RCL_initCamera(&camera);
+  camera.position.x = 2 * RCL_UNITS_PER_SQUARE;
+  camera.position.y = 2 * RCL_UNITS_PER_SQUARE;
   camera.direction = 0;
   camera.resolution.x = SCREEN_W;
   camera.resolution.y = SCREEN_H;
@@ -106,8 +116,8 @@ int main()
   {
     draw();
 
-    int squareX = divRoundDown(camera.position.x,UNITS_PER_SQUARE);
-    int squareY = divRoundDown(camera.position.y,UNITS_PER_SQUARE);
+    int squareX = RCL_divRoundDown(camera.position.x,RCL_UNITS_PER_SQUARE);
+    int squareY = RCL_divRoundDown(camera.position.y,RCL_UNITS_PER_SQUARE);
  
     if (rand() % 100 == 0)
     {
@@ -127,7 +137,7 @@ int main()
     camera.position.y += dy * 200;
     camera.direction += dr * 10;
 
-    camera.height = UNITS_PER_SQUARE + sinInt(frame * 16) / 2;
+    camera.height = RCL_UNITS_PER_SQUARE + RCL_sinInt(frame * 16) / 2;
 
     usleep(100000);
 
