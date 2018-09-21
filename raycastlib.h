@@ -422,7 +422,7 @@ int16_t _RCL_cameraHeightScreen = 0;
 RCL_ArrayFunction _RCL_rollFunction = 0; // says door rolling
 RCL_Unit *_RCL_floorPixelDistances = 0;
 
-#ifdef RAYCASTLIB_PROFILE
+#ifdef RCL_PROFILE
   // function call counters for profiling
   uint32_t profile_RCL_sqrtInt = 0;
   uint32_t profile_RCL_clamp = 0;
@@ -1270,7 +1270,8 @@ RCL_Unit coordStep = 1;
 
 #if RCL_COMPUTE_WALL_TEXCOORDS == 1
   p.texCoords.x = p.hit.textureCoord;
-  coordStep = RCL_UNITS_PER_SQUARE / wallHeightScreen;
+  coordStep = RCL_UNITS_PER_SQUARE /
+    (wallHeightScreen != 0 ? wallHeightScreen : 1);
   p.texCoords.y = coordStep * coordHelper;
 #endif
 
@@ -1284,7 +1285,8 @@ RCL_Unit coordStep = 1;
 
       p.position.y = y;
 #if RCL_COMPUTE_WALL_TEXCOORDS == 1
-      p.texCoords.y = (RCL_UNITS_PER_SQUARE * coordHelper) / wallHeightScreen;
+      p.texCoords.y = (RCL_UNITS_PER_SQUARE * coordHelper) /
+        (wallHeightScreen != 0 ? wallHeightScreen : 1);
 #endif
       RCL_PIXEL_FUNCTION(&p);
       ++coordHelper;

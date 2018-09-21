@@ -174,9 +174,77 @@ void benchmarkMapping()
   }
 }
 
+int countPixels = 0;
+uint32_t *pixelCounts = 0;
+RCL_Camera countCamera;
+int countOK = 1;
+
 void pixelFunc(RCL_PixelInfo *p)
 {
-} 
+  if (countPixels)
+  {
+    if (p->position.x >= countCamera.resolution.x || p->position.x < 0 ||
+        p->position.y >= countCamera.resolution.y || p->position.y < 0)
+    {
+      printf("ERROR: writing pixel outside screen at %d %d!\n",
+        p->position.x,p->position.y);
+   
+      countOK = 0;
+    }
+    else
+      pixelCounts[p->position.y * countCamera.resolution.x + p->position.x]++;
+  }
+}
+
+int testPixelCount(RCL_Unit camX, RCL_Unit camY, RCL_Unit camZ,
+  RCL_Unit camDir, RCL_Unit camShear, uint16_t camResX, uint16_t camResY,
+  int complexRender)
+{
+  printf("Counting rendered pixels...\n");
+
+  RCL_RayConstraints constraints;
+  RCL_Camera c;
+
+  RCL_initRayConstraints(&constraints);
+  RCL_initCamera(&c);
+  c.position.x = camX;
+  c.position.y = camY;
+  c.direction = camDir;
+  c.shear = camShear;
+  c.height = camZ;
+  c.resolution.x = camResX;
+  c.resolution.y = camResY;
+
+  uint32_t pixels[camResX * camResY];
+
+  for (uint32_t i = 0; i < camResX * camResY; ++i)
+    pixels[i] = 0;
+
+  pixelCounts = pixels;
+  countCamera = c;
+  countPixels = 1;
+
+  countOK = 1;
+
+  if (complexRender)
+    RCL_renderComplex(c,testArrayFunc,testArrayFunc2,0,constraints);
+  else
+    RCL_renderSimple(c,testArrayFunc,0,0,constraints);
+
+  for (uint32_t y = 0; y < camResY; ++y)
+    for (uint32_t x = 0; x < camResX; ++x)
+    {
+      uint32_t index = y * camResX + x;
+
+      if (pixels[index] != 1)
+      {
+        printf("ERROR: pixel at %d %d written %d times!\n",x,y,pixels[index]);
+        countOK = 0;
+      }
+    }
+
+  return countOK;
+}
 
 void benchmarkRender()
 {
@@ -193,6 +261,8 @@ void benchmarkRender()
 
   constraints.maxHits = 10;
   constraints.maxSteps = 12;
+
+  countPixels = 0;
 
   for (int i = 0; i < 100; ++i)
     RCL_renderComplex(c,testArrayFunc,testArrayFunc2,0,constraints);
@@ -251,6 +321,41 @@ int main()
     if (RCL_absVal(distance - distance2 > 2))
       printf("ERROR: distance: %d, distance inverse: %d\n",distance,distance2);
   }
+
+  printf("OK\n");
+
+  if (!testPixelCount(
+    RCL_UNITS_PER_SQUARE / 2,
+    RCL_UNITS_PER_SQUARE / 2,
+    RCL_UNITS_PER_SQUARE / 2,
+    0,
+    0,
+    128,
+    64,
+    1))
+    return 1;
+
+  if (!testPixelCount(
+    3 * RCL_UNITS_PER_SQUARE + 100,
+    4 * RCL_UNITS_PER_SQUARE + RCL_UNITS_PER_SQUARE / 3,
+    RCL_UNITS_PER_SQUARE,
+    312,
+    0,
+    200,
+    63,
+    0))
+    return 1;
+
+  if (!testPixelCount(
+    - RCL_UNITS_PER_SQUARE,
+    0,
+    300,
+    -600,
+    -120,
+    64,
+    68,
+    1))
+    return 1;
 
   printf("OK\n");
 
