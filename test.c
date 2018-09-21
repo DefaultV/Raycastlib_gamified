@@ -4,16 +4,17 @@
   license: CC0
 */
 
-#define RAYCASTLIB_PROFILE
+#define RCL_PROFILE
 
-#define HORIZONTAL_FOV UNITS_PER_SQUARE / 2
-#define PIXEL_FUNCTION pixelFunc
+#define RCL_HORIZONTAL_FOV RCL_UNITS_PER_SQUARE / 2
+
+#define RCL_PIXEL_FUNCTION pixelFunc
 
 #include <stdio.h>
 #include "raycastlib.h"
 #include <sys/time.h>
 
-Unit testArrayFunc(int16_t x, int16_t y)
+RCL_Unit testArrayFunc(int16_t x, int16_t y)
 {
   if (x > 12 || y > 12)
     return x * y;
@@ -21,20 +22,20 @@ Unit testArrayFunc(int16_t x, int16_t y)
   return (x < 0 || y < 0 || x > 9 || y > 9) ? 1 : 0;
 }
 
-Unit testArrayFunc2(int16_t x, int16_t y)
+RCL_Unit testArrayFunc2(int16_t x, int16_t y)
 {
-  return testArrayFunc(x,y) + 10 * UNITS_PER_SQUARE;
+  return testArrayFunc(x,y) + 10 * RCL_UNITS_PER_SQUARE;
 }
 
 /**
   Simple automatic test function.
 */
 
-int testSingleRay(Unit startX, Unit startY, Unit dirX, Unit dirY,
+int testSingleRay(RCL_Unit startX, RCL_Unit startY, RCL_Unit dirX, RCL_Unit dirY,
   int16_t expectSquareX, int16_t expectSquareY, int16_t expectPointX,
   int16_t expectPointY, int16_t tolerateError)
 {
-  Ray r;
+  RCL_Ray r;
 
   r.start.x     = startX;
   r.start.y     = startY;
@@ -42,12 +43,12 @@ int testSingleRay(Unit startX, Unit startY, Unit dirX, Unit dirY,
   r.direction.y = dirY;
 
   printf("- casting ray:\n");
-  logRay(r);
+  RCL_logRay(r);
 
-  HitResult h = castRay(r,testArrayFunc);
+  RCL_HitResult h = RCL_castRay(r,testArrayFunc);
   
   printf("- result:\n");
-  logHitResult(h);
+  RCL_logHitResult(h);
 
   int result = 
     h.square.x   == expectSquareX &&
@@ -65,13 +66,13 @@ int testSingleRay(Unit startX, Unit startY, Unit dirX, Unit dirY,
   return result;
 }
 
-int testSingleMapping(Unit posX, Unit posY, Unit posZ, uint32_t resX,
-  uint32_t resY, Unit camX, Unit camY, Unit camZ, Unit camDir,
-  Unit expectX, Unit expectY, Unit expectZ)
+int testSingleMapping(RCL_Unit posX, RCL_Unit posY, RCL_Unit posZ, uint32_t resX,
+  uint32_t resY, RCL_Unit camX, RCL_Unit camY, RCL_Unit camZ, RCL_Unit camDir,
+  RCL_Unit expectX, RCL_Unit expectY, RCL_Unit expectZ)
 {
   int result;
 
-  Camera c;
+  RCL_Camera c;
 
   c.resolution.x = resX;
   c.resolution.y = resY;
@@ -80,21 +81,21 @@ int testSingleMapping(Unit posX, Unit posY, Unit posZ, uint32_t resX,
   c.direction = camDir;
   c.height = camZ;
 
-  Vector2D pos;
-  Unit height;
+  RCL_Vector2D pos;
+  RCL_Unit height;
 
   pos.x = posX;
   pos.y = posY;
   height = posZ;
  
-  PixelInfo p;
+  RCL_PixelInfo p;
 
   printf("- mapping pixel: %d %d %d\n",posX,posY,posZ);
 
-  p = mapToScreen(pos,height,c);
+  p = RCL_mapToScreen(pos,height,c);
 
   printf("- result:\n");
-  logPixelInfo(p);
+  RCL_logPixelInfo(p);
 
   result = p.position.x == expectX && p.position.y == expectY &&
     p.depth == expectZ;
@@ -126,46 +127,46 @@ long measureTime(void (*func)(void))
 
 void benchCastRays()
 {
-  Ray r;
+  RCL_Ray r;
 
-  r.start.x = UNITS_PER_SQUARE + UNITS_PER_SQUARE / 2;
-  r.start.y = 2 * UNITS_PER_SQUARE + UNITS_PER_SQUARE / 4;
+  r.start.x = RCL_UNITS_PER_SQUARE + RCL_UNITS_PER_SQUARE / 2;
+  r.start.y = 2 * RCL_UNITS_PER_SQUARE + RCL_UNITS_PER_SQUARE / 4;
 
-  Vector2D directions[8];
+  RCL_Vector2D directions[8];
 
   for (int i = 0; i < 8; ++i)
-    directions[i] = angleToDirection(UNITS_PER_SQUARE / 8 * i);
+    directions[i] = RCL_angleToDirection(RCL_UNITS_PER_SQUARE / 8 * i);
 
   for (int i = 0; i < 1000000; ++i)
   {
     r.direction = directions[i % 8];
-    castRay(r,testArrayFunc);
+    RCL_castRay(r,testArrayFunc);
   }
 }
 
 void benchmarkMapping()
 {
-  Camera c;
+  RCL_Camera c;
 
   c.resolution.x = 1024;
   c.resolution.y = 768;
-  c.position.x = UNITS_PER_SQUARE / 2;
-  c.position.y = UNITS_PER_SQUARE * 2;
-  c.direction = UNITS_PER_SQUARE / 8;
+  c.position.x = RCL_UNITS_PER_SQUARE / 2;
+  c.position.y = RCL_UNITS_PER_SQUARE * 2;
+  c.direction = RCL_UNITS_PER_SQUARE / 8;
   c.height = 0;
 
-  PixelInfo p;
+  RCL_PixelInfo p;
 
-  Vector2D pos;
-  Unit height;
+  RCL_Vector2D pos;
+  RCL_Unit height;
 
-  pos.x = -1024 * UNITS_PER_SQUARE;
-  pos.y = -512 * UNITS_PER_SQUARE;
+  pos.x = -1024 * RCL_UNITS_PER_SQUARE;
+  pos.y = -512 * RCL_UNITS_PER_SQUARE;
   height = 0;
  
   for (int i = 0; i < 1000000; ++i)
   {
-    p = mapToScreen(pos,height,c);
+    p = RCL_mapToScreen(pos,height,c);
 
     pos.x += 4;
     pos.y += 8;
@@ -173,13 +174,13 @@ void benchmarkMapping()
   }
 }
 
-void pixelFunc(PixelInfo *p)
+void pixelFunc(RCL_PixelInfo *p)
 {
 } 
 
 void benchmarkRender()
 {
-  Camera c;
+  RCL_Camera c;
 
   c.resolution.x = 640;
   c.resolution.y = 300;
@@ -188,13 +189,13 @@ void benchmarkRender()
   c.direction = 100;
   c.height = 200;
 
-  RayConstraints constraints;
+  RCL_RayConstraints constraints;
 
   constraints.maxHits = 10;
   constraints.maxSteps = 12;
 
   for (int i = 0; i < 100; ++i)
-    render(c,testArrayFunc,testArrayFunc2,pixelFunc,constraints);
+    RCL_renderComplex(c,testArrayFunc,testArrayFunc2,0,constraints);
 }
 
 int main()
@@ -202,8 +203,8 @@ int main()
   printf("Testing raycastlib.\n"); 
 
   if (!testSingleRay(
-    3 * UNITS_PER_SQUARE + UNITS_PER_SQUARE / 2,
-    4 * UNITS_PER_SQUARE + UNITS_PER_SQUARE / 2,
+    3 * RCL_UNITS_PER_SQUARE + RCL_UNITS_PER_SQUARE / 2,
+    4 * RCL_UNITS_PER_SQUARE + RCL_UNITS_PER_SQUARE / 2,
     100, 50,
     10, 7,
     10240, 7936,
@@ -229,8 +230,8 @@ int main()
     return 1;
 
   if (!testSingleRay(
-    -4 * UNITS_PER_SQUARE - UNITS_PER_SQUARE / 2,
-    7 * UNITS_PER_SQUARE + UNITS_PER_SQUARE / 3,
+    -4 * RCL_UNITS_PER_SQUARE - RCL_UNITS_PER_SQUARE / 2,
+    7 * RCL_UNITS_PER_SQUARE + RCL_UNITS_PER_SQUARE / 3,
     100,-100,
     0, 2,
     1, 2900,
@@ -239,15 +240,15 @@ int main()
 
   printf("testing perspective scale...\n");
 
-  for (Unit i = 1; i < 100; ++i)
+  for (RCL_Unit i = 1; i < 100; ++i)
   {
-    Unit size = i * 3;
-    Unit distance = i * 6 + 200;
+    RCL_Unit size = i * 3;
+    RCL_Unit distance = i * 6 + 200;
 
-    Unit scaled = perspectiveScale(size,distance);
-    Unit distance2 = perspectiveScaleInverse(size,scaled);
+    RCL_Unit scaled = RCL_perspectiveScale(size,distance);
+    RCL_Unit distance2 = RCL_perspectiveScaleInverse(size,scaled);
 
-    if (absVal(distance - distance2 > 2))
+    if (RCL_absVal(distance - distance2 > 2))
       printf("ERROR: distance: %d, distance inverse: %d\n",distance,distance2);
   }
 
@@ -255,15 +256,15 @@ int main()
 
 /*
   if (!testSingleMapping(
-    -UNITS_PER_SQUARE,
+    -RCL_UNITS_PER_SQUARE,
     0,
-    UNITS_PER_SQUARE / 2,
+    RCL_UNITS_PER_SQUARE / 2,
     1280,
     640,
     0,
     0,
     0,
-    UNITS_PER_SQUARE / 2,
+    RCL_UNITS_PER_SQUARE / 2,
     640,
     0,
     1024
