@@ -479,6 +479,8 @@ RCL_Unit RCL_clamp(RCL_Unit value, RCL_Unit valueMin, RCL_Unit valueMax)
     return valueMin;
 }
 
+#define RCL_nonZero(v) ((v) != 0 ? (v) : 1) ///< To prevent zero divisions.
+
 static inline RCL_Unit RCL_absVal(RCL_Unit value)
 {
   RCL_profileCall(RCL_absVal);
@@ -955,8 +957,8 @@ RCL_Unit RCL_adjustDistance(RCL_Unit distance, RCL_Camera *camera,
      RCL_vectorsAngleCos(RCL_angleToDirection(camera->direction),
      ray->direction)) / RCL_UNITS_PER_SQUARE;
 
-  return result == 0 ? 1 : result;
-                // ^ prevent division by zero
+  return RCL_nonZero(result);
+      // ^ prevent division by zero
 }
 
 void _columnFunctionComplex(RCL_HitResult *hits, uint16_t hitCount, uint16_t x,
@@ -1078,7 +1080,7 @@ void _columnFunctionComplex(RCL_HitResult *hits, uint16_t hitCount, uint16_t x,
         {\
           limit = RCL_clamp(pref##Z2Screen,l1,l2);\
           RCL_Unit wallLength = pref##Z2Screen - pref##Z1Screen - 1;\
-          wallLength = wallLength != 0 ? wallLength : 1;\
+          wallLength = RCL_nonZero(wallLength);\
           RCL_Unit wallPosition =\
             RCL_absVal(pref##Z1Screen - pref##PosY) inc (-1);\
           RCL_Unit coordStep = RCL_COMPUTE_WALL_TEXCOORDS ? \
@@ -1122,7 +1124,7 @@ void _columnFunctionComplex(RCL_HitResult *hits, uint16_t hitCount, uint16_t x,
 
       // draw floor wall
 
-      if (fPosY > 0) // still pixels left?
+      if (fPosY > 0)  // still pixels left?
       {
         p.isFloor = 1;
         drawVertical(f,cPosY + 1,_RCL_camera.resolution.y,>,-)
@@ -1134,7 +1136,7 @@ void _columnFunctionComplex(RCL_HitResult *hits, uint16_t hitCount, uint16_t x,
       {
         p.isFloor = 0;
         drawVertical(c,-1,fPosY - 1,<,+)
-      }             // ^ puposfully allow outside screen bounds here 
+      }              // ^ puposfully allow outside screen bounds here 
 
       #undef drawVertical
     }
@@ -1266,12 +1268,11 @@ void _columnFunctionSimple(RCL_HitResult *hits, uint16_t hitCount, uint16_t x,
   p.hit.textureCoord -= p.hit.doorRoll;
 #endif
 
-RCL_Unit coordStep = 1;
+  RCL_Unit coordStep = 1;
 
 #if RCL_COMPUTE_WALL_TEXCOORDS == 1
   p.texCoords.x = p.hit.textureCoord;
-  coordStep = RCL_UNITS_PER_SQUARE /
-    (wallHeightScreen != 0 ? wallHeightScreen : 1);
+  coordStep = RCL_UNITS_PER_SQUARE / RCL_nonZero(wallHeightScreen);
   p.texCoords.y = coordStep * coordHelper;
 #endif
 
@@ -1286,7 +1287,7 @@ RCL_Unit coordStep = 1;
       p.position.y = y;
 #if RCL_COMPUTE_WALL_TEXCOORDS == 1
       p.texCoords.y = (RCL_UNITS_PER_SQUARE * coordHelper) /
-        (wallHeightScreen != 0 ? wallHeightScreen : 1);
+        RCL_nonZero(wallHeightScreen);
 #endif
       RCL_PIXEL_FUNCTION(&p);
       ++coordHelper;
@@ -1441,7 +1442,7 @@ RCL_Vector2D RCL_normalize(RCL_Vector2D v)
 
   RCL_Vector2D result;
   RCL_Unit l = RCL_len(v);
-  l = l != 0 ? l : 1;
+  l = RCL_nonZero(l);
 
   result.x = (v.x * RCL_UNITS_PER_SQUARE) / l;
   result.y = (v.y * RCL_UNITS_PER_SQUARE) / l;
@@ -1495,10 +1496,10 @@ RCL_PixelInfo RCL_mapToScreen(RCL_Vector2D worldPosition, RCL_Unit height,
   RCL_Unit cos = RCL_cosInt(RCL_HORIZONTAL_FOV_HALF);
 
   RCL_Unit b = (result.depth * RCL_sinInt(RCL_HORIZONTAL_FOV_HALF)) /
-    (cos == 0 ? 1 : cos);
+    RCL_nonZero(cos);
     // sin/cos = tan
 
-  result.position.x = (a * middleColumn) / (b == 0 ? 1 : b);
+  result.position.x = (a * middleColumn) / RCL_nonZero(b);
   result.position.x = middleColumn - result.position.x;
 
   return result;
