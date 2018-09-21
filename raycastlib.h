@@ -1405,10 +1405,9 @@ void RCL_renderSimple(RCL_Camera cam, RCL_ArrayFunction floorHeightFunc,
   _RCL_horizontalDepthStep = HORIZON_DEPTH / cam.resolution.y; 
 
   constraints.maxHits = 
-
-  _RCL_rollFunction == 0 ?
-    1 : // no door => 1 hit is enough 
-    3;  // for correctly rendering rolling doors we'll need 3 hits (NOT 2)
+    _RCL_rollFunction == 0 ?
+      1 : // no door => 1 hit is enough 
+      3;  // for correctly rendering rolling doors we'll need 3 hits (NOT 2)
 
 #if RCL_COMPUTE_FLOOR_TEXCOORDS == 1
   uint16_t halfResY = cam.resolution.y / 2;
@@ -1417,8 +1416,12 @@ void RCL_renderSimple(RCL_Camera cam, RCL_ArrayFunction floorHeightFunc,
                                              this will contain precomputed
                                              distance to the camera */
   RCL_Unit camHeightScreenSize =
-    (((cam.height >> 6) << 6) * // prevent weird floor movement with rounding
-    cam.resolution.y) / RCL_UNITS_PER_SQUARE;
+#ifdef RCL_RAYCAST_TINY
+    (cam.height 
+#else
+    (((cam.height >> 6) << 6) // prevent weird floor movement with rounding
+#endif
+    * cam.resolution.y) / RCL_UNITS_PER_SQUARE;
 
   for (uint16_t i = 0; i < halfResY; ++i) // precompute the distances
     floorPixelDistances[i] =
