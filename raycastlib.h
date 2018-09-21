@@ -1262,7 +1262,7 @@ void _columnFunctionSimple(RCL_HitResult *hits, uint16_t hitCount, uint16_t x,
 
   p.isWall = 1;
   p.isFloor = 1;
-  p.depth = RCL_dist;
+  p.depth = dist;
 
 #if RCL_ROLL_TEXTURE_COORDS == 1 && RCL_COMPUTE_WALL_TEXCOORDS == 1 
   p.hit.textureCoord -= p.hit.doorRoll;
