@@ -1239,11 +1239,11 @@ void _RCL_columnFunctionComplex(RCL_HitResult *hits, uint16_t hitCount, uint16_t
 void _RCL_columnFunctionSimple(RCL_HitResult *hits, uint16_t hitCount, uint16_t x,
   RCL_Ray ray)
 {
-  int16_t y = 0;
-  int16_t wallHeightScreen = 0;
-  int16_t wallStart = _RCL_middleRow;
-  int16_t wallEnd = _RCL_middleRow;
-  int16_t heightOffset = 0;
+  RCL_Unit y = 0;
+  RCL_Unit wallHeightScreen = 0;
+  RCL_Unit wallStart = _RCL_middleRow;
+  RCL_Unit wallEnd = _RCL_middleRow;
+  RCL_Unit heightOffset = 0;
 
   RCL_Unit dist = 1;
 
