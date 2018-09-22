@@ -1189,8 +1189,6 @@ void _columnFunctionComplex(RCL_HitResult *hits, uint16_t hitCount, uint16_t x,
 
         cZ1World = cZ2World; // for the next iteration
       }              // ^ puposfully allow outside screen bounds here 
-
-      #undef drawVertical
     }
   }
 }
