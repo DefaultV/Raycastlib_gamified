@@ -28,4 +28,4 @@ terminal:
 license
 -------
 
-Everything is CC0 1.0. This includes the resources that I found at OpenGameArt under the same license.
+Everything is CC0 1.0.
