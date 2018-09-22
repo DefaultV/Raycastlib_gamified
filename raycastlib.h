@@ -70,6 +70,14 @@
                             2: octagonal approximation (LQ) */
 #endif
 
+#ifndef RCL_ACCURATE_WALL_TEXTURING
+#define RCL_ACCURATE_WALL_TEXTURING 0 /**< If turned on, vertical wall texture
+                                      coordinates will always be calculated
+                                      with more precise (but slower) method,
+                                      otherwise RCL_MIN_TEXTURE_STEP will be
+                                      used to decide the method. */
+#endif
+
 #ifndef RCL_COMPUTE_FLOOR_DEPTH
 #define RCL_COMPUTE_FLOOR_DEPTH 1 /**< Whether depth should be computed for
                                    floor pixels - turns this off if not
@@ -116,8 +124,8 @@
 #ifndef RCL_MIN_TEXTURE_STEP
 #define RCL_MIN_TEXTURE_STEP 12 /**< Specifies the minimum step in pixels that
                                  can be used to compute texture coordinates in
-                                 a fast way. Smallet step will trigger a more
-                                 expensive way of computing texture coords. */
+                                 a fast way. Smallet step should be faster
+                                 (but less accurate). */
 #endif
 
 #define HORIZON_DEPTH (12 * RCL_UNITS_PER_SQUARE) /**< What depth the horizon
@@ -961,7 +969,6 @@ RCL_Unit RCL_adjustDistance(RCL_Unit distance, RCL_Camera *camera,
       // ^ prevent division by zero
 }
 
-
 static inline int16_t _drawWall(
   RCL_Unit yCurrent,
   RCL_Unit yFrom,
@@ -985,7 +992,13 @@ static inline int16_t _drawWall(
   pixelInfo->texCoords.y = RCL_COMPUTE_WALL_TEXCOORDS ?
     wallPosition * coordStep : 0;
 
-  if (coordStep < RCL_MIN_TEXTURE_STEP) // two-version loop
+#if RCL_ACCURATE_WALL_TEXTURING == 1
+  if (1)
+#else
+  if (RCL_absVal(coordStep) < RCL_MIN_TEXTURE_STEP)
+    /* for the sake of performance there are two-versions of the loop - it's
+       better to branch early than inside the loop */
+#endif
   {
     for (RCL_Unit i = yCurrent + increment; 
          increment == -1 ? i >= limit : i <= limit; // TODO: is efficient?
@@ -1023,9 +1036,6 @@ static inline int16_t _drawWall(
   
   return limit;
 }
-
-
-
 
 void _columnFunctionComplex(RCL_HitResult *hits, uint16_t hitCount, uint16_t x,
   RCL_Ray ray)
@@ -1190,7 +1200,6 @@ void _columnFunctionSimple(RCL_HitResult *hits, uint16_t hitCount, uint16_t x,
 {
   int16_t y = 0;
   int16_t wallHeightScreen = 0;
-  int16_t coordHelper = 0;
   int16_t wallStart = _RCL_middleRow;
   int16_t wallEnd = _RCL_middleRow;
   int16_t heightOffset = 0;
@@ -1267,15 +1276,6 @@ void _columnFunctionSimple(RCL_HitResult *hits, uint16_t hitCount, uint16_t x,
 
       wallStart = _RCL_middleRow - wallHeightScreen + heightOffset +
                   RCL_normalizedWallHeight;
-
-      coordHelper = -1 * wallStart;
-      coordHelper = coordHelper >= 0 ? coordHelper : 0;
-
-      wallEnd = RCL_clamp(wallStart + wallHeightScreen,0,
-        _RCL_camera.resolution.y);
-        // ^ intentionally allow outside screen
-
-      wallStart = RCL_clamp(wallStart,0,_RCL_camResYLimit);
     }
   }
 
@@ -1310,46 +1310,10 @@ void _columnFunctionSimple(RCL_HitResult *hits, uint16_t hitCount, uint16_t x,
   p.hit.textureCoord -= p.hit.doorRoll;
 #endif
 
-  RCL_Unit coordStep = 1;
-
-#if RCL_COMPUTE_WALL_TEXCOORDS == 1
   p.texCoords.x = p.hit.textureCoord;
-  coordStep = RCL_UNITS_PER_SQUARE / RCL_nonZero(wallHeightScreen);
-  p.texCoords.y = coordStep * coordHelper;
-#endif
 
-  if (coordStep < RCL_MIN_TEXTURE_STEP) /* instead of branching inside a
-                                           critical loop, have two versions of
-                                           the loop and branch early (here) */
-  {
-    while (y < wallEnd)
-    {
-      // more expensive and accurate version of texture coords computation
-
-      p.position.y = y;
-#if RCL_COMPUTE_WALL_TEXCOORDS == 1
-      p.texCoords.y = (RCL_UNITS_PER_SQUARE * coordHelper) /
-        RCL_nonZero(wallHeightScreen);
-#endif
-      RCL_PIXEL_FUNCTION(&p);
-      ++coordHelper;
-      ++y;
-    }
-  }
-  else
-  {
-    while (y < wallEnd)
-    {
-      // cheaper texture coord computation
-
-      p.position.y = y;
-      RCL_PIXEL_FUNCTION(&p);
-#if RCL_COMPUTE_WALL_TEXCOORDS == 1
-      p.texCoords.y += coordStep;
-#endif
-      ++y;
-    }
-  }
+  y = _drawWall(y - 1,wallStart,wallStart + wallHeightScreen - 1,-1,
+        _RCL_camera.resolution.y,1,&p);
 
   // draw floor
 
