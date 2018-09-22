@@ -132,6 +132,12 @@
                                                    has (the floor depth is only
                                                    approximated with the help
                                                    of this constant). */
+#ifndef RCL_VERTICAL_DEPTH_MULTIPLY
+#define RCL_VERTICAL_DEPTH_MULTIPLY 2 /**< Defines a multiplier of height
+                                       difference when approximating floor/ceil
+                                       depth. */
+#endif
+
 #define RCL_logV2D(v)\
   printf("[%d,%d]\n",v.x,v.y);
 
@@ -969,11 +975,53 @@ RCL_Unit RCL_adjustDistance(RCL_Unit distance, RCL_Camera *camera,
       // ^ prevent division by zero
 }
 
+/// Helper for drawing floor or ceiling.
+static inline int16_t _RCL_drawHorizontal(
+  RCL_Unit yCurrent,
+  RCL_Unit yTo,
+  RCL_Unit limit1,   // TODO: int16_t?
+  RCL_Unit limit2,
+  RCL_Unit verticalOffset,
+  int16_t increment,
+  int8_t computeDepth,
+  RCL_PixelInfo *pixelInfo
+)
+{
+  int16_t limit = RCL_clamp(yTo,limit1,limit2);
+
+  if (computeDepth) // branch early before critical function
+  {
+    pixelInfo->depth += RCL_absVal(verticalOffset) *
+      RCL_VERTICAL_DEPTH_MULTIPLY;
+
+    for (int16_t i = yCurrent + increment;
+         increment == -1 ? i >= limit : i <= limit; // TODO: is efficient?
+         i += increment)
+    {
+      pixelInfo->position.y = i;
+      pixelInfo->depth += _RCL_horizontalDepthStep;
+      RCL_PIXEL_FUNCTION(pixelInfo);
+    }
+  }
+  else
+  {
+    for (int16_t i = yCurrent + increment;
+         increment == -1 ? i >= limit : i <= limit; // TODO: is efficient?
+         i += increment)
+    {
+      pixelInfo->position.y = i;
+      RCL_PIXEL_FUNCTION(pixelInfo);
+    }
+  }
+
+  return limit;
+}
+
 static inline int16_t _RCL_drawWall(
   RCL_Unit yCurrent,
   RCL_Unit yFrom,
   RCL_Unit yTo,
-  RCL_Unit limit1,
+  RCL_Unit limit1, // TODO: int16_t?
   RCL_Unit limit2,
   int16_t increment,
   RCL_PixelInfo *pixelInfo
@@ -1102,22 +1150,6 @@ void _RCL_columnFunctionComplex(RCL_HitResult *hits, uint16_t hitCount, uint16_t
 
     RCL_Unit limit;
 
-    #define VERTICAL_DEPTH_MULTIPLY 2
-
-    #define drawHorizontal(pref,l1,l2,comp,inc,compDepth)\
-      if (compDepth)\
-        p.depth += RCL_absVal(pref##Z1World) * VERTICAL_DEPTH_MULTIPLY;\
-      limit = RCL_clamp(pref##Z1Screen,l1,l2);\
-      for (i = pref##PosY inc 1; i comp##= limit; inc##inc i)\
-      {\
-        p.position.y = i;\
-        if (compDepth)\
-          p.depth += _RCL_horizontalDepthStep;\
-        RCL_PIXEL_FUNCTION(&p);\
-      }\
-      if (pref##PosY comp limit)\
-        pref##PosY = limit;
-
     p.isWall = 0;
     p.isHorizon = drawingHorizon;
 
@@ -1130,8 +1162,12 @@ void _RCL_columnFunctionComplex(RCL_HitResult *hits, uint16_t hitCount, uint16_t
     p.depth = 0;
 #endif
 
-    drawHorizontal(f,cPosY + 1,_RCL_camera.resolution.y,>,-,
-      RCL_COMPUTE_FLOOR_DEPTH) // ^ purposfully allow outside screen bounds
+    limit = _RCL_drawHorizontal(fPosY,fZ1Screen,cPosY + 1,
+      _RCL_camera.resolution.y,fZ1World,-1,RCL_COMPUTE_FLOOR_DEPTH,&p);
+     // ^ purposfully allow outside screen bounds
+
+    if (fPosY > limit)
+      fPosY = limit;
 
     if (_RCL_ceilFunction != 0 || drawingHorizon)
     {
@@ -1143,12 +1179,13 @@ void _RCL_columnFunctionComplex(RCL_HitResult *hits, uint16_t hitCount, uint16_t
         _RCL_horizontalDepthStep;
 #endif
 
-      drawHorizontal(c,-1,fPosY - 1,<,+,RCL_COMPUTE_CEILING_DEPTH)
-                    // ^ purposfully allow outside screen bounds here
-    }
+      limit = _RCL_drawHorizontal(cPosY,cZ1Screen,
+        -1,fPosY - 1,cZ1World,1,RCL_COMPUTE_CEILING_DEPTH,&p);
+      // ^ purposfully allow outside screen bounds here
 
-    #undef drawHorizontal
-    #undef VERTICAL_DEPTH_MULTIPLY
+      if (cPosY < limit)
+        cPosY = limit;
+    }
 
     if (!drawingHorizon) // don't draw walls for horizon plane
     {
