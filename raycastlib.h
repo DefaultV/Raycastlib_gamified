@@ -929,7 +929,7 @@ void RCL_castRaysMultiHit(RCL_Camera cam, RCL_ArrayFunction arrayFunc,
 /**
   Helper function that determines intersection with both ceiling and floor.
 */
-RCL_Unit _floorCeilFunction(int16_t x, int16_t y)
+RCL_Unit _RCL_floorCeilFunction(int16_t x, int16_t y)
 {
   RCL_Unit f = _RCL_floorFunction(x,y);
 
@@ -969,7 +969,7 @@ RCL_Unit RCL_adjustDistance(RCL_Unit distance, RCL_Camera *camera,
       // ^ prevent division by zero
 }
 
-static inline int16_t _drawWall(
+static inline int16_t _RCL_drawWall(
   RCL_Unit yCurrent,
   RCL_Unit yFrom,
   RCL_Unit yTo,
@@ -1037,7 +1037,7 @@ static inline int16_t _drawWall(
   return limit;
 }
 
-void _columnFunctionComplex(RCL_HitResult *hits, uint16_t hitCount, uint16_t x,
+void _RCL_columnFunctionComplex(RCL_HitResult *hits, uint16_t hitCount, uint16_t x,
   RCL_Ray ray)
 {
   // last written Y position, can never go backwards
@@ -1164,7 +1164,7 @@ void _columnFunctionComplex(RCL_HitResult *hits, uint16_t hitCount, uint16_t x,
       {
         p.isFloor = 1;
 
-        limit = _drawWall(fPosY,fZ1Screen,fZ2Screen,cPosY + 1,
+        limit = _RCL_drawWall(fPosY,fZ1Screen,fZ2Screen,cPosY + 1,
                   _RCL_camera.resolution.y,-1,&p);
                   // ^ purposfully allow outside screen bounds here
 
@@ -1180,7 +1180,7 @@ void _columnFunctionComplex(RCL_HitResult *hits, uint16_t hitCount, uint16_t x,
       {
         p.isFloor = 0;
 
-        limit = _drawWall(cPosY,cZ1Screen,cZ2Screen,
+        limit = _RCL_drawWall(cPosY,cZ1Screen,cZ2Screen,
                   -1,fPosY - 1,1,&p);
                 // ^ puposfully allow outside screen bounds here
 
@@ -1193,7 +1193,7 @@ void _columnFunctionComplex(RCL_HitResult *hits, uint16_t hitCount, uint16_t x,
   }
 }
 
-void _columnFunctionSimple(RCL_HitResult *hits, uint16_t hitCount, uint16_t x,
+void _RCL_columnFunctionSimple(RCL_HitResult *hits, uint16_t hitCount, uint16_t x,
   RCL_Ray ray)
 {
   int16_t y = 0;
@@ -1310,7 +1310,7 @@ void _columnFunctionSimple(RCL_HitResult *hits, uint16_t hitCount, uint16_t x,
 
   p.texCoords.x = p.hit.textureCoord;
 
-  y = _drawWall(y - 1,wallStart,wallStart + wallHeightScreen - 1,-1,
+  y = _RCL_drawWall(y - 1,wallStart,wallStart + wallHeightScreen - 1,-1,
         _RCL_camera.resolution.y,1,&p) + 1;
 
   // draw floor
@@ -1388,8 +1388,8 @@ void RCL_renderComplex(RCL_Camera cam, RCL_ArrayFunction floorHeightFunc,
 
   _RCL_horizontalDepthStep = HORIZON_DEPTH / cam.resolution.y; 
 
-  RCL_castRaysMultiHit(cam,_floorCeilFunction,typeFunction,
-    _columnFunctionComplex,constraints);
+  RCL_castRaysMultiHit(cam,_RCL_floorCeilFunction,typeFunction,
+    _RCL_columnFunctionComplex,constraints);
 }
 
 void RCL_renderSimple(RCL_Camera cam, RCL_ArrayFunction floorHeightFunc,
@@ -1431,12 +1431,12 @@ void RCL_renderSimple(RCL_Camera cam, RCL_ArrayFunction floorHeightFunc,
     floorPixelDistances[i] =
       RCL_perspectiveScaleInverse(camHeightScreenSize,i);
 
-  // pass to _columnFunctionSimple
+  // pass to _RCL_columnFunctionSimple
   _RCL_floorPixelDistances = floorPixelDistances;
 #endif
 
   RCL_castRaysMultiHit(cam,_floorHeightNotZeroFunction,typeFunc,
-    _columnFunctionSimple, constraints);
+    _RCL_columnFunctionSimple, constraints);
 
 #if RCL_COMPUTE_FLOOR_TEXCOORDS == 1
   _RCL_floorPixelDistances = 0;
