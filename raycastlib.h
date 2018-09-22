@@ -961,6 +961,68 @@ RCL_Unit RCL_adjustDistance(RCL_Unit distance, RCL_Camera *camera,
       // ^ prevent division by zero
 }
 
+/*
+// WIP DEMACRO
+
+static inline void _drawWall(
+  int16_t yCurrent, int16_t yFrom, int16_t yTo, int16_t limit1, int16_t limit2,
+  int16_t increment,
+  RCL_PixelInfo *pixelInfo,
+  )
+{
+  int16_t limit = RCL_clamp(pref##Z2Screen,l1,l2);\
+
+  RCL_Unit wallLength = yTo - yFrom - 1;
+
+  wallLength = RCL_nonZero(wallLength);
+
+  RCL_Unit wallPosition = RCL_absVal(yFrom - yCurrent) - increment;
+
+  RCL_Unit coordStep = RCL_COMPUTE_WALL_TEXCOORDS ?
+    RCL_UNITS_PER_SQUARE / wallLength : 1;
+
+  pixelInfo->texCoords.y = RCL_COMPUTE_WALL_TEXCOORDS ?
+    wallPosition * coordStep : 0;
+
+  if (coordStep < RCL_MIN_TEXTURE_STEP) // two-version loop
+  {
+    for (int16_t i = yCurrent + increment; i comp##= limit; i += increment)
+    {
+      // more expensive texture coord computing
+
+      pixelInfo->position.y = i;
+
+      if (RCL_COMPUTE_WALL_TEXCOORDS == 1)
+      {
+        p.texCoords.y = (wallPosition * RCL_UNITS_PER_SQUARE) / wallLength;
+      }
+      wallPosition++;
+      RCL_PIXEL_FUNCTION(&p);
+    }
+  }
+  else
+  {
+    for (i = pref##PosY inc 1; i comp##= limit; inc##inc i)
+    {
+      // cheaper texture coord computing
+
+      p.position.y = i;
+      if (RCL_COMPUTE_WALL_TEXCOORDS == 1)
+      {
+        p.texCoords.x = hit.textureCoord;
+        p.texCoords.y += coordStep;
+      }
+
+      RCL_PIXEL_FUNCTION(&p);
+    }
+  }
+  
+  if (pref##PosY comp limit)
+    pref##PosY = limit;
+  pref##Z1World = pref##Z2World; // for the next iteration
+}
+*/
+
 void _columnFunctionComplex(RCL_HitResult *hits, uint16_t hitCount, uint16_t x,
   RCL_Ray ray)
 {
@@ -1091,10 +1153,8 @@ void _columnFunctionComplex(RCL_HitResult *hits, uint16_t hitCount, uint16_t x,
             for (i = pref##PosY inc 1; i comp##= limit; inc##inc i)\
             { /* more expensive texture coord computing */\
               p.position.y = i;\
-              p.hit = hit;\
               if (RCL_COMPUTE_WALL_TEXCOORDS == 1)\
               {\
-                p.texCoords.x = hit.textureCoord;\
                 p.texCoords.y = (wallPosition * RCL_UNITS_PER_SQUARE)\
                   / wallLength;\
               }\
@@ -1105,10 +1165,8 @@ void _columnFunctionComplex(RCL_HitResult *hits, uint16_t hitCount, uint16_t x,
             for (i = pref##PosY inc 1; i comp##= limit; inc##inc i)\
             { /* cheaper texture coord computing */\
               p.position.y = i;\
-              p.hit = hit;\
               if (RCL_COMPUTE_WALL_TEXCOORDS == 1)\
               {\
-                p.texCoords.x = hit.textureCoord;\
                 p.texCoords.y += coordStep;\
               }\
               RCL_PIXEL_FUNCTION(&p);\
@@ -1121,6 +1179,8 @@ void _columnFunctionComplex(RCL_HitResult *hits, uint16_t hitCount, uint16_t x,
       p.isWall = 1;
       p.depth = distance;
       p.isFloor = 1;
+      p.hit = hit;
+      p.texCoords.x = hit.textureCoord;
 
       // draw floor wall
 
