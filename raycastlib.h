@@ -138,6 +138,10 @@
                                        depth. */
 #endif
 
+#define RCL_min(a,b) ((a) < (b) ? (a) : (b))
+#define RCL_max(a,b) ((a) > (b) ? (a) : (b))
+#define RCL_nonZero(v) ((v) != 0 ? (v) : 1) ///< To prevent zero divisions.
+
 #define RCL_logV2D(v)\
   printf("[%d,%d]\n",v.x,v.y);
 
@@ -492,8 +496,6 @@ RCL_Unit RCL_clamp(RCL_Unit value, RCL_Unit valueMin, RCL_Unit valueMax)
   else
     return valueMin;
 }
-
-#define RCL_nonZero(v) ((v) != 0 ? (v) : 1) ///< To prevent zero divisions.
 
 static inline RCL_Unit RCL_absVal(RCL_Unit value)
 {
@@ -987,6 +989,8 @@ static inline int16_t _RCL_drawHorizontal(
   RCL_PixelInfo *pixelInfo
 )
 {
+  pixelInfo->isWall = 0;
+
   int16_t limit = RCL_clamp(yTo,limit1,limit2);
 
   if (computeDepth) // branch early before critical function
@@ -1027,6 +1031,8 @@ static inline int16_t _RCL_drawWall(
   RCL_PixelInfo *pixelInfo
   )
 {
+  pixelInfo->isWall = 1;
+
   RCL_Unit limit = RCL_clamp(yTo,limit1,limit2);
 
   RCL_Unit wallLength = yTo - yFrom - 1;
@@ -1321,7 +1327,7 @@ void _RCL_columnFunctionSimple(RCL_HitResult *hits, uint16_t hitCount, uint16_t 
   p.isHorizon = 1;
   p.depth = 1;
 
-  RCL_Unit limit = wallStart < _RCL_middleRow ? wallStart : _RCL_middleRow;
+  RCL_Unit limit = RCL_min(wallStart,_RCL_middleRow);
   // ^ in case there is no wall
 
   while (y < limit)
@@ -1710,10 +1716,10 @@ void RCL_moveCameraWithCollision(RCL_Camera *camera, RCL_Vector2D planeOffset,
     #define checkSquares(s1,s2)\
     {\
       height = floorHeightFunc(xSquare##s1,ySquare##s2);\
-      bottomLimit = bottomLimit < height ? height : bottomLimit;\
+      bottomLimit = RCL_max(bottomLimit,height);\
       height = ceilingHeightFunc != 0 ?\
         ceilingHeightFunc(xSquare##s1,ySquare##s2) : RCL_INFINITY;\
-      topLimit = topLimit > height ? height : topLimit;\
+      topLimit = RCL_min(topLimit,height);\
     }
 
     if (xSquare2 != xSquare1)
