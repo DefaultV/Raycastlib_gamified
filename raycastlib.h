@@ -961,19 +961,20 @@ RCL_Unit RCL_adjustDistance(RCL_Unit distance, RCL_Camera *camera,
       // ^ prevent division by zero
 }
 
-/*
-// WIP DEMACRO
 
-static inline void _drawWall(
-  int16_t yCurrent, int16_t yFrom, int16_t yTo, int16_t limit1, int16_t limit2,
+static inline int16_t _drawWall(
+  RCL_Unit yCurrent,
+  RCL_Unit yFrom,
+  RCL_Unit yTo,
+  RCL_Unit limit1,
+  RCL_Unit limit2,
   int16_t increment,
-  RCL_PixelInfo *pixelInfo,
+  RCL_PixelInfo *pixelInfo
   )
 {
-  int16_t limit = RCL_clamp(pref##Z2Screen,l1,l2);\
+  RCL_Unit limit = RCL_clamp(yTo,limit1,limit2);
 
   RCL_Unit wallLength = yTo - yFrom - 1;
-
   wallLength = RCL_nonZero(wallLength);
 
   RCL_Unit wallPosition = RCL_absVal(yFrom - yCurrent) - increment;
@@ -986,42 +987,45 @@ static inline void _drawWall(
 
   if (coordStep < RCL_MIN_TEXTURE_STEP) // two-version loop
   {
-    for (int16_t i = yCurrent + increment; i comp##= limit; i += increment)
+    for (RCL_Unit i = yCurrent + increment; 
+         increment == -1 ? i >= limit : i <= limit; // TODO: is efficient?
+         i += increment)
     {
       // more expensive texture coord computing
 
       pixelInfo->position.y = i;
 
-      if (RCL_COMPUTE_WALL_TEXCOORDS == 1)
-      {
-        p.texCoords.y = (wallPosition * RCL_UNITS_PER_SQUARE) / wallLength;
-      }
+#if RCL_COMPUTE_WALL_TEXCOORDS == 1
+      pixelInfo->texCoords.y = (wallPosition * RCL_UNITS_PER_SQUARE) / wallLength;
+#endif
+
       wallPosition++;
-      RCL_PIXEL_FUNCTION(&p);
+      RCL_PIXEL_FUNCTION(pixelInfo);
     }
   }
   else
   {
-    for (i = pref##PosY inc 1; i comp##= limit; inc##inc i)
+    for (RCL_Unit i = yCurrent + increment;
+         increment == -1 ? i >= limit : i <= limit; // TODO: is efficient?
+         i += increment)
     {
       // cheaper texture coord computing
 
-      p.position.y = i;
-      if (RCL_COMPUTE_WALL_TEXCOORDS == 1)
-      {
-        p.texCoords.x = hit.textureCoord;
-        p.texCoords.y += coordStep;
-      }
+      pixelInfo->position.y = i;
 
-      RCL_PIXEL_FUNCTION(&p);
+#if RCL_COMPUTE_WALL_TEXCOORDS == 1
+      pixelInfo->texCoords.y += coordStep;
+#endif
+
+      RCL_PIXEL_FUNCTION(pixelInfo);
     }
   }
   
-  if (pref##PosY comp limit)
-    pref##PosY = limit;
-  pref##Z1World = pref##Z2World; // for the next iteration
+  return limit;
 }
-*/
+
+
+
 
 void _columnFunctionComplex(RCL_HitResult *hits, uint16_t hitCount, uint16_t x,
   RCL_Ray ray)
@@ -1138,44 +1142,6 @@ void _columnFunctionComplex(RCL_HitResult *hits, uint16_t hitCount, uint16_t x,
 
     if (!drawingHorizon) // don't draw walls for horizon plane
     {
-      #define drawVertical(pref,l1,l2,comp,inc)\
-        {\
-          limit = RCL_clamp(pref##Z2Screen,l1,l2);\
-          RCL_Unit wallLength = pref##Z2Screen - pref##Z1Screen - 1;\
-          wallLength = RCL_nonZero(wallLength);\
-          RCL_Unit wallPosition =\
-            RCL_absVal(pref##Z1Screen - pref##PosY) inc (-1);\
-          RCL_Unit coordStep = RCL_COMPUTE_WALL_TEXCOORDS ? \
-            RCL_UNITS_PER_SQUARE / wallLength : 1;\
-          p.texCoords.y = RCL_COMPUTE_WALL_TEXCOORDS ?\
-            wallPosition * coordStep : 0;\
-          if (coordStep < RCL_MIN_TEXTURE_STEP) /* two-version loop */ \
-            for (i = pref##PosY inc 1; i comp##= limit; inc##inc i)\
-            { /* more expensive texture coord computing */\
-              p.position.y = i;\
-              if (RCL_COMPUTE_WALL_TEXCOORDS == 1)\
-              {\
-                p.texCoords.y = (wallPosition * RCL_UNITS_PER_SQUARE)\
-                  / wallLength;\
-              }\
-              wallPosition++;\
-              RCL_PIXEL_FUNCTION(&p);\
-            }\
-          else\
-            for (i = pref##PosY inc 1; i comp##= limit; inc##inc i)\
-            { /* cheaper texture coord computing */\
-              p.position.y = i;\
-              if (RCL_COMPUTE_WALL_TEXCOORDS == 1)\
-              {\
-                p.texCoords.y += coordStep;\
-              }\
-              RCL_PIXEL_FUNCTION(&p);\
-            }\
-          if (pref##PosY comp limit)\
-            pref##PosY = limit;\
-          pref##Z1World = pref##Z2World; /* for the next iteration */\
-        }
-
       p.isWall = 1;
       p.depth = distance;
       p.isFloor = 1;
@@ -1187,7 +1153,15 @@ void _columnFunctionComplex(RCL_HitResult *hits, uint16_t hitCount, uint16_t x,
       if (fPosY > 0)  // still pixels left?
       {
         p.isFloor = 1;
-        drawVertical(f,cPosY + 1,_RCL_camera.resolution.y,>,-)
+
+        limit = _drawWall(fPosY,fZ1Screen,fZ2Screen,cPosY + 1,
+                  _RCL_camera.resolution.y,-1,&p);
+                  // ^ purposfully allow outside screen bounds here
+
+        if (fPosY > limit)
+          fPosY = limit;
+
+        fZ1World = fZ2World; // for the next iteration
       }               // ^ purposfully allow outside screen bounds here
 
       // draw ceiling wall
@@ -1195,7 +1169,15 @@ void _columnFunctionComplex(RCL_HitResult *hits, uint16_t hitCount, uint16_t x,
       if (_RCL_ceilFunction != 0 && cPosY < _RCL_camResYLimit) // pixels left?
       {
         p.isFloor = 0;
-        drawVertical(c,-1,fPosY - 1,<,+)
+
+        limit = _drawWall(cPosY,cZ1Screen,cZ2Screen,
+                  -1,fPosY - 1,1,&p);
+                // ^ puposfully allow outside screen bounds here
+
+        if (cPosY < limit)
+          cPosY = limit;
+
+        cZ1World = cZ2World; // for the next iteration
       }              // ^ puposfully allow outside screen bounds here 
 
       #undef drawVertical
