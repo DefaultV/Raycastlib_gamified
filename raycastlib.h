@@ -1313,7 +1313,7 @@ void _columnFunctionSimple(RCL_HitResult *hits, uint16_t hitCount, uint16_t x,
   p.texCoords.x = p.hit.textureCoord;
 
   y = _drawWall(y - 1,wallStart,wallStart + wallHeightScreen - 1,-1,
-        _RCL_camera.resolution.y,1,&p);
+        _RCL_camera.resolution.y,1,&p) + 1;
 
   // draw floor
 
