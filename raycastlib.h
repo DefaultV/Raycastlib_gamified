@@ -70,6 +70,12 @@
                             2: octagonal approximation (LQ) */
 #endif
 
+#ifndef RCL_TEXTURE_VERTICAL_STRETCH
+#define RCL_TEXTURE_VERTICAL_STRETCH 1 /**< Whether textures should be
+                                       stretched to wall height (possibly
+                                       slightly slower if on). */
+#endif
+
 #ifndef RCL_ACCURATE_WALL_TEXTURING
 #define RCL_ACCURATE_WALL_TEXTURING 0 /**< If turned on, vertical wall texture
                                       coordinates will always be calculated
@@ -122,10 +128,14 @@
 #endif
 
 #ifndef RCL_MIN_TEXTURE_STEP
-#define RCL_MIN_TEXTURE_STEP 12 /**< Specifies the minimum step in pixels that
-                                 can be used to compute texture coordinates in
-                                 a fast way. Smallet step should be faster
-                                 (but less accurate). */
+  #if RCL_TEXTURE_VERTICAL_STRETCH == 1
+  #define RCL_MIN_TEXTURE_STEP 12 /**< Specifies the minimum step in pixels
+                                   that can be used to compute texture
+                                   coordinates in a fast way. Smallet step
+                                   should be faster (but less accurate). */
+  #else
+  #define RCL_MIN_TEXTURE_STEP 24
+  #endif
 #endif
 
 #define HORIZON_DEPTH (12 * RCL_UNITS_PER_SQUARE) /**< What depth the horizon
@@ -1027,6 +1037,7 @@ static inline int16_t _RCL_drawWall(
   RCL_Unit yTo,
   RCL_Unit limit1, // TODO: int16_t?
   RCL_Unit limit2,
+  RCL_Unit height,
   int16_t increment,
   RCL_PixelInfo *pixelInfo
   )
@@ -1041,7 +1052,12 @@ static inline int16_t _RCL_drawWall(
   RCL_Unit wallPosition = RCL_absVal(yFrom - yCurrent) - increment;
 
   RCL_Unit coordStep = RCL_COMPUTE_WALL_TEXCOORDS ?
-    RCL_UNITS_PER_SQUARE / wallLength : 1;
+#if RCL_TEXTURE_VERTICAL_STRETCH == 1
+    RCL_UNITS_PER_SQUARE / wallLength
+#else
+    height / wallLength
+#endif
+    : 1;
 
   pixelInfo->texCoords.y = RCL_COMPUTE_WALL_TEXCOORDS ?
     wallPosition * coordStep : 0;
@@ -1063,7 +1079,11 @@ static inline int16_t _RCL_drawWall(
       pixelInfo->position.y = i;
 
 #if RCL_COMPUTE_WALL_TEXCOORDS == 1
+  #if RCL_TEXTURE_VERTICAL_STRETCH == 1
       pixelInfo->texCoords.y = (wallPosition * RCL_UNITS_PER_SQUARE) / wallLength;
+  #else
+      pixelInfo->texCoords.y = (wallPosition * height) / wallLength;
+  #endif
 #endif
 
       wallPosition++;
@@ -1208,8 +1228,15 @@ void _RCL_columnFunctionComplex(RCL_HitResult *hits, uint16_t hitCount, uint16_t
         p.isFloor = 1;
 
         limit = _RCL_drawWall(fPosY,fZ1Screen,fZ2Screen,cPosY + 1,
-                  _RCL_camera.resolution.y,-1,&p);
+                  _RCL_camera.resolution.y,
                   // ^ purposfully allow outside screen bounds here
+#if RCL_TEXTURE_VERTICAL_STRETCH == 1
+                  RCL_UNITS_PER_SQUARE
+#else
+                  fZ2World - fZ1World
+#endif
+                  ,-1,&p);
+                
 
         if (fPosY > limit)
           fPosY = limit;
@@ -1224,9 +1251,15 @@ void _RCL_columnFunctionComplex(RCL_HitResult *hits, uint16_t hitCount, uint16_t
         p.isFloor = 0;
 
         limit = _RCL_drawWall(cPosY,cZ1Screen,cZ2Screen,
-                  -1,fPosY - 1,1,&p);
+                  -1,fPosY - 1,
                 // ^ puposfully allow outside screen bounds here
-
+#if RCL_TEXTURE_VERTICAL_STRETCH == 1
+                  RCL_UNITS_PER_SQUARE
+#else
+                  cZ2World - cZ1World
+#endif
+                  ,1,&p);
+                
         if (cPosY < limit)
           cPosY = limit;
 
@@ -1354,7 +1387,7 @@ void _RCL_columnFunctionSimple(RCL_HitResult *hits, uint16_t hitCount, uint16_t 
   p.texCoords.x = p.hit.textureCoord;
 
   y = _RCL_drawWall(y - 1,wallStart,wallStart + wallHeightScreen - 1,-1,
-        _RCL_camera.resolution.y,1,&p) + 1;
+        _RCL_camera.resolution.y,p.hit.arrayValue,1,&p) + 1;
 
   // draw floor
 
