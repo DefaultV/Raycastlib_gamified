@@ -1127,8 +1127,6 @@ void _RCL_columnFunctionComplex(RCL_HitResult *hits, uint16_t hitCount, uint16_t
   p.texCoords.x = 0;
   p.texCoords.y = 0;
 
-  RCL_Unit i;
-
   // we'll be simulatenously drawing the floor and the ceiling now  
   for (RCL_Unit j = 0; j <= hitCount; ++j)
   {                          // ^ = add extra iteration for horizon plane
@@ -1275,7 +1273,6 @@ void _RCL_columnFunctionSimple(RCL_HitResult *hits, uint16_t hitCount, uint16_t 
   RCL_Unit y = 0;
   RCL_Unit wallHeightScreen = 0;
   RCL_Unit wallStart = _RCL_middleRow;
-  RCL_Unit wallEnd = _RCL_middleRow;
   RCL_Unit heightOffset = 0;
 
   RCL_Unit dist = 1;
