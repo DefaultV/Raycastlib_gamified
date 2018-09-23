@@ -996,6 +996,7 @@ static inline int16_t _RCL_drawHorizontal(
   RCL_Unit verticalOffset,
   int16_t increment,
   int8_t computeDepth,
+  int16_t depthIncrementMultiplier,
   RCL_PixelInfo *pixelInfo
 )
 {
@@ -1007,13 +1008,16 @@ static inline int16_t _RCL_drawHorizontal(
   {
     pixelInfo->depth += RCL_absVal(verticalOffset) *
       RCL_VERTICAL_DEPTH_MULTIPLY;
+   
+    RCL_Unit depthIncrement = depthIncrementMultiplier *
+      _RCL_horizontalDepthStep;
 
     for (int16_t i = yCurrent + increment;
          increment == -1 ? i >= limit : i <= limit; // TODO: is efficient?
          i += increment)
     {
       pixelInfo->position.y = i;
-      pixelInfo->depth += _RCL_horizontalDepthStep;
+      pixelInfo->depth += depthIncrement;
       RCL_PIXEL_FUNCTION(pixelInfo);
     }
   }
@@ -1188,7 +1192,7 @@ void _RCL_columnFunctionComplex(RCL_HitResult *hits, uint16_t hitCount, uint16_t
 #endif
 
     limit = _RCL_drawHorizontal(fPosY,fZ1Screen,cPosY + 1,
-      _RCL_camera.resolution.y,fZ1World,-1,RCL_COMPUTE_FLOOR_DEPTH,&p);
+      _RCL_camera.resolution.y,fZ1World,-1,RCL_COMPUTE_FLOOR_DEPTH,1,&p);
      // ^ purposfully allow outside screen bounds
 
     if (fPosY > limit)
@@ -1205,7 +1209,7 @@ void _RCL_columnFunctionComplex(RCL_HitResult *hits, uint16_t hitCount, uint16_t
 #endif
 
       limit = _RCL_drawHorizontal(cPosY,cZ1Screen,
-        -1,fPosY - 1,cZ1World,1,RCL_COMPUTE_CEILING_DEPTH,&p);
+        -1,fPosY - 1,cZ1World,1,RCL_COMPUTE_CEILING_DEPTH,1,&p);
       // ^ purposfully allow outside screen bounds here
 
       if (cPosY < limit)
@@ -1362,7 +1366,7 @@ void _RCL_columnFunctionSimple(RCL_HitResult *hits, uint16_t hitCount, uint16_t 
   // ^ in case there is no wall
 
   y = _RCL_drawHorizontal(-1,wallStart,-1,_RCL_middleRow,_RCL_camera.height,1,
-    RCL_COMPUTE_CEILING_DEPTH,&p);
+    RCL_COMPUTE_CEILING_DEPTH,1,&p);
 
   // draw wall
 
@@ -1377,14 +1381,25 @@ void _RCL_columnFunctionSimple(RCL_HitResult *hits, uint16_t hitCount, uint16_t 
   p.texCoords.x = p.hit.textureCoord;
 
   limit = _RCL_drawWall(y,wallStart,wallStart + wallHeightScreen - 1,-1,
-        _RCL_camera.resolution.y,p.hit.arrayValue,1,&p);
+    _RCL_camera.resolution.y,p.hit.arrayValue,1,&p);
 
-  y = RCL_max(y,limit) + 1; // take max, in case no wall was drawn
+//  y = RCL_max(y,limit) + 1; // take max, in case no wall was drawn
+
+y = RCL_max(y,limit); // take max, in case no wall was drawn
 
   // draw floor
 
   p.isWall = 0;
 
+#if RCL_COMPUTE_FLOOR_DEPTH == 1
+  p.depth = (_RCL_camera.resolution.y - y) * _RCL_horizontalDepthStep + 1;
+#endif
+
+_RCL_drawHorizontal(y,_RCL_camResYLimit,-1,
+_RCL_camResYLimit,_RCL_camera.height,1,
+  RCL_COMPUTE_FLOOR_DEPTH,-1,&p);
+
+/*
 #if RCL_COMPUTE_FLOOR_DEPTH == 1
   p.depth = (_RCL_camera.resolution.y - y) * _RCL_horizontalDepthStep + 1;
 #endif
@@ -1425,6 +1440,8 @@ void _RCL_columnFunctionSimple(RCL_HitResult *hits, uint16_t hitCount, uint16_t 
     if (p.depth < 0) // just in case
       p.depth = 0;
   }
+*/
+
 }
 
 void RCL_renderComplex(RCL_Camera cam, RCL_ArrayFunction floorHeightFunc,
