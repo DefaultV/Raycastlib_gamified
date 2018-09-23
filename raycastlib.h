@@ -987,11 +987,11 @@ RCL_Unit RCL_adjustDistance(RCL_Unit distance, RCL_Camera *camera,
       // ^ prevent division by zero
 }
 
-/// Helper for drawing floor or ceiling.
+/// Helper for drawing floor or ceiling. Returns the last drawn pixel position.
 static inline int16_t _RCL_drawHorizontal(
   RCL_Unit yCurrent,
   RCL_Unit yTo,
-  RCL_Unit limit1,   // TODO: int16_t?
+  RCL_Unit limit1, // TODO: int16_t?
   RCL_Unit limit2,
   RCL_Unit verticalOffset,
   int16_t increment,
@@ -1031,6 +1031,7 @@ static inline int16_t _RCL_drawHorizontal(
   return limit;
 }
 
+/// Helper for drawing walls. Returns the last drawn pixel position.
 static inline int16_t _RCL_drawWall(
   RCL_Unit yCurrent,
   RCL_Unit yFrom,
@@ -1360,16 +1361,8 @@ void _RCL_columnFunctionSimple(RCL_HitResult *hits, uint16_t hitCount, uint16_t 
   RCL_Unit limit = RCL_min(wallStart,_RCL_middleRow);
   // ^ in case there is no wall
 
-  while (y < limit)
-  {
-    p.position.y = y;
-    RCL_PIXEL_FUNCTION(&p);
-    ++y;
-
-#if RCL_COMPUTE_CEILING_DEPTH == 1
-    p.depth += _RCL_horizontalDepthStep;
-#endif
-  }
+  y = _RCL_drawHorizontal(-1,wallStart,-1,_RCL_middleRow,_RCL_camera.height,1,
+    RCL_COMPUTE_CEILING_DEPTH,&p);
 
   // draw wall
 
@@ -1383,8 +1376,10 @@ void _RCL_columnFunctionSimple(RCL_HitResult *hits, uint16_t hitCount, uint16_t 
 
   p.texCoords.x = p.hit.textureCoord;
 
-  y = _RCL_drawWall(y - 1,wallStart,wallStart + wallHeightScreen - 1,-1,
-        _RCL_camera.resolution.y,p.hit.arrayValue,1,&p) + 1;
+  limit = _RCL_drawWall(y,wallStart,wallStart + wallHeightScreen - 1,-1,
+        _RCL_camera.resolution.y,p.hit.arrayValue,1,&p);
+
+  y = RCL_max(y,limit) + 1; // take max, in case no wall was drawn
 
   // draw floor
 
