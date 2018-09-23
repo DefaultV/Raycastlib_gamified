@@ -1004,7 +1004,7 @@ static inline int16_t _RCL_drawHorizontal(
 
   int16_t limit = RCL_clamp(yTo,limit1,limit2);
 
-  if (computeDepth) // branch early before critical function
+  if (computeDepth) // branch early before critical loop
   {
     pixelInfo->depth += RCL_absVal(verticalOffset) *
       RCL_VERTICAL_DEPTH_MULTIPLY;
