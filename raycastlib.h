@@ -458,7 +458,7 @@ RCL_Unit *_RCL_floorPixelDistances = 0;
   uint32_t profile_RCL_angleToDirection = 0;
   uint32_t profile_RCL_dist = 0;
   uint32_t profile_RCL_len = 0;
-  uint32_t profile_RCL_pointIsLeftOfRCL_Ray = 0;
+  uint32_t profile_RCL_pointIfLeftOfRay = 0;
   uint32_t profile_RCL_castRaySquare = 0;
   uint32_t profile_RCL_castRayMultiHit = 0; 
   uint32_t profile_RCL_castRay = 0;
@@ -478,7 +478,7 @@ RCL_Unit *_RCL_floorPixelDistances = 0;
     printf("  RCL_angleToDirection: %d\n",profile_RCL_angleToDirection);\
     printf("  RCL_dist: %d\n",profile_RCL_dist);\
     printf("  RCL_len: %d\n",profile_RCL_len);\
-    printf("  RCL_pointIsLeftOfRCL_Ray: %d\n",profile_RCL_pointIsLeftOfRCL_Ray);\
+    printf("  RCL_pointIfLeftOfRay: %d\n",profile_RCL_pointIfLeftOfRay);\
     printf("  RCL_castRaySquare: %d\n",profile_RCL_castRaySquare);\
     printf("  RCL_castRayMultiHit : %d\n",profile_RCL_castRayMultiHit);\
     printf("  RCL_castRay: %d\n",profile_RCL_castRay);\
@@ -703,9 +703,9 @@ RCL_Unit RCL_len(RCL_Vector2D v)
   return RCL_dist(zero,v);
 }
 
-static inline int8_t RCL_pointIsLeftOfRCL_Ray(RCL_Vector2D point, RCL_Ray ray)
+static inline int8_t RCL_pointIfLeftOfRay(RCL_Vector2D point, RCL_Ray ray)
 {
-  RCL_profileCall(RCL_pointIsLeftOfRCL_Ray);
+  RCL_profileCall(RCL_pointIfLeftOfRay);
 
   RCL_Unit dX    = point.x - ray.start.x;
   RCL_Unit dY    = point.y - ray.start.y;
@@ -738,7 +738,7 @@ void RCL_castRaySquare(RCL_Ray *localRay, RCL_Vector2D *nextCellOff,
     }
 
   #define helper2(n1,n2,c)\
-    if (RCL_pointIsLeftOfRCL_Ray(localRay->start,criticalLine) == c)\
+    if (RCL_pointIfLeftOfRay(localRay->start,criticalLine) == c)\
       helper(y,x,n1)\
     else\
       helper(x,y,n2)
@@ -1417,7 +1417,7 @@ void _RCL_columnFunctionSimple(RCL_HitResult *hits, uint16_t hitCount, uint16_t 
   p.texCoords.x = p.hit.textureCoord;
 
   limit = _RCL_drawWall(y,wallStart,wallStart + wallHeightScreen - 1,-1,
-    _RCL_camera.resolution.y,p.hit.arrayValue,1,&p);
+    _RCL_camResYLimit,p.hit.arrayValue,1,&p);
 
   y = RCL_max(y,limit); // take max, in case no wall was drawn
 
@@ -1572,7 +1572,7 @@ RCL_PixelInfo RCL_mapToScreen(RCL_Vector2D worldPosition, RCL_Unit height,
   r.start = camera.position;
   r.direction = cameraDir;
 
-  if (!RCL_pointIsLeftOfRCL_Ray(worldPosition,r))
+  if (!RCL_pointIfLeftOfRay(worldPosition,r))
     a *= -1;
 
   RCL_Unit cos = RCL_cosInt(RCL_HORIZONTAL_FOV_HALF);
