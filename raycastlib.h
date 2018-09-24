@@ -1122,6 +1122,8 @@ static inline int16_t _RCL_drawHorizontal(
       loop(1,1)
   }
 
+  #undef loop
+
   return limit;
 }
 
