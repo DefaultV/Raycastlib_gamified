@@ -460,7 +460,6 @@ RCL_Unit *_RCL_floorPixelDistances = 0;
   uint32_t profile_RCL_dist = 0;
   uint32_t profile_RCL_len = 0;
   uint32_t profile_RCL_pointIfLeftOfRay = 0;
-  uint32_t profile_RCL_castRaySquare = 0;
   uint32_t profile_RCL_castRayMultiHit = 0; 
   uint32_t profile_RCL_castRay = 0;
   uint32_t profile_RCL_absVal = 0;
@@ -480,7 +479,6 @@ RCL_Unit *_RCL_floorPixelDistances = 0;
     printf("  RCL_dist: %d\n",profile_RCL_dist);\
     printf("  RCL_len: %d\n",profile_RCL_len);\
     printf("  RCL_pointIfLeftOfRay: %d\n",profile_RCL_pointIfLeftOfRay);\
-    printf("  RCL_castRaySquare: %d\n",profile_RCL_castRaySquare);\
     printf("  RCL_castRayMultiHit : %d\n",profile_RCL_castRayMultiHit);\
     printf("  RCL_castRay: %d\n",profile_RCL_castRay);\
     printf("  RCL_normalize: %d\n",profile_RCL_normalize);\
@@ -715,13 +713,12 @@ static inline int8_t RCL_pointIfLeftOfRay(RCL_Vector2D point, RCL_Ray ray)
 }
 
 /**
+  DEPRECATED in favor of DDA.
   Casts a ray within a single square, to collide with the square borders.  
 */
 void RCL_castRaySquare(RCL_Ray *localRay, RCL_Vector2D *nextCellOff,
   RCL_Vector2D *collOff)
 {
-  RCL_profileCall(RCL_castRaySquare);
-
   nextCellOff->x = 0;
   nextCellOff->y = 0;
 
@@ -786,8 +783,6 @@ void RCL_castRaySquare(RCL_Ray *localRay, RCL_Vector2D *nextCellOff,
   collOff->y += nextCellOff->y;
 }
 
-int aaaaaa = 0;
-
 void RCL_castRayMultiHit(RCL_Ray ray, RCL_ArrayFunction arrayFunc,
   RCL_ArrayFunction typeFunc, RCL_HitResult *hitResults,
   uint16_t *hitResultsLen, RCL_RayConstraints constraints)
@@ -806,65 +801,63 @@ void RCL_castRayMultiHit(RCL_Ray ray, RCL_ArrayFunction arrayFunc,
 
   RCL_Unit squareType = arrayFunc(currentSquare.x,currentSquare.y);
 
-  RCL_Vector2D no, co; // next cell offset, collision offset
+  // DDA variables
+  RCL_Vector2D nextSideDist; // dist. from start to the next side in given axis
+  RCL_Vector2D delta;
+  RCL_Unit currentDist = 0;
+  RCL_Vector2D step;         // -1 or 1 for each axis
+  int8_t stepHorizontal = 0; // whether the last step was hor. or vert.
 
-  no.x = 0;            // just to supress a warning
-  no.y = 0;
-  co.x = 0;
-  co.y = 0;
+  nextSideDist.x = 0;
+  nextSideDist.y = 0;
 
-RCL_Vector2D nextSideDist;
-RCL_Vector2D delta;
-RCL_Unit currentDist = 0;
-RCL_Vector2D step;
+  RCL_Unit dirVecLength = RCL_len(ray.direction);
 
-nextSideDist.x = 0;
-nextSideDist.y = 0;
+  delta.x = RCL_absVal((RCL_UNITS_PER_SQUARE * dirVecLength) /
+    RCL_nonZero(ray.direction.x));
 
-RCL_Unit dirVecLength = RCL_len(ray.direction);
+  delta.y = RCL_absVal((RCL_UNITS_PER_SQUARE * dirVecLength) /
+    RCL_nonZero(ray.direction.y));
 
-delta.x = RCL_absVal((RCL_UNITS_PER_SQUARE * dirVecLength) / RCL_nonZero(ray.direction.x));
-delta.y = RCL_absVal((RCL_UNITS_PER_SQUARE * dirVecLength) / RCL_nonZero(ray.direction.y));
+  // init DDA
 
-int8_t stepHorizontal = 0;
+  if (ray.direction.x < 0)
+  {
+    step.x = -1;
+    nextSideDist.x = (RCL_wrap(ray.start.x,RCL_UNITS_PER_SQUARE) * delta.x) /
+                       RCL_UNITS_PER_SQUARE;
+  }
+  else
+  {
+    step.x = 1;
+    nextSideDist.x =
+      ((RCL_wrap(RCL_UNITS_PER_SQUARE - ray.start.x,RCL_UNITS_PER_SQUARE)) *
+        delta.x) / RCL_UNITS_PER_SQUARE;
+  }
 
+  if (ray.direction.y < 0)
+  {
+    step.y = -1;
+    nextSideDist.y = (RCL_wrap(ray.start.y,RCL_UNITS_PER_SQUARE) * delta.y) /
+                       RCL_UNITS_PER_SQUARE;
+  }
+  else
+  {
+    step.y = 1;
+    nextSideDist.y =
+      ((RCL_wrap(RCL_UNITS_PER_SQUARE - ray.start.y,RCL_UNITS_PER_SQUARE)) *
+        delta.y) / RCL_UNITS_PER_SQUARE;
+  }
 
-
-if (ray.direction.x < 0)
-{
-  step.x = -1;
-  nextSideDist.x = (RCL_wrap(ray.start.x,RCL_UNITS_PER_SQUARE) * delta.x) / RCL_UNITS_PER_SQUARE;
-}
-else
-{
-  step.x = 1;
-  nextSideDist.x = ((RCL_wrap(RCL_UNITS_PER_SQUARE - ray.start.x,RCL_UNITS_PER_SQUARE)) * delta.x) / RCL_UNITS_PER_SQUARE;
-}
-
-if (ray.direction.y < 0)
-{
-  step.y = -1;
-  nextSideDist.y = (RCL_wrap(ray.start.y,RCL_UNITS_PER_SQUARE) * delta.y) / RCL_UNITS_PER_SQUARE;
-}
-else
-{
-  step.y = 1;
-  nextSideDist.y = ((RCL_wrap(RCL_UNITS_PER_SQUARE - ray.start.y,RCL_UNITS_PER_SQUARE)) * delta.y) / RCL_UNITS_PER_SQUARE;
-}
-
-
+  // DDA loop
 
   for (uint16_t i = 0; i < constraints.maxSteps; ++i)
   {
-
-
-
     RCL_Unit currentType = arrayFunc(currentSquare.x,currentSquare.y);
 
     if (currentType != squareType)
     {
       // collision
-
 
       RCL_HitResult h;
 
@@ -872,83 +865,52 @@ else
       h.doorRoll = 0;
       h.position = currentPos;
       h.square   = currentSquare;
-//      h.distance = RCL_dist(initialPos,currentPos);
-h.distance = 
-  currentDist;
+      h.distance = currentDist;
 
-if (stepHorizontal)
-{
-  h.position.x = currentSquare.x * RCL_UNITS_PER_SQUARE;
-  h.direction = 3;
-
-  if (step.x == -1)
-  {
-    h.direction = 1;
-    h.position.x += RCL_UNITS_PER_SQUARE;
-  }
-
-  RCL_Unit diff = h.position.x - ray.start.x;
-  h.position.y = ray.start.y + ((ray.direction.y * diff) / RCL_nonZero(ray.direction.x)); 
-  h.textureCoord = h.position.y;
-
-h.distance =
-   ((h.position.x - ray.start.x) * RCL_UNITS_PER_SQUARE) / RCL_nonZero(ray.direction.x);
-}
-else
-{
-  h.position.y = currentSquare.y * RCL_UNITS_PER_SQUARE;
-  h.direction = 2;
-
-  if (step.y == -1)
-  {
-    h.direction = 0;
-    h.position.y += RCL_UNITS_PER_SQUARE;
-  }
-
-  RCL_Unit diff = h.position.y - ray.start.y;
-  h.position.x = ray.start.x + ((ray.direction.x * diff) / RCL_nonZero(ray.direction.y)); 
-  h.textureCoord = h.position.x;
-
-h.distance =
-   ((h.position.y - ray.start.y) * RCL_UNITS_PER_SQUARE) / RCL_nonZero(ray.direction.y);
-}
-
-
-
-      if (typeFunc != 0)
-        h.type = typeFunc(currentSquare.x,currentSquare.y);
-/*
-      if (no.y > 0)
+      if (stepHorizontal)
       {
-        h.direction = 0;
-#if RCL_COMPUTE_WALL_TEXCOORDS == 1
-        h.textureCoord = RCL_wrap(currentPos.x,RCL_UNITS_PER_SQUARE);
-#endif
-      }
-      else if (no.x > 0)
-      {
-        h.direction = 1;
-#if RCL_COMPUTE_WALL_TEXCOORDS == 1
-        h.textureCoord =
-          RCL_wrap(RCL_UNITS_PER_SQUARE - currentPos.y,RCL_UNITS_PER_SQUARE);
-#endif
-      }
-      else if (no.y < 0)
-      {
-        h.direction = 2;
-#if RCL_COMPUTE_WALL_TEXCOORDS == 1
-        h.textureCoord =
-          RCL_wrap(RCL_UNITS_PER_SQUARE - currentPos.x,RCL_UNITS_PER_SQUARE);
-#endif
+        h.position.x = currentSquare.x * RCL_UNITS_PER_SQUARE;
+        h.direction = 3;
+
+        if (step.x == -1)
+        {
+          h.direction = 1;
+          h.position.x += RCL_UNITS_PER_SQUARE;
+        }
+
+        RCL_Unit diff = h.position.x - ray.start.x;
+        h.position.y = ray.start.y + ((ray.direction.y * diff) /
+          RCL_nonZero(ray.direction.x)); 
+        h.textureCoord = h.position.y;
+
+        h.distance =
+         ((h.position.x - ray.start.x) * RCL_UNITS_PER_SQUARE) /
+         RCL_nonZero(ray.direction.x);
       }
       else
       {
-        h.direction = 3;
-#if RCL_COMPUTE_WALL_TEXCOORDS == 1
-        h.textureCoord = RCL_wrap(currentPos.y,RCL_UNITS_PER_SQUARE);
-#endif
+        h.position.y = currentSquare.y * RCL_UNITS_PER_SQUARE;
+        h.direction = 2;
+
+        if (step.y == -1)
+        {
+          h.direction = 0;
+          h.position.y += RCL_UNITS_PER_SQUARE;
+        }
+
+        RCL_Unit diff = h.position.y - ray.start.y;
+        h.position.x = ray.start.x + ((ray.direction.x * diff) /
+          RCL_nonZero(ray.direction.y)); 
+        h.textureCoord = h.position.x;
+
+        h.distance =
+         ((h.position.y - ray.start.y) * RCL_UNITS_PER_SQUARE) /
+         RCL_nonZero(ray.direction.y);
       }
-*/
+
+      if (typeFunc != 0)
+        h.type = typeFunc(currentSquare.x,currentSquare.y);
+
 #if RCL_COMPUTE_WALL_TEXCOORDS == 1
       if (_RCL_rollFunction != 0)
         h.doorRoll = _RCL_rollFunction(currentSquare.x,currentSquare.y);
@@ -964,36 +926,22 @@ h.distance =
         break;
     }
 
-//    ray.start.x = RCL_wrap(currentPos.x,RCL_UNITS_PER_SQUARE);
-//    ray.start.y = RCL_wrap(currentPos.y,RCL_UNITS_PER_SQUARE);
+    // DDA step
 
-
-if (nextSideDist.x < nextSideDist.y)
-{
-currentDist = nextSideDist.x;
-  nextSideDist.x += delta.x;
-  currentSquare.x += step.x;
-
-stepHorizontal = 1;
-}
-else
-{
-currentDist = nextSideDist.y;
-  nextSideDist.y += delta.y;
-  currentSquare.y += step.y;
-stepHorizontal = 0;
-}
-
-
-
-//    RCL_castRaySquare(&ray,&no,&co);
-
-//    currentSquare.x += no.x;
-//    currentSquare.y += no.y;
-
-    // offset into the next cell
-//    currentPos.x += co.x;
-//    currentPos.y += co.y;
+    if (nextSideDist.x < nextSideDist.y)
+    {
+      currentDist = nextSideDist.x;
+      nextSideDist.x += delta.x;
+      currentSquare.x += step.x;
+      stepHorizontal = 1;
+    }
+    else
+    {
+      currentDist = nextSideDist.y;
+      nextSideDist.y += delta.y;
+      currentSquare.y += step.y;
+      stepHorizontal = 0;
+    }
   }
 }
 
@@ -1040,9 +988,6 @@ void RCL_castRaysMultiHit(RCL_Camera cam, RCL_ArrayFunction arrayFunc,
 
   for (int16_t i = 0; i < cam.resolution.x; ++i)
   {
-
-aaaaaa = i == 100;
-
     r.direction.x = dir1.x + currentDX / cam.resolution.x;
     r.direction.y = dir1.y + currentDY / cam.resolution.x;
 
@@ -1152,8 +1097,6 @@ static inline int16_t _RCL_drawHorizontal(
       if (doCoords)/*constant condition - compiler should optimize it out*/\
       {\
         RCL_Unit d = _RCL_floorPixelDistances[pixPos];\
-/*        d = (d * RCL_UNITS_PER_SQUARE) / rayCameraCos;*/\
-         /* ^ inverse of RCL_adjustDistance(...) */\
         pixelInfo->texCoords.x =\
           _RCL_camera.position.x + ((d * dx) / (pixelInfo->hit.distance));\
         pixelInfo->texCoords.y =\
