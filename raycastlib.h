@@ -40,11 +40,11 @@
                                  RCL_UNITS_PER_SQUARE units in a square's
                                  length. This effectively serves the purpose of
                                  a fixed-point arithmetic. */
-  #define RCL_INFINITY 5000000
+  #define RCL_INFINITY 2000000000
 #else
   #define RCL_UNITS_PER_SQUARE 32
   typedef int16_t RCL_Unit;
-  #define RCL_INFINITY 2000000000
+  #define RCL_INFINITY 30000
   #define RCL_USE_DIST_APPROX 2
 #endif
 
