@@ -1400,9 +1400,11 @@ void _RCL_columnFunctionSimple(RCL_HitResult *hits, uint16_t hitCount,
       {
         // normal hit, check the door roll
 
+        RCL_Unit texCoordMod = hit.textureCoord % RCL_UNITS_PER_SQUARE;
+
         int8_t unrolled = hit.doorRoll >= 0 ?
-          hit.doorRoll > hit.textureCoord :
-          hit.textureCoord > RCL_UNITS_PER_SQUARE + hit.doorRoll;
+          hit.doorRoll > texCoordMod :
+          texCoordMod > RCL_UNITS_PER_SQUARE + hit.doorRoll;
 
         if (unrolled)
         {
