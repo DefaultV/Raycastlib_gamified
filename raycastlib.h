@@ -40,11 +40,11 @@
                                  RCL_UNITS_PER_SQUARE units in a square's
                                  length. This effectively serves the purpose of
                                  a fixed-point arithmetic. */
-  #define RCL_INFINITY 5000000;
+  #define RCL_INFINITY 5000000
 #else
   #define RCL_UNITS_PER_SQUARE 32
   typedef int16_t RCL_Unit;
-  #define RCL_INFINITY 32000;
+  #define RCL_INFINITY 2000000000
   #define RCL_USE_DIST_APPROX 2
 #endif
 
@@ -138,10 +138,12 @@
   #endif
 #endif
 
-#define HORIZON_DEPTH (11 * RCL_UNITS_PER_SQUARE) /**< What depth the horizon
-                                                   has (the floor depth is only
-                                                   approximated with the help
-                                                   of this constant). */
+#define RCL_HORIZON_DEPTH (11 * RCL_UNITS_PER_SQUARE) /**< What depth the
+                                                       horizon has (the floor
+                                                       depth is only
+                                                       approximated with the
+                                                       help of this
+                                                       constant). */
 #ifndef RCL_VERTICAL_DEPTH_MULTIPLY
 #define RCL_VERTICAL_DEPTH_MULTIPLY 2 /**< Defines a multiplier of height
                                        difference when approximating floor/ceil
@@ -1240,8 +1242,7 @@ void _RCL_columnFunctionComplex(RCL_HitResult *hits, uint16_t hitCount, uint16_t
     if (!drawingHorizon)
     {
       hit = hits[j];
-     // RCL_adjustDistance(hit.distance,&_RCL_camera,&ray);
-distance = hit.distance; 
+      distance = hit.distance; 
 
       fWallHeight = _RCL_floorFunction(hit.square.x,hit.square.y);
       fZ2World = fWallHeight - _RCL_camera.height;
@@ -1365,8 +1366,8 @@ distance = hit.distance;
   }
 }
 
-void _RCL_columnFunctionSimple(RCL_HitResult *hits, uint16_t hitCount, uint16_t x,
-  RCL_Ray ray)
+void _RCL_columnFunctionSimple(RCL_HitResult *hits, uint16_t hitCount,
+  uint16_t x, RCL_Ray ray)
 {
   RCL_Unit y = 0;
   RCL_Unit wallHeightScreen = 0;
@@ -1431,9 +1432,7 @@ void _RCL_columnFunctionSimple(RCL_HitResult *hits, uint16_t hitCount, uint16_t 
 
     if (goOn)
     {
-//      dist = RCL_adjustDistance(hit.distance,&_RCL_camera,&ray);
-
-dist = hit.distance;
+      dist = hit.distance;
 
       int16_t wallHeightWorld = _RCL_floorFunction(hit.square.x,hit.square.y);
 
@@ -1449,6 +1448,24 @@ dist = hit.distance;
                   RCL_normalizedWallHeight;
     }
   }
+  else
+  {
+    RCL_HitResult hit;
+
+    hit.distance = RCL_UNITS_PER_SQUARE * RCL_UNITS_PER_SQUARE;
+      /* ^ horizon is at infinity, but we can't use too big infinity
+           (RCL_INFINITY) because it would overflow in the following mult. */
+    hit.position.x = (ray.direction.x * hit.distance) / RCL_UNITS_PER_SQUARE;
+    hit.position.y = (ray.direction.y * hit.distance) / RCL_UNITS_PER_SQUARE;
+
+    hit.direction = 0;
+    hit.textureCoord = 0;
+    hit.arrayValue = 0;
+    hit.doorRoll = 0;
+    hit.type = 0;
+
+    p.hit = hit;
+  }
 
   // draw ceiling
 
@@ -1456,9 +1473,6 @@ dist = hit.distance;
   p.isFloor = 0;
   p.isHorizon = 1;
   p.depth = 1;
-
-  RCL_Unit limit = RCL_min(wallStart,_RCL_middleRow);
-  // ^ in case there is no wall
 
   y = _RCL_drawHorizontal(-1,wallStart,-1,_RCL_middleRow,_RCL_camera.height,1,
     RCL_COMPUTE_CEILING_DEPTH,0,1,&ray,&p);
@@ -1474,11 +1488,13 @@ dist = hit.distance;
 #endif
 
   p.texCoords.x = p.hit.textureCoord;
+  p.texCoords.y = 0;
 
-  limit = _RCL_drawWall(y,wallStart,wallStart + wallHeightScreen - 1,-1,
-    _RCL_camResYLimit,p.hit.arrayValue,1,&p);
+  RCL_Unit limit = _RCL_drawWall(y,wallStart,wallStart + wallHeightScreen - 1,
+    -1,_RCL_camResYLimit,p.hit.arrayValue,1,&p);
 
   y = RCL_max(y,limit); // take max, in case no wall was drawn
+  y = RCL_max(y,_RCL_middleRow + 1);
 
   // draw floor
 
@@ -1520,7 +1536,7 @@ void RCL_renderComplex(RCL_Camera cam, RCL_ArrayFunction floorHeightFunc,
         RCL_divRoundDown(cam.position.y,RCL_UNITS_PER_SQUARE)) -1 * cam.height
       : RCL_INFINITY;
 
-  _RCL_horizontalDepthStep = HORIZON_DEPTH / cam.resolution.y; 
+  _RCL_horizontalDepthStep = RCL_HORIZON_DEPTH / cam.resolution.y; 
 
   RCL_castRaysMultiHit(cam,_RCL_floorCeilFunction,typeFunction,
     _RCL_columnFunctionComplex,constraints);
@@ -1540,7 +1556,7 @@ void RCL_renderSimple(RCL_Camera cam, RCL_ArrayFunction floorHeightFunc,
     (_RCL_camera.resolution.y * (_RCL_camera.height - RCL_UNITS_PER_SQUARE)) /
     RCL_UNITS_PER_SQUARE;
 
-  _RCL_horizontalDepthStep = HORIZON_DEPTH / cam.resolution.y; 
+  _RCL_horizontalDepthStep = RCL_HORIZON_DEPTH / cam.resolution.y; 
 
   constraints.maxHits = 
     _RCL_rollFunction == 0 ?
