@@ -20,6 +20,7 @@ SDL:
 Arduboy:
 
 ![](/media/arduboy.gif)
+![](/media/arduboy2.gif)
 
 terminal:
 
