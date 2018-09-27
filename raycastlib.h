@@ -883,7 +883,6 @@ void RCL_castRayMultiHit(RCL_Ray ray, RCL_ArrayFunction arrayFunc,
         RCL_Unit diff = h.position.x - ray.start.x;
         h.position.y = ray.start.y + ((ray.direction.y * diff) /
           RCL_nonZero(ray.direction.x)); 
-        h.textureCoord = h.position.y;
 
         h.distance =
          ((h.position.x - ray.start.x) * RCL_UNITS_PER_SQUARE) /
@@ -903,7 +902,6 @@ void RCL_castRayMultiHit(RCL_Ray ray, RCL_ArrayFunction arrayFunc,
         RCL_Unit diff = h.position.y - ray.start.y;
         h.position.x = ray.start.x + ((ray.direction.x * diff) /
           RCL_nonZero(ray.direction.y)); 
-        h.textureCoord = h.position.x;
 
         h.distance =
          ((h.position.y - ray.start.y) * RCL_UNITS_PER_SQUARE) /
@@ -914,8 +912,27 @@ void RCL_castRayMultiHit(RCL_Ray ray, RCL_ArrayFunction arrayFunc,
         h.type = typeFunc(currentSquare.x,currentSquare.y);
 
 #if RCL_COMPUTE_WALL_TEXCOORDS == 1
+      switch (h.direction)
+      {
+        case 0: h.textureCoord =
+          RCL_wrap(-1 * h.position.x,RCL_UNITS_PER_SQUARE); break;
+
+        case 1: h.textureCoord =
+          RCL_wrap(h.position.y,RCL_UNITS_PER_SQUARE); break;
+
+        case 2: h.textureCoord =
+          RCL_wrap(h.position.x,RCL_UNITS_PER_SQUARE); break;
+
+        case 3: h.textureCoord =
+          RCL_wrap(-1 * h.position.y,RCL_UNITS_PER_SQUARE); break;
+
+        default: h.textureCoord = 0; break;
+      }
+
       if (_RCL_rollFunction != 0)
         h.doorRoll = _RCL_rollFunction(currentSquare.x,currentSquare.y);
+#else
+      h.textureCoord = 0;
 #endif
 
       hitResults[*hitResultsLen] = h;
