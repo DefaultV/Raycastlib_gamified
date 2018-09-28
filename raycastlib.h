@@ -235,6 +235,7 @@ typedef struct
   int8_t        isFloor;   ///< Whether the pixel is floor or ceiling.
   int8_t        isHorizon; ///< If the pixel belongs to horizon segment.
   RCL_Unit      depth;     ///< Corrected depth.
+  RCL_Unit      height;    ///< World height (mostly for floor).
   RCL_HitResult hit;       ///< Corresponding ray hit.
   RCL_Vector2D  texCoords; /**< Normalized (0 to RCL_UNITS_PER_SQUARE - 1)
                                 texture coordinates. */
@@ -1111,9 +1112,9 @@ static inline int16_t _RCL_drawHorizontal(
          i += increment)\
     {\
       pixelInfo->position.y = i;\
-      if (doDepth) /*constant condition - compiler should optimize it out*/\
+      if (doDepth)  /*constant condition - compiler should optimize it out*/\
         pixelInfo->depth += depthIncrement;\
-      if (doCoords)/*constant condition - compiler should optimize it out*/\
+      if (doCoords) /*constant condition - compiler should optimize it out*/\
       {\
         RCL_Unit d = _RCL_floorPixelDistances[pixPos];\
         pixelInfo->texCoords.x =\
@@ -1240,6 +1241,7 @@ void _RCL_columnFunctionComplex(RCL_HitResult *hits, uint16_t hitCount, uint16_t
 
   RCL_PixelInfo p;
   p.position.x = x;
+  p.height = 0;
   p.texCoords.x = 0;
   p.texCoords.y = 0;
 
@@ -1295,6 +1297,7 @@ void _RCL_columnFunctionComplex(RCL_HitResult *hits, uint16_t hitCount, uint16_t
 
     // draw floor until wall
     p.isFloor = 1;
+    p.height = fZ1World + _RCL_camera.height;
 
 #if RCL_COMPUTE_FLOOR_DEPTH == 1
     p.depth = (_RCL_fHorizontalDepthStart - fPosY) * _RCL_horizontalDepthStep;
@@ -1313,6 +1316,7 @@ void _RCL_columnFunctionComplex(RCL_HitResult *hits, uint16_t hitCount, uint16_t
     {
       // draw ceiling until wall
       p.isFloor = 0;
+      p.height = cZ1World + _RCL_camera.height;
 
 #if RCL_COMPUTE_CEILING_DEPTH == 1
       p.depth = (cPosY - _RCL_cHorizontalDepthStart) *
@@ -1334,6 +1338,7 @@ void _RCL_columnFunctionComplex(RCL_HitResult *hits, uint16_t hitCount, uint16_t
       p.isFloor = 1;
       p.hit = hit;
       p.texCoords.x = hit.textureCoord;
+      p.height = 0; // don't compute this, no use
 
       // draw floor wall
 
@@ -1492,6 +1497,7 @@ void _RCL_columnFunctionSimple(RCL_HitResult *hits, uint16_t hitCount,
   p.isFloor = 0;
   p.isHorizon = 1;
   p.depth = 1;
+  p.height = RCL_UNITS_PER_SQUARE;
 
   y = _RCL_drawHorizontal(-1,wallStart,-1,_RCL_middleRow,_RCL_camera.height,1,
     RCL_COMPUTE_CEILING_DEPTH,0,1,&ray,&p);
@@ -1501,6 +1507,7 @@ void _RCL_columnFunctionSimple(RCL_HitResult *hits, uint16_t hitCount,
   p.isWall = 1;
   p.isFloor = 1;
   p.depth = dist;
+  p.height = 0;
 
 #if RCL_ROLL_TEXTURE_COORDS == 1 && RCL_COMPUTE_WALL_TEXCOORDS == 1 
   p.hit.textureCoord -= p.hit.doorRoll;
@@ -1526,6 +1533,16 @@ void _RCL_columnFunctionSimple(RCL_HitResult *hits, uint16_t hitCount,
   _RCL_drawHorizontal(y,_RCL_camResYLimit,-1,_RCL_camResYLimit,
     _RCL_camera.height,1,RCL_COMPUTE_FLOOR_DEPTH,RCL_COMPUTE_FLOOR_TEXCOORDS,
     -1,&ray,&p);
+}
+
+static inline void _RCL_precomputeFloorDistances(RCL_Unit viewingHeight,
+  RCL_Unit *dest, uint16_t pixels)
+{
+  RCL_Unit camHeightScreenSize =
+    (viewingHeight * pixels * 2) / RCL_UNITS_PER_SQUARE;
+
+  for (uint16_t i = 0; i < pixels; ++i) // precompute the distances
+    dest[i] = RCL_perspectiveScaleInverse(camHeightScreenSize,i + 1);
 }
 
 void RCL_renderComplex(RCL_Camera cam, RCL_ArrayFunction floorHeightFunc,
@@ -1584,19 +1601,9 @@ void RCL_renderSimple(RCL_Camera cam, RCL_ArrayFunction floorHeightFunc,
 
 #if RCL_COMPUTE_FLOOR_TEXCOORDS == 1
   uint16_t halfResY = cam.resolution.y / 2;
-
-  RCL_Unit floorPixelDistances[halfResY]; /* for each vertical floor pixel,
-                                             this will contain precomputed
-                                             distance to the camera */
-  RCL_Unit camHeightScreenSize =
-    (cam.height * cam.resolution.y) / RCL_UNITS_PER_SQUARE;
-
-  for (uint16_t i = 0; i < halfResY; ++i) // precompute the distances
-    floorPixelDistances[i] =
-      RCL_perspectiveScaleInverse(camHeightScreenSize,i + 1);
-
-  // pass to _RCL_columnFunctionSimple
-  _RCL_floorPixelDistances = floorPixelDistances;
+  RCL_Unit floorPixelDistances[halfResY];
+  _RCL_precomputeFloorDistances(cam.height,floorPixelDistances,halfResY);
+  _RCL_floorPixelDistances = floorPixelDistances; // pass to column function
 #endif
 
   RCL_castRaysMultiHit(cam,_floorHeightNotZeroFunction,typeFunc,
