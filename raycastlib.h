@@ -1102,7 +1102,7 @@ static inline int16_t _RCL_drawHorizontal(
     {\
       dx = pixelInfo->hit.position.x - _RCL_camera.position.x;\
       dy = pixelInfo->hit.position.y - _RCL_camera.position.y;\
-      pixPos = yCurrent - _RCL_middleRow - 1;\
+      pixPos = yCurrent - _RCL_middleRow;\
       rayCameraCos = RCL_vectorsAngleCos(\
         RCL_angleToDirection(_RCL_camera.direction),ray->direction);\
     }\
@@ -1589,16 +1589,11 @@ void RCL_renderSimple(RCL_Camera cam, RCL_ArrayFunction floorHeightFunc,
                                              this will contain precomputed
                                              distance to the camera */
   RCL_Unit camHeightScreenSize =
-#ifdef RCL_RAYCAST_TINY
-    (cam.height 
-#else
-    (((cam.height >> 6) << 6) // prevent weird floor movement with rounding
-#endif
-    * cam.resolution.y) / RCL_UNITS_PER_SQUARE;
+    (cam.height * cam.resolution.y) / RCL_UNITS_PER_SQUARE;
 
   for (uint16_t i = 0; i < halfResY; ++i) // precompute the distances
     floorPixelDistances[i] =
-      RCL_perspectiveScaleInverse(camHeightScreenSize,i);
+      RCL_perspectiveScaleInverse(camHeightScreenSize,i + 1);
 
   // pass to _RCL_columnFunctionSimple
   _RCL_floorPixelDistances = floorPixelDistances;
@@ -1700,9 +1695,10 @@ RCL_Unit RCL_perspectiveScaleInverse(RCL_Unit originalSize,
   RCL_Unit scaledSize)
 {
   return scaledSize != 0 ?
-    (originalSize * RCL_UNITS_PER_SQUARE) /
+    (originalSize * RCL_UNITS_PER_SQUARE + RCL_UNITS_PER_SQUARE / 2) /
+                                           // ^ take the middle
       ((RCL_VERTICAL_FOV * 2 * scaledSize) / RCL_UNITS_PER_SQUARE)
-    : 0;
+    : RCL_INFINITY;
 }
 
 void RCL_moveCameraWithCollision(RCL_Camera *camera, RCL_Vector2D planeOffset,
