@@ -1104,8 +1104,6 @@ static inline int16_t _RCL_drawHorizontal(
     {\
       dx = pixelInfo->hit.position.x - _RCL_camera.position.x;\
       dy = pixelInfo->hit.position.y - _RCL_camera.position.y;\
-      pixPos = yCurrent - _RCL_middleRow;\
-      pixPosIncrement = yCurrent < yTo ? 1 : -1;\
       rayCameraCos = RCL_vectorsAngleCos(\
         RCL_angleToDirection(_RCL_camera.direction),ray->direction);\
     }\
@@ -1118,12 +1116,11 @@ static inline int16_t _RCL_drawHorizontal(
         pixelInfo->depth += depthIncrement;\
       if (doCoords) /*constant condition - compiler should optimize it out*/\
       {\
-        RCL_Unit d = _RCL_floorPixelDistances[pixPos];\
+        RCL_Unit d = _RCL_floorPixelDistances[i];\
         pixelInfo->texCoords.x =\
           _RCL_camera.position.x + ((d * dx) / (pixelInfo->hit.distance));\
         pixelInfo->texCoords.y =\
           _RCL_camera.position.y + ((d * dy) / (pixelInfo->hit.distance));\
-        pixPos += pixPosIncrement;\
       }\
       RCL_PIXEL_FUNCTION(pixelInfo);\
     }\
@@ -1541,14 +1538,15 @@ void _RCL_columnFunctionSimple(RCL_HitResult *hits, uint16_t hitCount,
     -1,&ray,&p);
 }
 
-static inline void _RCL_precomputeFloorDistances(RCL_Unit viewingHeight,
-  RCL_Unit *dest, uint16_t pixels)
+static inline void _RCL_precomputeFloorDistances(RCL_Camera camera,
+  RCL_Unit *dest)
 {
   RCL_Unit camHeightScreenSize =
-    (viewingHeight * pixels * 2) / RCL_UNITS_PER_SQUARE;
+    (camera.height * camera.resolution.y) / RCL_UNITS_PER_SQUARE;
 
-  for (uint16_t i = 0; i < pixels; ++i) // precompute the distances
-    dest[i] = RCL_perspectiveScaleInverse(camHeightScreenSize,i + 1);
+  for (uint16_t i = 0; i < camera.resolution.y; ++i)
+    dest[i] = RCL_perspectiveScaleInverse(camHeightScreenSize,
+             RCL_absVal(i - _RCL_middleRow));
 }
 
 void RCL_renderComplex(RCL_Camera cam, RCL_ArrayFunction floorHeightFunc,
@@ -1581,8 +1579,8 @@ void RCL_renderComplex(RCL_Camera cam, RCL_ArrayFunction floorHeightFunc,
   _RCL_horizontalDepthStep = RCL_HORIZON_DEPTH / cam.resolution.y; 
 
 #if RCL_COMPUTE_FLOOR_TEXCOORDS == 1
-  RCL_Unit floorPixelDistances[halfResY];
-  _RCL_precomputeFloorDistances(cam.height,floorPixelDistances,halfResY);
+  RCL_Unit floorPixelDistances[cam.resolution.y];
+  _RCL_precomputeFloorDistances(cam,floorPixelDistances);
   _RCL_floorPixelDistances = floorPixelDistances; // pass to column function
 #endif
 
@@ -1612,9 +1610,8 @@ void RCL_renderSimple(RCL_Camera cam, RCL_ArrayFunction floorHeightFunc,
       3;  // for correctly rendering rolling doors we'll need 3 hits (NOT 2)
 
 #if RCL_COMPUTE_FLOOR_TEXCOORDS == 1
-  uint16_t halfResY = cam.resolution.y / 2;
-  RCL_Unit floorPixelDistances[halfResY];
-  _RCL_precomputeFloorDistances(cam.height,floorPixelDistances,halfResY);
+  RCL_Unit floorPixelDistances[cam.resolution.y];
+  _RCL_precomputeFloorDistances(cam,floorPixelDistances);
   _RCL_floorPixelDistances = floorPixelDistances; // pass to column function
 #endif
 
