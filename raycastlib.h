@@ -1082,6 +1082,7 @@ static inline int16_t _RCL_drawHorizontal(
   RCL_Unit dx;
   RCL_Unit dy;
   RCL_Unit pixPos;
+  RCL_Unit pixPosIncrement;
   RCL_Unit rayCameraCos;
 
   pixelInfo->isWall = 0;
@@ -1104,6 +1105,7 @@ static inline int16_t _RCL_drawHorizontal(
       dx = pixelInfo->hit.position.x - _RCL_camera.position.x;\
       dy = pixelInfo->hit.position.y - _RCL_camera.position.y;\
       pixPos = yCurrent - _RCL_middleRow;\
+      pixPosIncrement = yCurrent < yTo ? 1 : -1;\
       rayCameraCos = RCL_vectorsAngleCos(\
         RCL_angleToDirection(_RCL_camera.direction),ray->direction);\
     }\
@@ -1121,7 +1123,7 @@ static inline int16_t _RCL_drawHorizontal(
           _RCL_camera.position.x + ((d * dx) / (pixelInfo->hit.distance));\
         pixelInfo->texCoords.y =\
           _RCL_camera.position.y + ((d * dy) / (pixelInfo->hit.distance));\
-        ++pixPos;\
+        pixPos += pixPosIncrement;\
       }\
       RCL_PIXEL_FUNCTION(pixelInfo);\
     }\
@@ -1228,6 +1230,22 @@ static inline int16_t _RCL_drawWall(
   return limit;
 }
 
+/// Fills a RCL_HitResult struct with info for a hit at infinity.
+static inline void _RCL_makeInfiniteHit(RCL_HitResult *hit, RCL_Ray *ray)
+{
+  hit->distance = RCL_UNITS_PER_SQUARE * RCL_UNITS_PER_SQUARE;
+  /* ^ horizon is at infinity, but we can't use too big infinity
+       (RCL_INFINITY) because it would overflow in the following mult. */
+  hit->position.x = (ray->direction.x * hit->distance) / RCL_UNITS_PER_SQUARE;
+  hit->position.y = (ray->direction.y * hit->distance) / RCL_UNITS_PER_SQUARE;
+
+  hit->direction = 0;
+  hit->textureCoord = 0;
+  hit->arrayValue = 0;
+  hit->doorRoll = 0;
+  hit->type = 0;
+}
+
 void _RCL_columnFunctionComplex(RCL_HitResult *hits, uint16_t hitCount, uint16_t x,
   RCL_Ray ray)
 {
@@ -1288,6 +1306,7 @@ void _RCL_columnFunctionComplex(RCL_HitResult *hits, uint16_t hitCount, uint16_t
     {
       fZ1Screen = _RCL_middleRow;
       cZ1Screen = _RCL_middleRow + 1;
+      _RCL_makeInfiniteHit(&p.hit,&ray);
     }
 
     RCL_Unit limit;
@@ -1306,8 +1325,9 @@ void _RCL_columnFunctionComplex(RCL_HitResult *hits, uint16_t hitCount, uint16_t
 #endif
 
     limit = _RCL_drawHorizontal(fPosY,fZ1Screen,cPosY + 1,
-     _RCL_camera.resolution.y,fZ1World,-1,RCL_COMPUTE_FLOOR_DEPTH,0,1,&ray,&p);
+     _RCL_camera.resolution.y,fZ1World,-1,RCL_COMPUTE_FLOOR_DEPTH,
      // ^ purposfully allow outside screen bounds
+       RCL_COMPUTE_FLOOR_TEXCOORDS,1,&ray,&p);
 
     if (fPosY > limit)
       fPosY = limit;
@@ -1474,21 +1494,7 @@ void _RCL_columnFunctionSimple(RCL_HitResult *hits, uint16_t hitCount,
   }
   else
   {
-    RCL_HitResult hit;
-
-    hit.distance = RCL_UNITS_PER_SQUARE * RCL_UNITS_PER_SQUARE;
-      /* ^ horizon is at infinity, but we can't use too big infinity
-           (RCL_INFINITY) because it would overflow in the following mult. */
-    hit.position.x = (ray.direction.x * hit.distance) / RCL_UNITS_PER_SQUARE;
-    hit.position.y = (ray.direction.y * hit.distance) / RCL_UNITS_PER_SQUARE;
-
-    hit.direction = 0;
-    hit.textureCoord = 0;
-    hit.arrayValue = 0;
-    hit.doorRoll = 0;
-    hit.type = 0;
-
-    p.hit = hit;
+    _RCL_makeInfiniteHit(&p.hit,&ray);
   }
 
   // draw ceiling
@@ -1554,7 +1560,7 @@ void RCL_renderComplex(RCL_Camera cam, RCL_ArrayFunction floorHeightFunc,
   _RCL_camera = cam;
   _RCL_camResYLimit = cam.resolution.y - 1;
 
-  int16_t halfResY = cam.resolution.y / 2;
+  uint16_t halfResY = cam.resolution.y / 2;
 
   _RCL_middleRow = halfResY + cam.shear;
 
@@ -1573,6 +1579,12 @@ void RCL_renderComplex(RCL_Camera cam, RCL_ArrayFunction floorHeightFunc,
       : RCL_INFINITY;
 
   _RCL_horizontalDepthStep = RCL_HORIZON_DEPTH / cam.resolution.y; 
+
+#if RCL_COMPUTE_FLOOR_TEXCOORDS == 1
+  RCL_Unit floorPixelDistances[halfResY];
+  _RCL_precomputeFloorDistances(cam.height,floorPixelDistances,halfResY);
+  _RCL_floorPixelDistances = floorPixelDistances; // pass to column function
+#endif
 
   RCL_castRaysMultiHit(cam,_RCL_floorCeilFunction,typeFunction,
     _RCL_columnFunctionComplex,constraints);
