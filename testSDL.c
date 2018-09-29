@@ -12,11 +12,7 @@
 
 //#define RCL_USE_DIST_APPROX 2
 
-// redefine some parameters
-#define FPS 40
-#define GRAVITY_ACCELERATION (RCL_UNITS_PER_SQUARE * 3)
-#define PLAYER_JUMP_SPEED 700
-#define RCL_CAMERA_COLL_HEIGHT_BELOW ((3 * RCL_UNITS_PER_SQUARE) / 2)
+#define RCL_COMPUTE_FLOOR_TEXCOORDS 1
 #define RCL_HORIZONTAL_FOV (RCL_UNITS_PER_SQUARE / 5)
 #define RCL_VERTICAL_FOV RCL_UNITS_PER_SQUARE // redefine camera vertical FOV
 
@@ -878,7 +874,7 @@ void pixelFunc(RCL_PixelInfo *pixel)
   if (pixel->isWall)
     c = sampleImage(textures[pixel->hit.type],pixel->texCoords.x,pixel->texCoords.y);
   else
-    c = pixel->isFloor ? 0b00010001 : 0b00001010;
+    c = sampleImage(textures[0],pixel->texCoords.x,pixel->texCoords.y); //pixel->isFloor ? 0b00010001 : 0b00001010;
 
 //  int intensity = pixel->depth - 8 * RCL_UNITS_PER_SQUARE;
 int intensity = pixel->depth - 8 * RCL_UNITS_PER_SQUARE;
@@ -913,6 +909,7 @@ if (pixel->isWall)
 else
   c = pixel->isFloor ? 0x00FF0000 : 0x00F00000;
 */
+
   pixels[index] = r | g | b;
   pixelCounter[index]++;
 }
@@ -983,11 +980,11 @@ int main()
   placeSprite(6,sprite3,16,12,1,3000);
 
   #undef placeSprite
-  camera.position.x = RCL_UNITS_PER_SQUARE * 5;
-  camera.position.y = RCL_UNITS_PER_SQUARE * 4;
+  camera.position.x = 25699;
+  camera.position.y = 10717;
   camera.shear = 0;
-  camera.direction = 0;
-  camera.height = RCL_UNITS_PER_SQUARE * 2;
+  camera.direction = -205;
+  camera.height = 2048;
   camera.resolution.x = SCREEN_WIDTH;
   camera.resolution.y = SCREEN_HEIGHT;
 

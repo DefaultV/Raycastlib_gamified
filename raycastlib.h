@@ -1249,7 +1249,7 @@ void _RCL_columnFunctionComplex(RCL_HitResult *hits, uint16_t hitCount, uint16_t
   RCL_Unit fPosY = _RCL_camera.resolution.y;
   RCL_Unit cPosY = -1;
 
-  // world coordinates
+  // world coordinates (relative to camera height though)
   RCL_Unit fZ1World = _RCL_startFloorHeight;
   RCL_Unit cZ1World = _RCL_startCeil_Height;
 
@@ -1261,7 +1261,7 @@ void _RCL_columnFunctionComplex(RCL_HitResult *hits, uint16_t hitCount, uint16_t
 
   // we'll be simulatenously drawing the floor and the ceiling now  
   for (RCL_Unit j = 0; j <= hitCount; ++j)
-  {                          // ^ = add extra iteration for horizon plane
+  {                    // ^ = add extra iteration for horizon plane
     int8_t drawingHorizon = j == hitCount;
 
     RCL_HitResult hit;
@@ -1320,6 +1320,8 @@ void _RCL_columnFunctionComplex(RCL_HitResult *hits, uint16_t hitCount, uint16_t
     p.depth = 0;
 #endif
 
+    p.hit = hit;
+
     limit = _RCL_drawHorizontal(fPosY,fZ1Screen,cPosY + 1,
      _RCL_camera.resolution.y,fZ1World,-1,RCL_COMPUTE_FLOOR_DEPTH,
      // ^ purposfully allow outside screen bounds
@@ -1352,7 +1354,6 @@ void _RCL_columnFunctionComplex(RCL_HitResult *hits, uint16_t hitCount, uint16_t
       p.isWall = 1;
       p.depth = distance;
       p.isFloor = 1;
-      p.hit = hit;
       p.texCoords.x = hit.textureCoord;
       p.height = 0; // don't compute this, no use
 
