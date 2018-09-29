@@ -56,6 +56,14 @@
 #define RCL_COMPUTE_FLOOR_TEXCOORDS 0
 #endif
 
+#ifndef RCL_FLOOR_TEXCOORDS_HEIGHT
+#define RCL_FLOOR_TEXCOORDS_HEIGHT 0 /** If RCL_COMPUTE_FLOOR_TEXCOORDS == 1,
+                                      this says for what height level the
+                                      texture coords will be computed for
+                                      (for simplicity/performance only one
+                                      level is allowed). */
+#endif
+
 #ifndef RCL_USE_COS_LUT
 #define RCL_USE_COS_LUT 0 /**< type of look up table for cos function:
                            0: none (compute)
@@ -1325,7 +1333,8 @@ void _RCL_columnFunctionComplex(RCL_HitResult *hits, uint16_t hitCount, uint16_t
     limit = _RCL_drawHorizontal(fPosY,fZ1Screen,cPosY + 1,
      _RCL_camera.resolution.y,fZ1World,-1,RCL_COMPUTE_FLOOR_DEPTH,
      // ^ purposfully allow outside screen bounds
-       RCL_COMPUTE_FLOOR_TEXCOORDS,1,&ray,&p);
+       RCL_COMPUTE_FLOOR_TEXCOORDS && p.height == RCL_FLOOR_TEXCOORDS_HEIGHT,
+       1,&ray,&p);
 
     if (fPosY > limit)
       fPosY = limit;

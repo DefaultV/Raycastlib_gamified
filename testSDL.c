@@ -874,10 +874,10 @@ void pixelFunc(RCL_PixelInfo *pixel)
   if (pixel->isWall)
     c = sampleImage(textures[pixel->hit.type],pixel->texCoords.x,pixel->texCoords.y);
   else
-    c = sampleImage(textures[0],pixel->texCoords.x,pixel->texCoords.y); //pixel->isFloor ? 0b00010001 : 0b00001010;
+    c = pixel->height == RCL_FLOOR_TEXCOORDS_HEIGHT ?
+      sampleImage(textures[0],pixel->texCoords.x,pixel->texCoords.y) : 0b00010001;
 
-//  int intensity = pixel->depth - 8 * RCL_UNITS_PER_SQUARE;
-int intensity = pixel->depth - 8 * RCL_UNITS_PER_SQUARE;
+  int intensity = pixel->depth - 8 * RCL_UNITS_PER_SQUARE;
   intensity = intensity < 0 ? 0 : intensity;
   intensity = (intensity * 32) / RCL_UNITS_PER_SQUARE;
 
