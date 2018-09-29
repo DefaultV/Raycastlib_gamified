@@ -1538,13 +1538,18 @@ void _RCL_columnFunctionSimple(RCL_HitResult *hits, uint16_t hitCount,
     -1,&ray,&p);
 }
 
+/**
+  Precomputes a distance from camera to the floor at each screen row into an
+  array (must be preallocated with sufficient (camera.resolution.y) length).
+*/
 static inline void _RCL_precomputeFloorDistances(RCL_Camera camera,
-  RCL_Unit *dest)
+  RCL_Unit *dest, uint16_t startIndex)
 {
   RCL_Unit camHeightScreenSize =
     (camera.height * camera.resolution.y) / RCL_UNITS_PER_SQUARE;
 
-  for (uint16_t i = 0; i < camera.resolution.y; ++i)
+  for (uint16_t i = startIndex
+; i < camera.resolution.y; ++i)
     dest[i] = RCL_perspectiveScaleInverse(camHeightScreenSize,
              RCL_absVal(i - _RCL_middleRow));
 }
@@ -1580,7 +1585,7 @@ void RCL_renderComplex(RCL_Camera cam, RCL_ArrayFunction floorHeightFunc,
 
 #if RCL_COMPUTE_FLOOR_TEXCOORDS == 1
   RCL_Unit floorPixelDistances[cam.resolution.y];
-  _RCL_precomputeFloorDistances(cam,floorPixelDistances);
+  _RCL_precomputeFloorDistances(cam,floorPixelDistances,0);
   _RCL_floorPixelDistances = floorPixelDistances; // pass to column function
 #endif
 
@@ -1611,7 +1616,7 @@ void RCL_renderSimple(RCL_Camera cam, RCL_ArrayFunction floorHeightFunc,
 
 #if RCL_COMPUTE_FLOOR_TEXCOORDS == 1
   RCL_Unit floorPixelDistances[cam.resolution.y];
-  _RCL_precomputeFloorDistances(cam,floorPixelDistances);
+  _RCL_precomputeFloorDistances(cam,floorPixelDistances,_RCL_middleRow);
   _RCL_floorPixelDistances = floorPixelDistances; // pass to column function
 #endif
 
