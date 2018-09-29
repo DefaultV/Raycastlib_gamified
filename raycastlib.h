@@ -1284,7 +1284,7 @@ void _RCL_columnFunctionComplex(RCL_HitResult *hits, uint16_t hitCount, uint16_t
     if (!drawingHorizon)
     {
       hit = hits[j];
-      distance = hit.distance; 
+      distance = RCL_nonZero(hit.distance); 
       p.hit = hit;
 
       fWallHeight = _RCL_floorFunction(hit.square.x,hit.square.y);
