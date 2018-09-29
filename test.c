@@ -17,9 +17,9 @@
 RCL_Unit testArrayFunc(int16_t x, int16_t y)
 {
   if (x > 12 || y > 12)
-    return x * y;
+    return x * y * RCL_UNITS_PER_SQUARE;
 
-  return (x < 0 || y < 0 || x > 9 || y > 9) ? 1 : 0;
+  return (x < 0 || y < 0 || x > 9 || y > 9) ? RCL_UNITS_PER_SQUARE : 0;
 }
 
 RCL_Unit testArrayFunc2(int16_t x, int16_t y)
@@ -206,6 +206,7 @@ int testPixelCount(RCL_Unit camX, RCL_Unit camY, RCL_Unit camZ,
   RCL_Camera c;
 
   RCL_initRayConstraints(&constraints);
+  constraints.maxSteps = 32;
   RCL_initCamera(&c);
   c.position.x = camX;
   c.position.y = camY;
@@ -338,11 +339,11 @@ int main()
   if (!testPixelCount(
     3 * RCL_UNITS_PER_SQUARE + 100,
     4 * RCL_UNITS_PER_SQUARE + RCL_UNITS_PER_SQUARE / 3,
-    RCL_UNITS_PER_SQUARE,
-    312,
+    RCL_UNITS_PER_SQUARE / 2,
+    512,
     0,
-    200,
-    63,
+    120,
+    60,
     0))
     return 1;
 

@@ -1191,7 +1191,6 @@ static inline int16_t _RCL_drawWall(
          i += increment)
     {
       // more expensive texture coord computing
-
       pixelInfo->position.y = i;
 
 #if RCL_COMPUTE_WALL_TEXCOORDS == 1
@@ -1523,7 +1522,7 @@ void _RCL_columnFunctionSimple(RCL_HitResult *hits, uint16_t hitCount,
     -1,_RCL_camResYLimit,p.hit.arrayValue,1,&p);
 
   y = RCL_max(y,limit); // take max, in case no wall was drawn
-  y = RCL_max(y,_RCL_middleRow + 1);
+  y = RCL_max(y,wallStart);
 
   // draw floor
 
