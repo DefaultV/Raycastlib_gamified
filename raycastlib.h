@@ -1125,10 +1125,11 @@ static inline int16_t _RCL_drawHorizontal(
       if (doCoords) /*constant condition - compiler should optimize it out*/\
       {\
         RCL_Unit d = _RCL_floorPixelDistances[i];\
+        RCL_Unit d2 = RCL_nonZero(pixelInfo->hit.distance);\
         pixelInfo->texCoords.x =\
-          _RCL_camera.position.x + ((d * dx) / (pixelInfo->hit.distance));\
+          _RCL_camera.position.x + ((d * dx) / d2);\
         pixelInfo->texCoords.y =\
-          _RCL_camera.position.y + ((d * dy) / (pixelInfo->hit.distance));\
+          _RCL_camera.position.y + ((d * dy) / d2);\
       }\
       RCL_PIXEL_FUNCTION(pixelInfo);\
     }\
@@ -1284,6 +1285,7 @@ void _RCL_columnFunctionComplex(RCL_HitResult *hits, uint16_t hitCount, uint16_t
     {
       hit = hits[j];
       distance = hit.distance; 
+      p.hit = hit;
 
       fWallHeight = _RCL_floorFunction(hit.square.x,hit.square.y);
       fZ2World = fWallHeight - _RCL_camera.height;
@@ -1327,8 +1329,6 @@ void _RCL_columnFunctionComplex(RCL_HitResult *hits, uint16_t hitCount, uint16_t
 #else
     p.depth = 0;
 #endif
-
-    p.hit = hit;
 
     limit = _RCL_drawHorizontal(fPosY,fZ1Screen,cPosY + 1,
      _RCL_camera.resolution.y,fZ1World,-1,RCL_COMPUTE_FLOOR_DEPTH,
