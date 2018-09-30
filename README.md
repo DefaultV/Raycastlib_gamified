@@ -44,10 +44,18 @@ features
 - Many compile-time options to tune the performance vs quality.
 - Well commented code.
 
+**NOTE**: Backwards compatibility isn't a goal of this libraray. It is meant to
+be an as-is set of tools that the users is welcome to adjust for their
+specific project. So new features will be preferred to keeping the same
+interface.
+
 TODO
 ----
 
-- Transparency.
+- Transparency (conditional ray passing through).
+- Doors in the middle of squares.
+- Rolling doors for `RCL_renderComplex`.
+- Possibly merge all rendering functions into one.
 
 license
 -------
