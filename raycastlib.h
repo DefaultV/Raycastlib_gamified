@@ -813,9 +813,7 @@ void RCL_castRayMultiHit(RCL_Ray ray, RCL_ArrayFunction arrayFunc,
 {
   RCL_profileCall(RCL_castRayMultiHit);
 
-  RCL_Vector2D initialPos = ray.start;
   RCL_Vector2D currentPos = ray.start;
-
   RCL_Vector2D currentSquare;
 
   currentSquare.x = RCL_divRoundDown(ray.start.x,RCL_UNITS_PER_SQUARE);
@@ -1102,9 +1100,6 @@ static inline int16_t _RCL_drawHorizontal(
   RCL_Unit depthIncrement;
   RCL_Unit dx;
   RCL_Unit dy;
-  RCL_Unit pixPos;
-  RCL_Unit pixPosIncrement;
-  RCL_Unit rayCameraCos;
 
   pixelInfo->isWall = 0;
 
@@ -1125,8 +1120,6 @@ static inline int16_t _RCL_drawHorizontal(
     {\
       dx = pixelInfo->hit.position.x - _RCL_camera.position.x;\
       dy = pixelInfo->hit.position.y - _RCL_camera.position.y;\
-      rayCameraCos = RCL_vectorsAngleCos(\
-        RCL_angleToDirection(_RCL_camera.direction),ray->direction);\
     }\
     for (int16_t i = yCurrent + increment;\
          increment == -1 ? i >= limit : i <= limit; /* TODO: is efficient? */\
@@ -1287,7 +1280,7 @@ void _RCL_columnFunctionComplex(RCL_HitResult *hits, uint16_t hitCount, uint16_t
     int8_t drawingHorizon = j == hitCount;
 
     RCL_HitResult hit;
-    RCL_Unit distance;
+    RCL_Unit distance = 1;
 
     RCL_Unit fWallHeight = 0, cWallHeight = 0;
     RCL_Unit fZ2World = 0,    cZ2World = 0;
@@ -1899,6 +1892,7 @@ void RCL_moveCameraWithCollision(RCL_Camera *camera, RCL_Vector2D planeOffset,
     camera->height = RCL_clamp(camera->height,
       bottomLimit + RCL_CAMERA_COLL_HEIGHT_BELOW,
       topLimit - RCL_CAMERA_COLL_HEIGHT_ABOVE);
+
     #undef checkSquares
   }
 }
