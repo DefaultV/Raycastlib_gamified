@@ -170,7 +170,7 @@
   printf("  start: ");\
   RCL_logV2D(r.start);\
   printf("  dir: ");\
-  RCL_logV2D(r.direction);}\
+  RCL_logV2D(r.direction);}
 
 #define RCL_logHitResult(h){\
   printf("hit:\n");\
@@ -180,17 +180,30 @@
   RCL_logV2D(h.position);\
   printf("  dist: %d\n", h.distance);\
   printf("  dir: %d\n", h.direction);\
-  printf("  texcoord: %d\n", h.textureCoord);}\
+  printf("  texcoord: %d\n", h.textureCoord);}
 
 #define RCL_logPixelInfo(p){\
   printf("pixel:\n");\
   printf("  position: ");\
   RCL_logV2D(p.position);\
+  printf("  texCoord: ");\
+  RCL_logV2D(p.texCoords);\
   printf("  depth: %d\n", p.depth);\
+  printf("  height: %d\n", p.height);\
   printf("  wall: %d\n", p.isWall);\
   printf("  hit: ");\
   RCL_logHitResult(p.hit);\
-  }\
+  }
+
+#define RCL_logCamera(c){\
+  printf("camera:\n");\
+  printf("  position: ");\
+  RCL_logV2D(c.position);\
+  printf("  height: %d\n",c.height);\
+  printf("  direction: %d\n",c.direction);\
+  printf("  shear: %d\n",c.shear);\
+  printf("  resolution: %d x %d\n",c.resolution.x,c.resolution.y);\
+  }
 
 /// Position in 2D space.
 typedef struct
