@@ -26,7 +26,7 @@
 
   author: Miloslav "drummyfish" Ciz
   license: CC0 1.0
-  version: 0.1
+  version: 0.8
 */
 
 #include <stdint.h>
