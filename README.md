@@ -27,6 +27,10 @@ terminal:
 
 ![](/media/terminal.gif)
 
+Gamebuino META (quick and dirty port):
+
+![](/media/gamebuino.gif)
+
 features
 --------
 
