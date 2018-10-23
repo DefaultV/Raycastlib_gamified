@@ -36,7 +36,7 @@ features
 
 - Very fast, small and efficient.
 - Uses only integer math.
-- No dependencies (uses only stdint standard library).
+- No dependencies (uses only stdint standard library), extremely portable.
 - Single header, KISS.
 - Advanced rendering of variable height floor and ceiling.
 - Textured walls and floor.
