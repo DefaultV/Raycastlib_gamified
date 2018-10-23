@@ -1,6 +1,9 @@
 # raycastlib
 
-Ray Casting library for (not only) limited-resource computers.
+Ray casting library for (not only) limited-resource computers.
+
+Take a look at my [Pokitto demos](https://gitlab.com/drummyfish/Pokitto-Raycasting) repository,
+it contains some better code for learning the usage, including a very simple hello world.
 
 eye-candy previews
 ------------------
