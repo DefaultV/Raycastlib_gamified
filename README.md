@@ -47,7 +47,7 @@ features
 - Pure C, tested to run as C++ as well.
 - Optional framework functions that handle the whole rendering.
 - Still flexible -- pixels are left for you to draw in any way you want.
-- Tested on multiple platforms (PC, Arduboy, Pokitto).
+- Tested on multiple platforms (PC, Arduboy, Pokitto, Gamebuino META).
 - Many compile-time options to tune the performance vs quality.
 - Well commented code.
 
