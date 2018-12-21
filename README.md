@@ -40,7 +40,7 @@ features
 - Depth information (for fog).
 - Camera shearing (looking up/down).
 - Camera movement with collisions.
-- Support for opening door.
+- Partial support for opening door.
 - Pure C, tested to run as C++ as well.
 - Optional framework functions that handle the whole rendering.
 - Still flexible -- pixels are left for you to draw in any way you want.
