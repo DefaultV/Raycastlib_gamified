@@ -60,7 +60,7 @@ For start take a look at the [testTerminal.c](https://gitlab.com/drummyfish/rayc
 It is only a little bit more complex than a simple hello world.
 
 For more examples see the other files, plus my [Pokitto demos](https://gitlab.com/drummyfish/Pokitto-Raycasting) repository,
-which contains some better documented example code, including a very simple hello world.
+which contains some better documented example code, including a [very simple hello world](https://gitlab.com/drummyfish/Pokitto-Raycasting/blob/master/helloRay.cpp).
 
 The basic philosophy is:
 
