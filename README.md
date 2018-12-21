@@ -2,9 +2,6 @@
 
 Ray casting library for (not only) limited-resource computers.
 
-Take a look at my [Pokitto demos](https://gitlab.com/drummyfish/Pokitto-Raycasting) repository,
-it contains some better code for learning the usage, including a very simple hello world.
-
 eye-candy previews
 ------------------
 
@@ -55,6 +52,31 @@ features
 be an as-is set of tools that the users is welcome to adjust for their
 specific project. So new features will be preferred to keeping the same
 interface.
+
+how to use
+----------
+
+For start take a look at the [testTerminal.c](https://gitlab.com/drummyfish/raycastlib/blob/master/testTerminal.c) program.
+It is only a little bit more complex than a simple hello world.
+
+For more examples see the other files, plus my [Pokitto demos](https://gitlab.com/drummyfish/Pokitto-Raycasting) repository,
+which contains some better documented example code, including a very simple hello world.
+
+The basic philosophy is:
+
+- Before including the header, define `RCL_PIXEL_FUNCTION` to the name of a function you will use to
+  draw pixels. It is basically a fragment/pixel shader function that the library will call. You will
+  be passed info about the pixel and can decide what to do with it, so you can process it, discard it,
+  or simply write it to the screen.
+- Call `RCL_renderSimple` or `RCL_renderComplex` to perform the frame rendering. This will cause the
+  library to start calling the `RCL_PIXEL_FUNCTION` in order to draw the frame.
+- The library gets info about the world (such as floor or ceiling height) via *array* functions
+  (`RCL_ArrayFunction` type) -- functions that take *x* and *y* coordinates of a square and return given
+  information. This way you are free to generate the world procedurally if you want.
+- Fixed point arithmetics is used as a principle, but there is no abstraction above it, everything is simply
+  an integer (`RCL_Unit` type). The space is considered to be a dense grid, where each world square
+  has a side length of `RCL_UNITS_PER_SQUARE` units. Numbers are normalized by this constant, so e.g.
+  the sin function returns a value from `-RCL_UNITS_PER_SQUARE` to `RCL_UNITS_PER_SQUARE`.
 
 TODO
 ----
