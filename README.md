@@ -89,4 +89,4 @@ TODO
 license
 -------
 
-Everything is CC0 1.0. Please share your own software as free and open-source.
+Everything is CC0 1.0 + a waiver of all other IP rights (including patents). Please share your own software as free and open-source.
