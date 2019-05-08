@@ -25,7 +25,7 @@
   - Screen coordinates are normal: [0,0] = top left, x goes right, y goes down.
 
   author: Miloslav "drummyfish" Ciz
-  license: CC0 1.0
+  license: CC0 1.0 + all IP waiver
   version: 0.8
   
   -----
