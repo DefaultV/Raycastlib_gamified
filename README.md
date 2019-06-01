@@ -37,11 +37,11 @@ features
 - Single header, KISS.
 - Advanced rendering of variable height floor and ceiling.
 - Textured walls and floor.
-- Depth information (for fog).
+- Depth information (e.g. for fog or z-buffer rendering).
 - Camera shearing (looking up/down).
 - Camera movement with collisions.
 - Partial support for opening door.
-- Pure C, tested to run as C++ as well.
+- Pure C99, tested to run as C++ as well.
 - Optional framework functions that handle the whole rendering.
 - Still flexible -- pixels are left for you to draw in any way you want.
 - Tested on multiple platforms (PC, Arduboy, Pokitto, Gamebuino META).
