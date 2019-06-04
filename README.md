@@ -56,7 +56,7 @@ interface.
 how to use
 ----------
 
-For start take a look at the [testTerminal.c](https://gitlab.com/drummyfish/raycastlib/blob/master/testTerminal.c) program.
+For start take a look at the [testTerminal.c](https://gitlab.com/drummyfish/raycastlib/blob/master/programs/testTerminal.c) program.
 It is only a little bit more complex than a simple hello world.
 
 For more examples see the other files, plus my [Pokitto demos](https://gitlab.com/drummyfish/Pokitto-Raycasting) repository,
