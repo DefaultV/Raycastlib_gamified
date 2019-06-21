@@ -2,6 +2,8 @@
 
 Ray casting library for (not only) limited-resource computers.
 
+If you like this, you may also like my similar project: [small3dlib](https://gitlab.com/drummyfish/small3dlib).
+
 eye-candy previews
 ------------------
 
