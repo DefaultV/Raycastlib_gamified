@@ -49,6 +49,7 @@ features
 - Tested on multiple platforms (PC, Arduboy, Pokitto, Gamebuino META).
 - Many compile-time options to tune the performance vs quality.
 - Well commented and formatted code.
+- Completely free of legal restrictions, do literally everything you want.
 
 **NOTE**: Backwards compatibility isn't a goal of this libraray. It is meant to
 be an as-is set of tools that the users is welcome to adjust for their
