@@ -7,17 +7,17 @@ If you like this, you may also like my similar project: [small3dlib](https://git
 eye-candy previews
 ------------------
 
-Pokitto:
+Pokitto (32bit embedded console, 48 MHz, 36 kB RAM):
 
 ![](/media/pokitto1.gif)
 ![](/media/pokitto2.gif)
 ![](/media/pokitto3.gif)
 
-SDL:
+SDL (PC):
 
 ![](/media/sdl.gif)
 
-Arduboy:
+Arduboy (8bit Arduino console, 16 MHz, 2.5 kB RAM):
 
 ![](/media/arduboy.gif)
 ![](/media/arduboy2.gif)
@@ -26,7 +26,7 @@ terminal:
 
 ![](/media/terminal.gif)
 
-Gamebuino META:
+Gamebuino META (Arduino 32bit console, 48 MHz, 32 kB RAM):
 
 ![](/media/gamebuino.gif)
 
