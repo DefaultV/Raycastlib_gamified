@@ -59,6 +59,8 @@ interface.
 how to use
 ----------
 
+**Don't forget to compile with -O3!** This drastically improves performance.
+
 For start take a look at the [testTerminal.c](https://gitlab.com/drummyfish/raycastlib/blob/master/programs/testTerminal.c) program.
 It is only a little bit more complex than a simple hello world.
 
