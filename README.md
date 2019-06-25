@@ -33,23 +33,23 @@ Gamebuino META (Arduino 32bit console, 48 MHz, 32 kB RAM):
 features
 --------
 
-- Very fast, small and efficient.
-- Uses only integer math (32bit).
-- No dependencies (uses only stdint standard library), extremely portable.
-- Single header, KISS.
-- Advanced rendering of variable height floor and ceiling.
-- Textured walls and floor.
-- Depth information (e.g. for fog or z-buffer rendering).
-- Camera shearing (looking up/down).
-- Camera movement with collisions.
-- Partial support for opening door.
-- Pure C99, tested to run as C++ as well.
-- Optional framework functions that handle the whole rendering.
-- Still flexible -- pixels are left for you to draw in any way you want.
-- Tested on multiple platforms (PC, Arduboy, Pokitto, Gamebuino META).
-- Many compile-time options to tune the performance vs quality.
-- Well commented and formatted code.
-- Completely free of legal restrictions, do literally anything you want.
+- Very **fast, small and efficient**.
+- Uses **only integer math** (32bit). The tiny version should only require 16bit, but isn't completed.
+- **No dependencies** (uses only stdint standard library), extremely portable.
+- **Single header**, KISS.
+- Advanced rendering of **variable height floor and ceiling**.
+- **Textured walls and floor**.
+- **Depth information** (e.g. for fog or z-buffer rendering).
+- **Camera shearing** (looking up/down).
+- Camera movement with **collisions**.
+- Partial support for **opening door**.
+- **Pure C99**, tested to run as C++ as well.
+- Optional framework **functions that handle the whole rendering**.
+- Still **flexible** -- pixels are left for you to draw in any way you want.
+- **Tested on multiple platforms** (PC, Arduboy, Pokitto, Gamebuino META).
+- **Many compile-time options** to tune the performance vs quality.
+- **Well commented** and formatted code.
+- Completely **free of legal restrictions**, do literally anything you want.
 
 **NOTE**: Backwards compatibility isn't a goal of this libraray. It is meant to
 be an as-is set of tools that the users is welcome to adjust for their
