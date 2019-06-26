@@ -67,6 +67,8 @@ It is only a little bit more complex than a simple hello world.
 For more examples see the other files, plus my [Pokitto demos](https://gitlab.com/drummyfish/Pokitto-Raycasting) repository,
 which contains some better documented example code, including a [very simple hello world](https://gitlab.com/drummyfish/Pokitto-Raycasting/blob/master/helloRay.cpp).
 
+Also see **the library code itself**, it is meant to be self-documenting -- you'll find the description of a lot of things at the start of the file.
+
 The basic philosophy is:
 
 - The library implements only a rendering back-end, it doesn't perform any drawing to the actual screen,
