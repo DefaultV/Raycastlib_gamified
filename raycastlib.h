@@ -2,6 +2,8 @@
 #define RAYCASTLIB_H
 
 /**
+  @file raycastlib.h
+
   raycastlib (RCL) - Small C header-only raycasting library for embedded and
   low performance computers, such as Arduino. Only uses integer math and stdint
   standard library.
@@ -52,9 +54,7 @@
 
 #include <stdint.h>
 
-#ifndef RCL_RAYCAST_TINY /** Turns on super efficient version of this library.
-                             Only use if neccesarry, looks ugly. Also not done
-                             yet. */
+#ifndef RCL_RAYCAST_TINY
   #define RCL_UNITS_PER_SQUARE 1024 /**< Number of RCL_Units in a side of a
                                          spatial square. */
   typedef int32_t RCL_Unit; /**< Smallest spatial unit, there is
@@ -378,7 +378,7 @@ RCL_Unit RCL_len(RCL_Vector2D v);
 */   
 RCL_Unit RCL_degreesToUnitsAngle(int16_t degrees);
 
-///< Computes the change in size of an object due to perspective.
+/** Computes the change in size of an object due to perspective. */
 RCL_Unit RCL_perspectiveScale(RCL_Unit originalSize, RCL_Unit distance);
 
 RCL_Unit RCL_perspectiveScaleInverse(RCL_Unit originalSize,
