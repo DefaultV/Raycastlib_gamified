@@ -7,17 +7,17 @@ If you like this, you may also like my similar project: [small3dlib](https://git
 eye-candy previews
 ------------------
 
-Pokitto:
+Pokitto (32bit embedded console, 48 MHz, 36 kB RAM):
 
 ![](/media/pokitto1.gif)
 ![](/media/pokitto2.gif)
 ![](/media/pokitto3.gif)
 
-SDL:
+SDL (PC):
 
 ![](/media/sdl.gif)
 
-Arduboy:
+Arduboy (8bit Arduino console, 16 MHz, 2.5 kB RAM):
 
 ![](/media/arduboy.gif)
 ![](/media/arduboy2.gif)
@@ -26,30 +26,30 @@ terminal:
 
 ![](/media/terminal.gif)
 
-Gamebuino META:
+Gamebuino META (Arduino 32bit console, 48 MHz, 32 kB RAM):
 
 ![](/media/gamebuino.gif)
 
 features
 --------
 
-- Very fast, small and efficient.
-- Uses only integer math (32bit).
-- No dependencies (uses only stdint standard library), extremely portable.
-- Single header, KISS.
-- Advanced rendering of variable height floor and ceiling.
-- Textured walls and floor.
-- Depth information (e.g. for fog or z-buffer rendering).
-- Camera shearing (looking up/down).
-- Camera movement with collisions.
-- Partial support for opening door.
-- Pure C99, tested to run as C++ as well.
-- Optional framework functions that handle the whole rendering.
-- Still flexible -- pixels are left for you to draw in any way you want.
-- Tested on multiple platforms (PC, Arduboy, Pokitto, Gamebuino META).
-- Many compile-time options to tune the performance vs quality.
-- Well commented and formatted code.
-- Completely free of legal restrictions, do literally anything you want.
+- Very **fast, small and efficient**.
+- Uses **only integer math** (32bit). The tiny version should only require 16bit, but isn't completed.
+- **No dependencies** (uses only stdint standard library), extremely portable.
+- **Single header**, KISS.
+- Advanced rendering of **variable height floor and ceiling**.
+- **Textured walls and floor**.
+- **Depth information** (e.g. for fog or z-buffer rendering).
+- **Camera shearing** (looking up/down).
+- Camera movement with **collisions**.
+- Partial support for **opening door**.
+- **Pure C99**, tested to run as C++ as well.
+- Optional framework **functions that handle the whole rendering**.
+- Still **flexible** -- pixels are left for you to draw in any way you want.
+- **Tested on multiple platforms** (PC, Arduboy, Pokitto, Gamebuino META).
+- **Many compile-time options** to tune the performance vs quality.
+- **Well commented** and formatted code.
+- Completely **free of legal restrictions**, do literally anything you want.
 
 **NOTE**: Backwards compatibility isn't a goal of this libraray. It is meant to
 be an as-is set of tools that the users is welcome to adjust for their
@@ -59,15 +59,19 @@ interface.
 how to use
 ----------
 
+**Don't forget to compile with -O3!** This drastically improves performance.
+
 For start take a look at the [testTerminal.c](https://gitlab.com/drummyfish/raycastlib/blob/master/programs/testTerminal.c) program.
 It is only a little bit more complex than a simple hello world.
 
 For more examples see the other files, plus my [Pokitto demos](https://gitlab.com/drummyfish/Pokitto-Raycasting) repository,
 which contains some better documented example code, including a [very simple hello world](https://gitlab.com/drummyfish/Pokitto-Raycasting/blob/master/helloRay.cpp).
 
+Also see **the library code itself**, it is meant to be self-documenting -- you'll find the description of a lot of things at the start of the file.
+
 The basic philosophy is:
 
-- The library implements only a rendering back-end, it doesn't permorm any drawing to the actual screen,
+- The library implements only a rendering back-end, it doesn't perform any drawing to the actual screen,
   hence there is no dependency on any library such as OpenGL or SDL. It just calls your front-end function
   and tells you which pixels you should write. How you do it is up to you.
 - Before including the header, define `RCL_PIXEL_FUNCTION` to the name of a function you will use to
@@ -97,4 +101,8 @@ TODO
 license
 -------
 
-Everything is CC0 1.0 + a waiver of all other IP rights (including patents). Please share your own software as free and open-source.
+Everything is CC0 1.0 + a waiver of all other IP rights (including patents). The art used in demos is either my own released under CC0 or someone else's released under CC0.
+
+Please support free software and free culture by using free licenses and/or waivers.
+
+If you'd like to support me or just read something about me and my projects, visit my site: [www.tastyfish.cz](http://www.tastyfish.cz/).
