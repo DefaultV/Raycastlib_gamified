@@ -2,8 +2,6 @@
 #define RAYCASTLIB_H
 
 /**
-  @file raycastlib.h
-
   raycastlib (RCL) - Small C header-only raycasting library for embedded and
   low performance computers, such as Arduino. Only uses integer math and stdint
   standard library.
@@ -27,36 +25,15 @@
   - Screen coordinates are normal: [0,0] = top left, x goes right, y goes down.
 
   author: Miloslav "drummyfish" Ciz
-  license: CC0 1.0 (public domain)
-           found at https://creativecommons.org/publicdomain/zero/1.0/
-           + additional waiver of all IP
+  license: CC0 1.0
   version: 0.8
-  
-  -----
-  
-  This work's goal is to never be encumbered by any exclusive intellectual
-  property rights.
-
-  The work is therefore provided under CC0 1.0 + additional WAIVER OF ALL
-  INTELLECTUAL PROPERTY RIGHTS that waives the rest of intellectual property
-  rights not already waived by CC0 1.0. The WAIVER OF ALL INTELLECTUAL PROPERTY
-  RGHTS is as follows:
-
-  Each contributor to this work agrees that they waive any exclusive rights,
-  including but not limited to copyright, patents, trademark, trade dress,
-  industrial design, plant varieties and trade secrets, to any and all ideas,
-  concepts, processes, discoveries, improvements and inventions conceived,
-  discovered, made, designed, researched or developed by the contributor either
-  solely or jointly with others, which relate to this work or result from this
-  work. Should any waiver of such right be judged legally invalid or ineffective
-  under applicable law, the contributor hereby grants to each affected person a 
-  royalty-free, non transferable, non sublicensable, non exclusive, irrevocable
-  and unconditional license to this right.
 */
 
 #include <stdint.h>
 
-#ifndef RCL_RAYCAST_TINY
+#ifndef RCL_RAYCAST_TINY /** Turns on super efficient version of this library.
+                             Only use if neccesarry, looks ugly. Also not done
+                             yet. */
   #define RCL_UNITS_PER_SQUARE 1024 /**< Number of RCL_Units in a side of a
                                          spatial square. */
   typedef int32_t RCL_Unit; /**< Smallest spatial unit, there is
@@ -380,7 +357,7 @@ RCL_Unit RCL_len(RCL_Vector2D v);
 */   
 RCL_Unit RCL_degreesToUnitsAngle(int16_t degrees);
 
-/** Computes the change in size of an object due to perspective. */
+///< Computes the change in size of an object due to perspective.
 RCL_Unit RCL_perspectiveScale(RCL_Unit originalSize, RCL_Unit distance);
 
 RCL_Unit RCL_perspectiveScaleInverse(RCL_Unit originalSize,
@@ -759,77 +736,6 @@ static inline int8_t RCL_pointIfLeftOfRay(RCL_Vector2D point, RCL_Ray ray)
          // ^ Z component of cross-product
 }
 
-/**
-  DEPRECATED in favor of DDA.
-  Casts a ray within a single square, to collide with the square borders.  
-*/
-void RCL_castRaySquare(RCL_Ray *localRay, RCL_Vector2D *nextCellOff,
-  RCL_Vector2D *collOff)
-{
-  nextCellOff->x = 0;
-  nextCellOff->y = 0;
-
-  RCL_Ray criticalLine;
-  criticalLine.start = localRay->start;
-  criticalLine.direction = localRay->direction;
-
-  #define helper(c1,c2,n)\
-    {\
-      nextCellOff->c1 = n;\
-      collOff->c1 = criticalLine.start.c1 - localRay->start.c1;\
-      collOff->c2 = \
-        (((RCL_Unit) collOff->c1) * localRay->direction.c2) /\
-        ((localRay->direction.c1 == 0) ? 1 : localRay->direction.c1);\
-    }
-
-  #define helper2(n1,n2,c)\
-    if (RCL_pointIfLeftOfRay(localRay->start,criticalLine) == c)\
-      helper(y,x,n1)\
-    else\
-      helper(x,y,n2)
-      
-  if (localRay->direction.x > 0)
-  {
-    criticalLine.start.x = RCL_UNITS_PER_SQUARE - 1;
-
-    if (localRay->direction.y > 0)
-    {
-      // top right
-      criticalLine.start.y = RCL_UNITS_PER_SQUARE - 1;
-      helper2(1,1,1)
-    }
-    else
-    {
-      // bottom right
-      criticalLine.start.y = 0;
-      helper2(-1,1,0)
-    }
-  }
-  else
-  {
-    criticalLine.start.x = 0;
-
-    if (localRay->direction.y > 0)
-    {
-      // top left
-      criticalLine.start.y = RCL_UNITS_PER_SQUARE - 1;
-      helper2(1,-1,0)
-    }
-    else
-    {
-      // bottom left
-      criticalLine.start.y = 0;
-      helper2(-1,-1,1)
-    }
-  }
-
-  #undef helper2
-  #undef helper
-
-  collOff->x += nextCellOff->x;
-  collOff->y += nextCellOff->y;
-}
-
 void RCL_castRayMultiHit(RCL_Ray ray, RCL_ArrayFunction arrayFunc,
   RCL_ArrayFunction typeFunc, RCL_HitResult *hitResults,
   uint16_t *hitResultsLen, RCL_RayConstraints constraints)
@@ -973,7 +879,13 @@ void RCL_castRayMultiHit(RCL_Ray ray, RCL_ArrayFunction arrayFunc,
       }
 
       if (_RCL_rollFunction != 0)
+      {
         h.doorRoll = _RCL_rollFunction(currentSquare.x,currentSquare.y);
+        
+        if (h.direction == 0 || h.direction == 1)
+          h.doorRoll *= -1;
+      }
+
 #else
       h.textureCoord = 0;
 #endif
@@ -1084,7 +996,7 @@ RCL_Unit _RCL_floorCeilFunction(int16_t x, int16_t y)
 RCL_Unit _floorHeightNotZeroFunction(int16_t x, int16_t y)
 {
   return _RCL_floorFunction(x,y) == 0 ? 0 :
-    (x & 0x00FF) | ((y & 0x00FF) << 8);
+    RCL_nonZero((x & 0x00FF) | ((y & 0x00FF) << 8));
     // ^ this makes collisions between all squares - needed for rolling doors
 }
 
@@ -1480,8 +1392,8 @@ void _RCL_columnFunctionSimple(RCL_HitResult *hits, uint16_t hitCount,
         RCL_Unit texCoordMod = hit.textureCoord % RCL_UNITS_PER_SQUARE;
 
         int8_t unrolled = hit.doorRoll >= 0 ?
-          hit.doorRoll > texCoordMod :
-          texCoordMod > RCL_UNITS_PER_SQUARE + hit.doorRoll;
+          (hit.doorRoll > texCoordMod) :
+          (texCoordMod > RCL_UNITS_PER_SQUARE + hit.doorRoll);
 
         if (unrolled)
         {
