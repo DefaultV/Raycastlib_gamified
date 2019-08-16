@@ -26,7 +26,7 @@
 
   author: Miloslav "drummyfish" Ciz
   license: CC0 1.0
-  version: 0.8
+  version: 0.81
 */
 
 #include <stdint.h>
@@ -76,6 +76,11 @@
                             0: none (compute full Euclidean distance)
                             1: accurate approximation
                             2: octagonal approximation (LQ) */
+#endif
+
+#ifndef RCL_EQUILINEAR
+#define RCL_EQUILINEAR 1 /**< Whether to use equilinear perspective (normally
+                              used), or curvilinear perspective (fish eye). */
 #endif
 
 #ifndef RCL_TEXTURE_VERTICAL_STRETCH
@@ -755,20 +760,16 @@ void RCL_castRayMultiHit(RCL_Ray ray, RCL_ArrayFunction arrayFunc,
   // DDA variables
   RCL_Vector2D nextSideDist; // dist. from start to the next side in given axis
   RCL_Vector2D delta;
-  RCL_Unit currentDist = 0;
   RCL_Vector2D step;         // -1 or 1 for each axis
   int8_t stepHorizontal = 0; // whether the last step was hor. or vert.
 
   nextSideDist.x = 0;
   nextSideDist.y = 0;
 
-  RCL_Unit dirVecLength = RCL_len(ray.direction);
+  RCL_Unit dirVecLengthNorm = RCL_len(ray.direction) * RCL_UNITS_PER_SQUARE;
 
-  delta.x = RCL_absVal((RCL_UNITS_PER_SQUARE * dirVecLength) /
-    RCL_nonZero(ray.direction.x));
-
-  delta.y = RCL_absVal((RCL_UNITS_PER_SQUARE * dirVecLength) /
-    RCL_nonZero(ray.direction.y));
+  delta.x = RCL_absVal(dirVecLengthNorm / RCL_nonZero(ray.direction.x));
+  delta.y = RCL_absVal(dirVecLengthNorm / RCL_nonZero(ray.direction.y));
 
   // init DDA
 
@@ -816,7 +817,6 @@ void RCL_castRayMultiHit(RCL_Ray ray, RCL_ArrayFunction arrayFunc,
       h.doorRoll = 0;
       h.position = currentPos;
       h.square   = currentSquare;
-      h.distance = currentDist;
 
       if (stepHorizontal)
       {
@@ -833,9 +833,11 @@ void RCL_castRayMultiHit(RCL_Ray ray, RCL_ArrayFunction arrayFunc,
         h.position.y = ray.start.y + ((ray.direction.y * diff) /
           RCL_nonZero(ray.direction.x)); 
 
+#if RCL_EQUILINEAR
         h.distance =
          ((h.position.x - ray.start.x) * RCL_UNITS_PER_SQUARE) /
          RCL_nonZero(ray.direction.x);
+#endif
       }
       else
       {
@@ -852,10 +854,16 @@ void RCL_castRayMultiHit(RCL_Ray ray, RCL_ArrayFunction arrayFunc,
         h.position.x = ray.start.x + ((ray.direction.x * diff) /
           RCL_nonZero(ray.direction.y)); 
 
+#if RCL_EQUILINEAR
         h.distance =
          ((h.position.y - ray.start.y) * RCL_UNITS_PER_SQUARE) /
          RCL_nonZero(ray.direction.y);
+#endif
       }
+
+#if !RCL_EQUILINEAR
+      h.distance = RCL_dist(h.position,ray.start);
+#endif
 
       if (typeFunc != 0)
         h.type = typeFunc(currentSquare.x,currentSquare.y);
@@ -904,14 +912,12 @@ void RCL_castRayMultiHit(RCL_Ray ray, RCL_ArrayFunction arrayFunc,
 
     if (nextSideDist.x < nextSideDist.y)
     {
-      currentDist = nextSideDist.x;
       nextSideDist.x += delta.x;
       currentSquare.x += step.x;
       stepHorizontal = 1;
     }
     else
     {
-      currentDist = nextSideDist.y;
       nextSideDist.y += delta.y;
       currentSquare.y += step.y;
       stepHorizontal = 0;
