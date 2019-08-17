@@ -225,8 +225,12 @@ typedef struct
 
 typedef struct
 {
-  RCL_Unit     distance; /**< Distance (perpend.) to the hit position, or -1
-                              if no collision happened. */
+  RCL_Unit     distance; /**< Distance to the hit position, or -1 if no
+                              collision happened. If RCL_EQUILINEAR != 0, then
+                              the distance is perpendicular to the projection
+                              plane (fish eye correction), otherwise it is
+                              the straight distance to the ray start
+                              position. */
   uint8_t      direction;    ///< Direction of hit.
   RCL_Unit     textureCoord; /**< Normalized (0 to RCL_UNITS_PER_SQUARE - 1)
                                   texture coordinate (horizontal). */
@@ -314,7 +318,9 @@ RCL_PixelInfo RCL_mapToScreen(RCL_Vector2D worldPosition, RCL_Unit height,
 /**
   Casts a single ray and returns a list of collisions.
 
-  @param ray ray to be cast
+  @param ray ray to be cast, if RCL_EQUILINEAR != 0 then the computed hit
+         distance is divided by the ray direction vector length (to correct
+         the fish eye effect)
   @param arrayFunc function that will be used to determine collisions (hits)
          with the ray (squares for which this function returns different values
          are considered to have a collision between them), this will typically
@@ -834,6 +840,13 @@ void RCL_castRayMultiHit(RCL_Ray ray, RCL_ArrayFunction arrayFunc,
           RCL_nonZero(ray.direction.x)); 
 
 #if RCL_EQUILINEAR
+        /* Here we compute the fish eye corrected distance (perpendicular to
+        the projection plane) as the Euclidean distance divided by the length
+        of the ray direction vector. This can be computed without actually
+        computing Euclidean distances as a hypothenuse A (distance) divided
+        by hypothenuse B (length) is equal to leg A (distance along one axis)
+        divided by leg B (length along the same axis). */
+
         h.distance =
          ((h.position.x - ray.start.x) * RCL_UNITS_PER_SQUARE) /
          RCL_nonZero(ray.direction.x);
@@ -968,6 +981,10 @@ void RCL_castRaysMultiHit(RCL_Camera cam, RCL_ArrayFunction arrayFunc,
 
   for (int16_t i = 0; i < cam.resolution.x; ++i)
   {
+    /* Here by linearly interpolating the direction vector its length changes,
+    which in result achieves correcting the fish eye effect (computing
+    perpendicular distance). */
+
     r.direction.x = dir1.x + currentDX / cam.resolution.x;
     r.direction.y = dir1.y + currentDY / cam.resolution.x;
 
