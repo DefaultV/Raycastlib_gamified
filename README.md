@@ -38,7 +38,7 @@ features
 - Very **fast, small and efficient**.
 - Uses **only integer math** (32bit). The tiny version should only require 16bit, but isn't completed.
 - **No dependencies** (uses only stdint standard library), extremely portable.
-- **Single header**, KISS.
+- **Single header**, KISS, suckless.
 - Advanced rendering of **variable height floor and ceiling**.
 - **Textured walls and floor**.
 - **Depth information** (e.g. for fog or z-buffer rendering).
