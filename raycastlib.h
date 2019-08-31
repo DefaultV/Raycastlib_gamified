@@ -78,8 +78,8 @@
                             2: octagonal approximation (LQ) */
 #endif
 
-#ifndef RCL_EQUILINEAR
-#define RCL_EQUILINEAR 1 /**< Whether to use equilinear perspective (normally
+#ifndef RCL_RECTILINEAR
+#define RCL_RECTILINEAR 1 /**< Whether to use rectilinear perspective (normally
                               used), or curvilinear perspective (fish eye). */
 #endif
 
@@ -226,7 +226,7 @@ typedef struct
 typedef struct
 {
   RCL_Unit     distance; /**< Distance to the hit position, or -1 if no
-                              collision happened. If RCL_EQUILINEAR != 0, then
+                              collision happened. If RCL_RECTILINEAR != 0, then
                               the distance is perpendicular to the projection
                               plane (fish eye correction), otherwise it is
                               the straight distance to the ray start
@@ -318,7 +318,7 @@ RCL_PixelInfo RCL_mapToScreen(RCL_Vector2D worldPosition, RCL_Unit height,
 /**
   Casts a single ray and returns a list of collisions.
 
-  @param ray ray to be cast, if RCL_EQUILINEAR != 0 then the computed hit
+  @param ray ray to be cast, if RCL_RECTILINEAR != 0 then the computed hit
          distance is divided by the ray direction vector length (to correct
          the fish eye effect)
   @param arrayFunc function that will be used to determine collisions (hits)
@@ -839,7 +839,7 @@ void RCL_castRayMultiHit(RCL_Ray ray, RCL_ArrayFunction arrayFunc,
         h.position.y = ray.start.y + ((ray.direction.y * diff) /
           RCL_nonZero(ray.direction.x)); 
 
-#if RCL_EQUILINEAR
+#if RCL_RECTILINEAR
         /* Here we compute the fish eye corrected distance (perpendicular to
         the projection plane) as the Euclidean distance divided by the length
         of the ray direction vector. This can be computed without actually
@@ -867,14 +867,14 @@ void RCL_castRayMultiHit(RCL_Ray ray, RCL_ArrayFunction arrayFunc,
         h.position.x = ray.start.x + ((ray.direction.x * diff) /
           RCL_nonZero(ray.direction.y)); 
 
-#if RCL_EQUILINEAR
+#if RCL_RECTILINEAR
         h.distance =
          ((h.position.y - ray.start.y) * RCL_UNITS_PER_SQUARE) /
          RCL_nonZero(ray.direction.y);
 #endif
       }
 
-#if !RCL_EQUILINEAR
+#if !RCL_RECTILINEAR
       h.distance = RCL_dist(h.position,ray.start);
 #endif
 
