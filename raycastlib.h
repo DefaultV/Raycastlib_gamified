@@ -104,7 +104,7 @@
 #endif
 
 #ifndef RCL_COMPUTE_CEILING_DEPTH
-#define RCL_COMPUTE_CEILING_DEPTH 1 /**< AS RCL_COMPUTE_FLOOR_DEPTH but for
+#define RCL_COMPUTE_CEILING_DEPTH 1 /**< As RCL_COMPUTE_FLOOR_DEPTH but for
                                      ceiling. */
 #endif
 
