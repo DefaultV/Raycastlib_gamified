@@ -231,7 +231,8 @@ typedef struct
                               plane (fish eye correction), otherwise it is
                               the straight distance to the ray start
                               position. */
-  uint8_t      direction;    ///< Direction of hit.
+  uint8_t      direction;    /**< Direction of hit. The convention for angle
+                                  units is explained above. */
   RCL_Unit     textureCoord; /**< Normalized (0 to RCL_UNITS_PER_SQUARE - 1)
                                   texture coordinate (horizontal). */
   RCL_Vector2D square;       ///< Collided square coordinates.
