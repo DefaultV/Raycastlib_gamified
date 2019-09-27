@@ -1335,7 +1335,7 @@ void _RCL_columnFunctionComplex(RCL_HitResult *hits, uint16_t hitCount, uint16_t
       p.depth = distance;
       p.isFloor = 1;
       p.texCoords.x = hit.textureCoord;
-      p.height = 0; // don't compute this, no use
+      p.height = fZ1World + _RCL_camera.height;
 
       // draw floor wall
 
@@ -1365,6 +1365,7 @@ void _RCL_columnFunctionComplex(RCL_HitResult *hits, uint16_t hitCount, uint16_t
       if (_RCL_ceilFunction != 0 && cPosY < _RCL_camResYLimit) // pixels left?
       {
         p.isFloor = 0;
+        p.height = cZ1World + _RCL_camera.height;
 
         limit = _RCL_drawWall(cPosY,cZ1Screen,cZ2Screen,
                   -1,fPosY - 1,
