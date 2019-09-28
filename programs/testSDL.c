@@ -13,6 +13,8 @@
 #define RCL_HORIZONTAL_FOV (RCL_UNITS_PER_SQUARE / 5)
 #define RCL_VERTICAL_FOV RCL_UNITS_PER_SQUARE // redefine camera vertical FOV
 
+#define RCL_TEXTURE_VERTICAL_STRETCH 1
+
 #define RCL_PIXEL_FUNCTION pixelFunc 
 
 #include "../raycastlib.h"
@@ -579,7 +581,7 @@ void pixelFunc(RCL_PixelInfo *pixel)
 
   int32_t index = pixel->position.y * SCREEN_WIDTH + pixel->position.x;
 
-  pixels[index] = r | g | b;
+  pixels[index] = color;//r | g | b;
   pixelCounter[index]++;
 }
 

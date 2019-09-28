@@ -26,7 +26,7 @@
 
   author: Miloslav "drummyfish" Ciz
   license: CC0 1.0
-  version: 0.82
+  version: 0.84
 */
 
 #include <stdint.h>
@@ -266,6 +266,7 @@ typedef struct
   int8_t        isFloor;   ///< Whether the pixel is floor or ceiling.
   int8_t        isHorizon; ///< If the pixel belongs to horizon segment.
   RCL_Unit      depth;     ///< Corrected depth.
+  RCL_Unit      wallHeight;///< Only for wall pixels, says its height.
   RCL_Unit      height;    ///< World height (mostly for floor).
   RCL_HitResult hit;       ///< Corresponding ray hit.
   RCL_Vector2D  texCoords; /**< Normalized (0 to RCL_UNITS_PER_SQUARE - 1)
@@ -1142,7 +1143,8 @@ static inline int16_t _RCL_drawWall(
 
   RCL_Unit limit = RCL_clamp(yTo,limit1,limit2);
 
-  RCL_Unit wallLength = yTo - yFrom - 1;
+  RCL_Unit wallLength = RCL_absVal(yTo - yFrom - 1);
+
   wallLength = RCL_nonZero(wallLength);
 
   RCL_Unit wallPosition = RCL_absVal(yFrom - yCurrent) - increment;
@@ -1157,6 +1159,19 @@ static inline int16_t _RCL_drawWall(
 
   pixelInfo->texCoords.y = RCL_COMPUTE_WALL_TEXCOORDS ?
     wallPosition * coordStep : 0;
+
+  if (increment < 0)
+  {
+    coordStep *= -1;
+    pixelInfo->texCoords.y =
+#if RCL_TEXTURE_VERTICAL_STRETCH == 1
+      RCL_UNITS_PER_SQUARE - pixelInfo->texCoords.y;
+#else
+      height - pixelInfo->texCoords.y;
+#endif
+
+    wallPosition = wallLength - wallPosition;
+  }
 
 #if RCL_ACCURATE_WALL_TEXTURING == 1
   if (1)
@@ -1175,13 +1190,15 @@ static inline int16_t _RCL_drawWall(
 
 #if RCL_COMPUTE_WALL_TEXCOORDS == 1
   #if RCL_TEXTURE_VERTICAL_STRETCH == 1
-      pixelInfo->texCoords.y = (wallPosition * RCL_UNITS_PER_SQUARE) / wallLength;
+      pixelInfo->texCoords.y =
+        (wallPosition * RCL_UNITS_PER_SQUARE) / wallLength;
   #else
       pixelInfo->texCoords.y = (wallPosition * height) / wallLength;
   #endif
 #endif
 
-      wallPosition++;
+      wallPosition += increment;
+
       RCL_PIXEL_FUNCTION(pixelInfo);
     }
   }
@@ -1236,6 +1253,7 @@ void _RCL_columnFunctionComplex(RCL_HitResult *hits, uint16_t hitCount, uint16_t
   RCL_PixelInfo p;
   p.position.x = x;
   p.height = 0;
+  p.wallHeight = 0;
   p.texCoords.x = 0;
   p.texCoords.y = 0;
 
@@ -1294,6 +1312,7 @@ void _RCL_columnFunctionComplex(RCL_HitResult *hits, uint16_t hitCount, uint16_t
     // draw floor until wall
     p.isFloor = 1;
     p.height = fZ1World + _RCL_camera.height;
+    p.wallHeight = 0;
 
 #if RCL_COMPUTE_FLOOR_DEPTH == 1
     p.depth = (_RCL_fHorizontalDepthStart - fPosY) * _RCL_horizontalDepthStep;
@@ -1336,6 +1355,7 @@ void _RCL_columnFunctionComplex(RCL_HitResult *hits, uint16_t hitCount, uint16_t
       p.isFloor = 1;
       p.texCoords.x = hit.textureCoord;
       p.height = fZ1World + _RCL_camera.height;
+      p.wallHeight = fWallHeight;
 
       // draw floor wall
 
@@ -1366,6 +1386,7 @@ void _RCL_columnFunctionComplex(RCL_HitResult *hits, uint16_t hitCount, uint16_t
       {
         p.isFloor = 0;
         p.height = cZ1World + _RCL_camera.height;
+        p.wallHeight = cWallHeight;
 
         limit = _RCL_drawWall(cPosY,cZ1Screen,cZ2Screen,
                   -1,fPosY - 1,
@@ -1373,7 +1394,7 @@ void _RCL_columnFunctionComplex(RCL_HitResult *hits, uint16_t hitCount, uint16_t
 #if RCL_TEXTURE_VERTICAL_STRETCH == 1
                   RCL_UNITS_PER_SQUARE
 #else
-                  cZ2World - cZ1World
+                  cZ1World - cZ2World 
 #endif
                   ,1,&p);
                 
@@ -1398,6 +1419,7 @@ void _RCL_columnFunctionSimple(RCL_HitResult *hits, uint16_t hitCount,
 
   RCL_PixelInfo p;
   p.position.x = x;
+  p.wallHeight = RCL_UNITS_PER_SQUARE;
 
   if (hitCount > 0)
   {
