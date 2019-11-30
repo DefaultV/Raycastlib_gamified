@@ -24,6 +24,12 @@
     unit length, texture coordinates etc.).
   - Screen coordinates are normal: [0,0] = top left, x goes right, y goes down.
 
+  The library is meant to be used in not so huge programs that use single
+  translation unit and so includes both declarations and implementation at once.
+  If you for some reason use multiple translation units (which include the
+  library), you'll have to handle this yourself (e.g. create a wrapper, manually
+  split the library into .c and .h etc.).
+
   author: Miloslav "drummyfish" Ciz
   license: CC0 1.0
   version: 0.901
