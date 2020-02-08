@@ -24,15 +24,9 @@
     unit length, texture coordinates etc.).
   - Screen coordinates are normal: [0,0] = top left, x goes right, y goes down.
 
-  The library is meant to be used in not so huge programs that use single
-  translation unit and so includes both declarations and implementation at once.
-  If you for some reason use multiple translation units (which include the
-  library), you'll have to handle this yourself (e.g. create a wrapper, manually
-  split the library into .c and .h etc.).
-
   author: Miloslav "drummyfish" Ciz
   license: CC0 1.0
-  version: 0.901
+  version: 0.902
 */
 
 #include <stdint.h>
@@ -1555,8 +1549,7 @@ static inline void _RCL_precomputeFloorDistances(RCL_Camera camera,
   RCL_Unit camHeightScreenSize =
     (camera.height * camera.resolution.y) / RCL_UNITS_PER_SQUARE;
 
-  for (uint16_t i = startIndex
-; i < camera.resolution.y; ++i)
+  for (uint16_t i = startIndex; i < camera.resolution.y; ++i)
     dest[i] = RCL_perspectiveScaleInverse(camHeightScreenSize,
              RCL_absVal(i - _RCL_middleRow));
 }
@@ -1687,7 +1680,8 @@ RCL_PixelInfo RCL_mapToScreen(RCL_Vector2D worldPosition, RCL_Unit height,
     middleColumn + (-1 * toPoint.y * middleColumn) / RCL_nonZero(result.depth);
 
   result.position.y = camera.resolution.y / 2 -
-    (camera.resolution.y *
+(((3 * camera.resolution.y) / 4 ) *
+//    ((camera.resolution.y / 2) *
      RCL_perspectiveScale(height - camera.height,result.depth))
      / RCL_UNITS_PER_SQUARE + camera.shear;
 
@@ -1766,8 +1760,9 @@ void RCL_moveCameraWithCollision(RCL_Camera *camera, RCL_Vector2D planeOffset,
         dir##Collides = 1;\
       else if (ceilingHeightFunc != 0)\
       {\
-        height = ceilingHeightFunc(s1,s2);\
-        if (height < topLimit)\
+        RCL_Unit height2 = ceilingHeightFunc(s1,s2);\
+        if ((height2 < topLimit) || ((height2 - height) < \
+          (RCL_CAMERA_COLL_HEIGHT_ABOVE + RCL_CAMERA_COLL_HEIGHT_BELOW)))\
           dir##Collides = 1;\
       }\
     }\
