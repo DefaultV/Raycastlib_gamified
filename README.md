@@ -99,6 +99,7 @@ TODO
 - Doors in the middle of squares.
 - Rolling doors for `RCL_renderComplex`.
 - Possibly merge all rendering functions into one.
+- Fix rendering bug that happens at the boundary of positive and negative square coords.
 
 license
 -------
