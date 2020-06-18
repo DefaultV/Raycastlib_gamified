@@ -74,6 +74,8 @@ int testSingleMapping(RCL_Unit posX, RCL_Unit posY, RCL_Unit posZ, uint32_t resX
 
   RCL_Camera c;
 
+  RCL_initCamera(&c);
+
   c.resolution.x = resX;
   c.resolution.y = resY;
   c.position.x = camX;
@@ -316,8 +318,8 @@ int main()
     RCL_Unit size = i * 3;
     RCL_Unit distance = i * 6 + 200;
 
-    RCL_Unit scaled = RCL_perspectiveScale(size,distance);
-    RCL_Unit distance2 = RCL_perspectiveScaleInverse(size,scaled);
+    RCL_Unit scaled = RCL_perspectiveScaleHorizontal(size,distance);
+    RCL_Unit distance2 = RCL_perspectiveScaleHorizontalInverse(size,scaled);
 
     if (RCL_absVal(distance - distance2 > 2))
       printf("ERROR: distance: %d, distance inverse: %d\n",distance,distance2);
@@ -360,23 +362,22 @@ int main()
 
   printf("OK\n");
 
-/*
   if (!testSingleMapping(
-    -RCL_UNITS_PER_SQUARE,
+    RCL_UNITS_PER_SQUARE,
+    RCL_UNITS_PER_SQUARE * 2,
     0,
-    RCL_UNITS_PER_SQUARE / 2,
-    1280,
+    800,
     640,
-    0,
-    0,
-    0,
     RCL_UNITS_PER_SQUARE / 2,
-    640,
     0,
-    1024
+    RCL_UNITS_PER_SQUARE / 4,
+    (RCL_UNITS_PER_SQUARE * 5) / 6,
+    287,
+    370,
+    2027
     ))
-    return -1;
-*/
+    return 1;
+
   printf("benchmark:\n");
 
   long t;
@@ -391,6 +392,8 @@ int main()
 
   printf("\n"); 
   printProfile();
+
+  printf("\n===== all OK =====\n");
 
   return 0;
 }

@@ -1712,7 +1712,7 @@ RCL_PixelInfo RCL_mapToScreen(RCL_Vector2D worldPosition, RCL_Unit height,
 
   RCL_Unit middleColumn = camera.resolution.x / 2;
 
-  // rotate the point
+  // rotate the point to camera space (y left/right, x forw/backw)
 
   RCL_Unit cos = RCL_cosInt(camera.direction);
   RCL_Unit sin = RCL_sinInt(camera.direction);
