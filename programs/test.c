@@ -5,35 +5,111 @@
 */
 
 #define RCL_PROFILE
-
-#define RCL_HORIZONTAL_FOV RCL_UNITS_PER_SQUARE / 2
-
 #define RCL_PIXEL_FUNCTION pixelFunc
 
 #include <stdio.h>
 #include "../raycastlib.h"
 #include <sys/time.h>
 
+static const char renderSimpleExpect[] =
+  ",,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,"
+  ",,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,"
+  ",,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,DD,,,,,,,,,"
+  ",,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,EEEEEDD,,,,,,,,,"
+  ",,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,EEEEEEEEDD,,,,,,,,,"
+  ",,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,EEEEEEEEEEEEEDD,,,,,,,,,"
+  ",,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,FFEEEEEEEEEEEEEEEDD,,,,,,,,,"
+  ",,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,FFFFFFEEEEEEEEEEEEEEEDD,,,,,,,,,"
+  ",,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,FFFFFFEEEEEEEEEEEEEEEDD,,,,,,,,,"
+  ",,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,FFFFFFEEEEEEEEEEEEEEEDD,,,,,,,,,"
+  ",,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,FFFFFFEEEEEEEEEEEEEEEDD,,,,,,,,,"
+  ",,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,FFFFFFEEEEEEEEEEEEEEEDD,,,,,,,,,"
+  ",,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,FFFFFFEEEEEEEEEEEEEEEDD,,,,,,,,,"
+  ",,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,FFFFFFEEEEEEEEEEEEEEEDD,,,,,,,,,"
+  "ddddddddd,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,FFFFFFEEEEEEEEEEEEEEEDD,,,,,,,,,"
+  "dddddddddddddddeeeeeeeeee,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,FFFFFFEEEEEEEEEEEEEEEDD,,,,,,,,,"
+  "dddddddddddddddeeeeeeeeeeeeeeeeeefffff,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,FFFFFFEEEEEEEEEEEEEEEDD,,,,,,,,,"
+  "dddddddddddddddeeeeeeeeeeeeeeeeeefffffffffffffggggggg,,,,,,,,,,,,,,,FFFFFFEEEEEEEEEEEEEEEDD,,,,,,,,,"
+  "dddddddddddddddeeeeeeeeeeeeeeeeeefffffffffffffggggggggghhhhhhhiiiii,FFFFFFEEEEEEEEEEEEEEEDD,,,,,,,,,"
+  "dddddddddddddddeeeeeeeeeeeeeeeeeefffffffffffffggggggggghhhhhhhiiiiiiFFFFFFEEEEEEEEEEEEEEEDD,,,,,,,,,"
+  "dddddddddddddddeeeeeeeeeeeeeeeeeefffffffffffffggggggggghhhhhhhiiiiiiFFFFFFEEEEEEEEEEEEEEEDD,,,,,,,,,"
+  "dddddddddddddddeeeeeeeeeeeeeeeeeefffffffffffffggggggggghhhhhhhiiiiiiFFFFFFEEEEEEEEEEEEEEEDDDDDDDDDDD"
+  "dddddddddddddddeeeeeeeeeeeeeeeeeefffffffffffffggggggggghhhhhhhiiiiiiFFFFFFEEEEEEEEEEEEEEEDDDDDDDDDDD"
+  "dddddddddddddddeeeeeeeeeeeeeeeeeefffffffffffffggggggggghhhhhhhiiiiiiFFFFFFEEEEEEEEEEEEEEEDDDDDDDDDDD"
+  "dddddddddddddddeeeeeeeeeeeeeeeeeefffffffffffffggggggggghhhhhhhiiiiiiFFFFFFEEEEEEEEEEEEEEEDDDDDDDDDDD"
+  "dddddddddddddddeeeeeeeeeeeeeeeeeefffffffffffffggggggggghhhhhhhiiiiiiFFFFFFEEEEEEEEEEEEEEEDDDDDDDDDDD"
+  "dddddddddddddddeeeeeeeeeeeeeeeeeefffffffffffffggggggggghhhhhhhiiiiiiFFFFFFEEEEEEEEEEEEEEEDDDDDDDDDDD"
+  "dddddddddddddddeeeeeeeeeeeeeeeeeefffffffffffffggggggggghhhhhhhiiiiiiFFFFFFEEEEEEEEEEEEEEEDDDDDDDDDDD"
+  "dddddddddddddddeeeeeeeeeeeeeeeeeefffffffffffffggggggggghhhhhhhi.....FFFFFFEEEEEEEEEEEEEEEDDDDDDDDDDD"
+  "dddddddddddddddeeeeeeeeeeeeeeeeeefffffffffffffggggggggghhh..........FFFFFFEEEEEEEEEEEEEEEDDDDDDDDDDD"
+  "dddddddddddddddeeeeeeeeeeeeeeeeeefffffffffffffggggggg...............FFFFFFEEEEEEEEEEEEEEEDDDDDDDDDDD"
+  "dddddddddddddddeeeeeeeeeeeeeeeeeefffffffffffffg.....................FFFFFFEEEEEEEEEEEEEEEDDDDDDDDDDD"
+  "dddddddddddddddeeeeeeeeeeeeeeeeeefffffffff..........................FFFFFFEEEEEEEEEEEEEEEDDDDDDDDDDD"
+  "dddddddddddddddeeeeeeeeeeeeeeeeeeffff.................................FFFFEEEEEEEEEEEEEEEDDDDDDDDDDD"
+  "dddddddddddddddeeeeeeeeeeeeeeee............................................EEEEEEEEEEEEEEDDDDDDDDDDD"
+  "dddddddddddddddeeeeeeeeeee.....................................................EEEEEEEEEEDDDDDDDDDDD"
+  "dddddddddddddddeeeeee..............................................................EEEEEEDDDDDDDDDDD"
+  "ddddddddddddddde.......................................................................EEDDDDDDDDDDD"
+  "ddddddddddd.................................................................................DDDDDDDD"
+  "ddddddd........................................................................................DDDDD";
+
+static const char renderComplexExpect[] =
+  ",,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,"
+  ",,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,DD,,,,,,,,,"
+  ",,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,EEEEEDDe,,,,,,,,"
+  ",,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,EEEEEEEEDDee,,,,,,,"
+  ",,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,EEEEEEEEEEEEEDDeee,,,,,,"
+  ",,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,FFEEEEEEEEEEEEEEEDDeeee,,,,,"
+  ",,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,FFFFFFEEEEEEEEEEEEEEEDDeeeef,,,,"
+  ",,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,FFFFFFEEEEEEEEEEEEEEEDDeeeef,,,,"
+  ",,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,FFFFFFEEEEEEEEEEEEEEEDDeeeef,,,,"
+  ",,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,FFFFFFEEEEEEEEEEEEEEEDDeeeef,,,,"
+  ",,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,FFFFFFEEEEEEEEEEEEEEEDDeeeef,,,,"
+  ",,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,FFFFFFEEEEEEEEEEEEEEEDDeeeef,,,,"
+  ",,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,FFFFFFEEEEEEEEEEEEEEEDDeeeef,,,,"
+  "ddddddddd,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,FFFFFFEEEEEEEEEEEEEEEDDeeeef,,,,"
+  "dddddddddddddddeeeeeeee,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,FFFFFFEEEEEEEEEEEEEEEDDeeeef,,,,"
+  "dddddddddddddddeeeeeeeeeeeeeeeeeeffff,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,FFFFFFEEEEEEEEEEEEEEEDDeeeef,,,,"
+  "dddddddddddddddeeeeeeeeeeeeeeeeeefffffffffffffgggggg,,,,,,,,,,,,,,,,FFFFFFEEEEEEEEEEEEEEEDDeeeef,GGG"
+  "dddddddddddddddeeeeeeeeeeeeeeeeeefffffffffffffggggggggghhhhhhhiiiii,FFFFFFEEEEEEEEEEEEEEEDDeeeefGGGG"
+  "dddddddddddddddeeeeeeeeeeeeeeeeeefffffffffffffggggggggghhhhhhhiiiiiiFFFFFFEEEEEEEEEEEEEEEDDeeeefGGGG"
+  "dddddddddddddddeeeeeeeeeeeeeeeeeefffffffffffffggggggggghhhhhhhiiiiiiFFFFFFEEEEEEEEEEEEEEEDDeeeefGGGG"
+  "dddddddddddddddeeeeeeeeeeeeeeeeeefffffffffffffggggggggghhhhhhhiiiiiiFFFFFFEEEEEEEEEEEEEEEDDeeeefGGGG"
+  "dddddddddddddddeeeeeeeeeeeeeeeeeefffffffffffffggggggggghhhhhhhiiiiiiFFFFFFEEEEEEEEEEEEEEEDDeeeefGGGG"
+  "dddddddddddddddeeeeeeeeeeeeeeeeeefffffffffffffggggggggghhhhhhhiiiiiiFFFFFFEEEEEEEEEEEEEEEDDeeeefGGGG"
+  "dddddddddddddddeeeeeeeeeeeeeeeeeefffffffffffffggggggggghhhhhhhiiiiiiFFFFFFEEEEEEEEEEEEEEEDDeeeefGGGG"
+  "dddddddddddddddeeeeeeeeeeeeeeeeeefffffffffffffggggggggghhhhhhhiiiiiiFFFFFFEEEEEEEEEEEEEEEDDeeeefGGGG"
+  "dddddddddddddddeeeeeeeeeeeeeeeeeefffffffffffffggggggggghhhhhhhiiiiiiFFFFFFEEEEEEEEEEEEEEEDDeeeefGGGG"
+  "dddddddddddddddeeeeeeeeeeeeeeeeeefffffffffffffggggggggghhhhhhhiiiiiiFFFFFFEEEEEEEEEEEEEEEDDeeeefGGGG"
+  "dddddddddddddddeeeeeeeeeeeeeeeeeefffffffffffffggggggggghhhhhhhiiiiiiFFFFFFEEEEEEEEEEEEEEEDDeeeefGGGG"
+  "dddddddddddddddeeeeeeeeeeeeeeeeeefffffffffffffggggggggghhhhhhhi.....FFFFFFEEEEEEEEEEEEEEEDDeeeefGGGG"
+  "dddddddddddddddeeeeeeeeeeeeeeeeeefffffffffffffggggggggghhh..........FFFFFFEEEEEEEEEEEEEEEDDeeeefGGGG"
+  "dddddddddddddddeeeeeeeeeeeeeeeeeefffffffffffffgggggg................FFFFFFEEEEEEEEEEEEEEEDDeeeefGGGG"
+  "dddddddddddddddeeeeeeeeeeeeeeeeeefffffffffffffg.....................FFFFFFEEEEEEEEEEEEEEEDDeeeef...."
+  "dddddddddddddddeeeeeeeeeeeeeeeeeeffffffff...........................FFFFFFEEEEEEEEEEEEEEEDDeeeef...."
+  "dddddddddddddddeeeeeeeeeeeeeeeeeefff...................................FFFEEEEEEEEEEEEEEEDDeeeef...."
+  "dddddddddddddddeeeeeeeeeeeeeeee............................................EEEEEEEEEEEEEEDDeeeefFFFE"
+  "dddddddddddddddeeeeeeeeeee.....................................................EEEEEEEEEEDDeeeefFFFE"
+  "dddddddddddddddeeeee................................................................EEEEEDDeeee....E"
+  "ddddddddddddddd..........................................................................DDeee......"
+  "ddddddddddd.................................................................................e......."
+  "dddd................................................................................................";
+
 RCL_Unit testArrayFunc(int16_t x, int16_t y)
 {
-  if (x > 12 || y > 12)
-    return x * y * RCL_UNITS_PER_SQUARE;
+  if (x == 1 & y == 8)
+    return RCL_UNITS_PER_SQUARE * 3;
 
-  return (x < 0 || y < 0 || x > 9 || y > 9) ? RCL_UNITS_PER_SQUARE : 0;
+  if (x == 2 & y == 8)
+    return -1 * RCL_UNITS_PER_SQUARE / 4;
+
+  return (x < 0 || x >= 10 || y < 0 || y >= 10) ? 
+    (RCL_UNITS_PER_SQUARE * 2) : 0;
 }
 
-RCL_Unit testArrayFunc2(int16_t x, int16_t y)
-{
-  return testArrayFunc(x,y) + 10 * RCL_UNITS_PER_SQUARE;
-}
-
-/**
-  Simple automatic test function.
-*/
-
-int testSingleRay(RCL_Unit startX, RCL_Unit startY, RCL_Unit dirX, RCL_Unit dirY,
-  int16_t expectSquareX, int16_t expectSquareY, int16_t expectPointX,
-  int16_t expectPointY, int16_t tolerateError)
+int testSingleRay(RCL_Unit startX, RCL_Unit startY, RCL_Unit dirX,
+  RCL_Unit dirY, int16_t expectSquareX, int16_t expectSquareY,
+  int16_t expectPointX, int16_t expectPointY, int16_t tolerateError)
 {
   RCL_Ray r;
 
@@ -176,14 +252,19 @@ void benchmarkMapping()
   }
 }
 
-int countPixels = 0;
+int renderMode = 0;
 uint32_t *pixelCounts = 0;
 RCL_Camera countCamera;
 int countOK = 1;
 
+#define TEST_SCREEN_RES_X 100
+#define TEST_SCREEN_RES_Y 40
+
+char testScreen[TEST_SCREEN_RES_X * TEST_SCREEN_RES_Y];
+
 void pixelFunc(RCL_PixelInfo *p)
 {
-  if (countPixels)
+  if (renderMode == 0) // count pixels
   {
     if (p->position.x >= countCamera.resolution.x || p->position.x < 0 ||
         p->position.y >= countCamera.resolution.y || p->position.y < 0)
@@ -196,13 +277,27 @@ void pixelFunc(RCL_PixelInfo *p)
     else
       pixelCounts[p->position.y * countCamera.resolution.x + p->position.x]++;
   }
+  else if (renderMode == 1)
+  {
+    char c = '?';
+
+   if (p->isFloor)
+     c = '.';
+   else
+     c = ',';
+
+   if (p->isWall)
+     c = (p->hit.direction % 2 ? 'a' : 'A') + p->depth / 512;
+
+    testScreen[p->position.y * TEST_SCREEN_RES_X + p->position.x] = c;
+  }
 }
 
 int testPixelCount(RCL_Unit camX, RCL_Unit camY, RCL_Unit camZ,
   RCL_Unit camDir, RCL_Unit camShear, uint16_t camResX, uint16_t camResY,
   int complexRender)
 {
-  printf("Counting rendered pixels...\n");
+  printf("Counting rendered pixels (each should be rendered exactly once)...\n");
 
   RCL_RayConstraints constraints;
   RCL_Camera c;
@@ -210,6 +305,7 @@ int testPixelCount(RCL_Unit camX, RCL_Unit camY, RCL_Unit camZ,
   RCL_initRayConstraints(&constraints);
   constraints.maxSteps = 32;
   RCL_initCamera(&c);
+
   c.position.x = camX;
   c.position.y = camY;
   c.direction = camDir;
@@ -225,12 +321,12 @@ int testPixelCount(RCL_Unit camX, RCL_Unit camY, RCL_Unit camZ,
 
   pixelCounts = pixels;
   countCamera = c;
-  countPixels = 1;
+  renderMode = 0;
 
   countOK = 1;
 
   if (complexRender)
-    RCL_renderComplex(c,testArrayFunc,testArrayFunc2,0,constraints);
+    RCL_renderComplex(c,testArrayFunc,testArrayFunc,0,constraints);
   else
     RCL_renderSimple(c,testArrayFunc,0,0,constraints);
 
@@ -249,9 +345,68 @@ int testPixelCount(RCL_Unit camX, RCL_Unit camY, RCL_Unit camZ,
   return countOK;
 }
 
+int testRender(int8_t simple)
+{
+  printf("\nTesting rendering\n");
+
+  renderMode = 1;
+  
+  RCL_Camera c;
+  RCL_initCamera(&c);
+
+  c.resolution.x = TEST_SCREEN_RES_X;
+  c.resolution.y = TEST_SCREEN_RES_Y;
+  c.position.x =  2 * RCL_UNITS_PER_SQUARE + RCL_UNITS_PER_SQUARE / 2; // 3000;//5 * RCL_UNITS_PER_SQUARE;
+  c.position.y =  5 * RCL_UNITS_PER_SQUARE + RCL_UNITS_PER_SQUARE / 2; //5000;//5 * RCL_UNITS_PER_SQUARE;
+  c.direction = 625;//700;
+  c.height = 1500;//1000;
+
+  RCL_RayConstraints constraints;
+  RCL_initRayConstraints(&constraints);
+
+  constraints.maxHits = 7;
+  constraints.maxSteps = 20;
+
+  renderMode = 1;
+
+  for (uint32_t i = 0; i < TEST_SCREEN_RES_X * TEST_SCREEN_RES_Y; ++i)
+    testScreen[i] = '?';
+
+  if (simple)
+  {
+    RCL_renderSimple(c,testArrayFunc,0,0,constraints);
+  }
+  else
+  {
+    RCL_renderComplex(c,testArrayFunc,0,0,constraints);
+  }
+
+  for (uint32_t i = 0; i < TEST_SCREEN_RES_X * TEST_SCREEN_RES_Y; ++i)
+  {
+    if ((i % TEST_SCREEN_RES_X) == 0)
+      printf("  \n");
+
+    printf("%c",testScreen[i]);   
+  }
+
+  const char *expect = simple ? renderSimpleExpect : renderComplexExpect;
+
+  for (uint32_t i = 0; i < TEST_SCREEN_RES_X * TEST_SCREEN_RES_Y; ++i)
+    if (expect[i] != testScreen[i])
+    {
+      printf("\n\nFAIL!\n");
+      return 0;
+    }
+
+  printf("\n\nOK\n");
+
+  return 1;
+}
+
 void benchmarkRender()
 {
   RCL_Camera c;
+  RCL_initCamera(&c);
 
   c.resolution.x = 640;
   c.resolution.y = 300;
@@ -261,14 +416,15 @@ void benchmarkRender()
   c.height = 200;
 
   RCL_RayConstraints constraints;
+  RCL_initRayConstraints(&constraints);
 
   constraints.maxHits = 10;
   constraints.maxSteps = 12;
 
-  countPixels = 0;
+  renderMode = 255; // don't write pixels
 
   for (int i = 0; i < 100; ++i)
-    RCL_renderComplex(c,testArrayFunc,testArrayFunc2,0,constraints);
+    RCL_renderComplex(c,testArrayFunc,testArrayFunc,0,constraints);
 }
 
 int main()
@@ -376,6 +532,12 @@ int main()
     370,
     2027
     ))
+    return 1;
+
+  if (!testRender(0))
+    return 1;
+
+  if (!testRender(1))
     return 1;
 
   printf("benchmark:\n");

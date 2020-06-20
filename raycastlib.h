@@ -1524,7 +1524,16 @@ void _RCL_columnFunctionSimple(RCL_HitResult *hits, uint16_t hitCount,
     {
       dist = hit.distance;
 
-      int16_t wallHeightWorld = _RCL_floorFunction(hit.square.x,hit.square.y);
+      RCL_Unit wallHeightWorld = _RCL_floorFunction(hit.square.x,hit.square.y);
+
+      if (wallHeightWorld < 0)
+      {
+        /* We can't just do wallHeightWorld = max(0,wallHeightWorld) because
+        we would be processing an actual hit with height 0, which shouldn't
+        ever happen, so we assign some arbitrary height. */
+
+        wallHeightWorld = RCL_UNITS_PER_SQUARE;
+      }
 
       RCL_Unit worldPointTop = wallHeightWorld - _RCL_camera.height;
       RCL_Unit worldPointBottom = -1 * _RCL_camera.height;
@@ -1538,6 +1547,9 @@ void _RCL_columnFunctionSimple(RCL_HitResult *hits, uint16_t hitCount,
         * _RCL_camera.resolution.y) / RCL_UNITS_PER_SQUARE;
 
       wallHeightScreen = wallEnd - wallStart;
+
+      if (wallHeightScreen <= 0) // can happen because of rounding errors
+        wallHeightScreen = 1; 
     }
   }
   else
