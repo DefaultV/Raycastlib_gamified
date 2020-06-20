@@ -26,7 +26,7 @@
 
   author: Miloslav "drummyfish" Ciz
   license: CC0 1.0
-  version: 0.904
+  version: 0.905
 */
 
 #include <stdint.h>
@@ -1526,16 +1526,18 @@ void _RCL_columnFunctionSimple(RCL_HitResult *hits, uint16_t hitCount,
 
       int16_t wallHeightWorld = _RCL_floorFunction(hit.square.x,hit.square.y);
 
-      wallHeightScreen = RCL_perspectiveScaleVertical((wallHeightWorld *
-        _RCL_camera.resolution.y) / RCL_UNITS_PER_SQUARE,dist);
+      RCL_Unit worldPointTop = wallHeightWorld - _RCL_camera.height;
+      RCL_Unit worldPointBottom = -1 * _RCL_camera.height;
 
-      int16_t RCL_normalizedWallHeight = wallHeightWorld != 0 ?
-        ((RCL_UNITS_PER_SQUARE * wallHeightScreen) / wallHeightWorld) : 0;
+      wallStart = _RCL_middleRow -  
+        (RCL_perspectiveScaleVertical(worldPointTop,dist)
+        * _RCL_camera.resolution.y) / RCL_UNITS_PER_SQUARE;
 
-      heightOffset = RCL_perspectiveScaleVertical(_RCL_cameraHeightScreen,dist);
+      int16_t wallEnd =  _RCL_middleRow -
+        (RCL_perspectiveScaleVertical(worldPointBottom,dist)
+        * _RCL_camera.resolution.y) / RCL_UNITS_PER_SQUARE;
 
-      wallStart = _RCL_middleRow - wallHeightScreen + heightOffset +
-                  RCL_normalizedWallHeight;
+      wallHeightScreen = wallEnd - wallStart;
     }
   }
   else
@@ -2036,3 +2038,4 @@ void RCL_initRayConstraints(RCL_RayConstraints *constraints)
 }
 
 #endif
+
