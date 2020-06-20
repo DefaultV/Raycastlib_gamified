@@ -2,18 +2,19 @@
   Raycasting terminal test.
 
   author: Miloslav Ciz
-  license: CC0
+  license: CC0 1.0, public domain
 */
 
-#define RCL_PIXEL_FUNCTION pixelFunc
-#define RCL_COMPUTE_WALL_TEXCOORDS 0
-#define RCL_COMPUTE_FLOOR_DEPTH 0
+#define RCL_PIXEL_FUNCTION pixelFunc // set our pixel functio
+#define RCL_COMPUTE_FLOOR_DEPTH 0    // turn off what we don't need
 #define RCL_COMPUTE_CEILING_DEPTH 0
 
 #include <stdio.h>
-#include "../raycastlib.h"
 #include <unistd.h>
 #include <stdlib.h>
+#include <string.h>
+
+#include "../raycastlib.h"
 
 #define LEVEL_W 20
 #define LEVEL_H 15
@@ -21,10 +22,14 @@
 #define SCREEN_W 80
 #define SCREEN_H 40
 
-char pixels[SCREEN_W * SCREEN_H];
+#define FRAME_OFFSET 20 // number of newlines printed before each frame
+
+#define PIXELS_TOTAL (FRAME_OFFSET+ (SCREEN_W + 1) * SCREEN_H + 1)
+
+char pixels[FRAME_OFFSET + (SCREEN_W + 1) * SCREEN_H + 1];
 RCL_Camera camera;
 
-const int8_t level[LEVEL_W * LEVEL_H] =
+const int8_t level[LEVEL_W * LEVEL_H] = // here 1 means wall, 0 floor
 {
 /*                      11  13  15  17  19 
   0 1 2 3 4 5 6 7 8 9 10  12  14  16  18  */
@@ -45,6 +50,10 @@ const int8_t level[LEVEL_W * LEVEL_H] =
   0,0,0,0,0,1,0,0,0,1,0,0,0,0,1,0,0,0,0,0  // 14
 };
 
+/*
+  Function that says the floor height at each square. We do it by reading the
+  anove level array.
+*/
 RCL_Unit heightAt(int16_t x, int16_t y)
 {
   int32_t index = y * LEVEL_W + x;
@@ -55,29 +64,37 @@ RCL_Unit heightAt(int16_t x, int16_t y)
   return level[y * LEVEL_W + x] * RCL_UNITS_PER_SQUARE * 2;
 }
 
+static const char asciiShades[] = "HXi/;,.               ";
+
 void pixelFunc(RCL_PixelInfo *p)
 {
   char c = ' ';
+
+  uint8_t shade = 3;
+
+  shade -= RCL_min(3,p->depth / RCL_UNITS_PER_SQUARE);
 
   if (p->isWall)
   {
     switch (p->hit.direction)
     {
-      case 0:  c = 'X'; break;
-      case 1:  c = '#'; break;
+      case 0:  shade += 2;
+      case 1:  shade += p->texCoords.y / 512;
+               c = asciiShades[shade];
+               break;
       case 2:  c = 'o'; break;
       case 3:
       default: c = '.'; break;
     }
   }
 
-  pixels[p->position.y * SCREEN_W + p->position.x] = c;
+  pixels[FRAME_OFFSET + p->position.y * (SCREEN_W + 1) + p->position.x] = c;
 }
 
 void draw()
 {
-  for (int i = 0; i < 15; ++i)
-    printf("\n");
+  memset(pixels,'\n',PIXELS_TOTAL);
+  pixels[PIXELS_TOTAL - 1] = 0; // terminate string
 
   RCL_RayConstraints c;
 
@@ -86,16 +103,16 @@ void draw()
   c.maxHits = 1;
   c.maxSteps = 40;
 
-  //RCL_renderSimple(camera,heightAt,0,0,c);
-  RCL_renderComplex(camera,heightAt,0,0,c);
+  #if 1
+    RCL_renderSimple(camera,heightAt,0,0,c);
+  #else
+    /* Here you can try using the complex rendering function. The result should
+       be practically the same. */
 
-  for (int j = 0; j < SCREEN_H; ++j)
-  {
-    for (int i = 0; i < SCREEN_W; ++i)
-      printf("%c",pixels[j * SCREEN_W + i]);   
+    RCL_renderComplex(camera,heightAt,0,0,c);
+  #endif
 
-    printf("\n");
-  }
+  puts(pixels);
 }
 
 int dx = 1;
