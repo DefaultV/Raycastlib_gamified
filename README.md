@@ -55,6 +55,7 @@ features
   - Arduboy (only experimental)
   - Pokitto (32bit resource-limited embedded ARM)
   - Gamebuino META (32bit resource-limited embedded ARM)
+  - TODO:
     - Android
     - Windows
 - **Many compile-time options** to tune the performance vs quality.
