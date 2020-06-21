@@ -154,7 +154,7 @@ int main()
     camera.position.y += dy * 200;
     camera.direction += dr * 10;
 
-    camera.height = RCL_UNITS_PER_SQUARE + RCL_sinInt(frame * 16) / 2;
+    camera.height = RCL_UNITS_PER_SQUARE + RCL_sin(frame * 16) / 2;
 
     usleep(100000);
 
