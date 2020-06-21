@@ -18,7 +18,7 @@ fi
 clear
 clear
 
-flags="-x c -g -O3 -pedantic -Wall -Wextra -o $1 $1.c ${link}"
+flags="-x c -g -O3 -std=c99 -pedantic -Wall -Wextra -o $1 $1.c ${link}"
 compiler=gcc
 #compiler=clang
 

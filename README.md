@@ -50,13 +50,11 @@ features
 - Still **flexible** -- pixels are left for you to draw in any way you want.
 - **Tested on many platforms**:
   - PC (little endian, 64bit GNU)
-  - compilers: gcc, clang
-  - Emscripten (web browser, JavaScript transpile)
+  - PowerPC emulator (big endian)
+  - compilers: gcc, clang, emscripten (web browser, JavaScript transpile)
   - Arduboy (only experimental)
   - Pokitto (32bit resource-limited embedded ARM)
   - Gamebuino META (32bit resource-limited embedded ARM)
-  - TODO: 
-    - PowerPC emulator (big endian)
     - Android
     - Windows
 - **Many compile-time options** to tune the performance vs quality.
