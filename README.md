@@ -4,6 +4,8 @@ Public domain ray casting library for (not only) resource-limited computers.
 
 If you like this, you may also like my similar project: [small3dlib](https://gitlab.com/drummyfish/small3dlib). These two libraries can very easily be combined together -- here is a proof-of-concept gif (environment rendered with raycastlib, cubes with small3dlib):
 
+I am currently making a full suckless game with this library: [Anarch](https://gitlab.com/drummyfish/sucklessfps).
+
 ![](https://gitlab.com/drummyfish/small3dlib/raw/master/media/rcl_plus_s3l.gif)
 
 eye-candy previews

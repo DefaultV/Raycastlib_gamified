@@ -24,4 +24,4 @@ compiler=gcc
 
 echo "making:" ${compiler} ${flags}
 
-${compiler} ${flags} > /dev/null 2>&1 && ./$1
+${compiler} ${flags} && ./$1
