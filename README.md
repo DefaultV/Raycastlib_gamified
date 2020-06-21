@@ -57,6 +57,7 @@ features
   - Arduboy (only experimental)
   - Pokitto (32bit resource-limited embedded ARM)
   - Gamebuino META (32bit resource-limited embedded ARM)
+  - TODO:
     - Android
     - Windows
 - **Many compile-time options** to tune the performance vs quality.
@@ -104,8 +105,8 @@ license
 
 Everything is CC0 1.0 (public domain, https://creativecommons.org/publicdomain/zero/1.0/) + a waiver of all other IP rights (including patents).
 
-The art used in demos is either my own released under CC0 or someone else's released under CC0.
+I've written all code completely myself from scratch, the art used in demos is either my own released under CC0 or someone else's released under CC0.
 
-Please support free software and free culture by using free licenses and/or waivers.
+This is not a mandatory condition, but please consider supporting free software and free culture by using free licenses and/or waivers.
 
 If you'd like to support me or just read something about me and my projects, visit my site: [www.tastyfish.cz](http://www.tastyfish.cz/).
