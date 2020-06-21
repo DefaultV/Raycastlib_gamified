@@ -1,5 +1,6 @@
 /*
-  Raycasting terminal test.
+  Raycasting terminal test. Renders a raycasted animation in the terminal as
+  ASCII.
 
   author: Miloslav Ciz
   license: CC0 1.0, public domain
@@ -79,8 +80,7 @@ void pixelFunc(RCL_PixelInfo *p)
     switch (p->hit.direction)
     {
       case 0:  shade += 2;
-      case 1:  shade += p->texCoords.y / 512;
-               c = asciiShades[shade];
+      case 1:  c = asciiShades[shade];
                break;
       case 2:  c = 'o'; break;
       case 3:

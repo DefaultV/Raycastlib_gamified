@@ -48,18 +48,19 @@ features
 - **Pure C99**, tested to run as C++ as well.
 - Optional framework **functions that handle the whole rendering**.
 - Still **flexible** -- pixels are left for you to draw in any way you want.
-- **Tested on multiple platforms**:
+- **Tested on many platforms**:
   - PC (little endian, 64bit GNU)
+  - compilers: gcc, clang
   - Emscripten (web browser, JavaScript transpile)
-  - Arduboy
-  - Pokitto
-  - Gamebuino META
+  - Arduboy (only experimental)
+  - Pokitto (32bit resource-limited embedded ARM)
+  - Gamebuino META (32bit resource-limited embedded ARM)
   - TODO: 
     - PowerPC emulator (big endian)
     - Android
     - Windows
 - **Many compile-time options** to tune the performance vs quality.
-- **Well commented** and formatted code. Automatic documentation (comments + provided Doxyfile).
+- **Well commented** and formatted code, with examples. Automatic documentation (comments + provided Doxyfile).
 - Completely **free of legal restrictions**, do literally anything you want.
 
 **NOTE**: Backwards compatibility isn't a goal of this libraray. It is meant to
@@ -72,17 +73,14 @@ how to use
 
 **Don't forget to compile with -O3!** This drastically improves performance.
 
-For start take a look at the [testTerminal.c](https://gitlab.com/drummyfish/raycastlib/blob/master/programs/testTerminal.c) program.
-It is only a little bit more complex than a simple hello world.
-
-For more examples see the other files, plus my [Pokitto demos](https://gitlab.com/drummyfish/Pokitto-Raycasting) repository,
-which contains some better documented example code, including a [very simple hello world](https://gitlab.com/drummyfish/Pokitto-Raycasting/blob/master/helloRay.cpp).
+For start take a look at the [helloWorld.c](https://gitlab.com/drummyfish/raycastlib/blob/master/programs/helloWorld.c) program and other examples.
+For more examples see my [Pokitto demos](https://gitlab.com/drummyfish/Pokitto-Raycasting) repository.
 
 Also see **the library code itself**, it is meant to be self-documenting -- you'll find the description of a lot of things at the start of the file.
 
 The basic philosophy is:
 
-- The library implements only a rendering back-end, it doesn't perform any drawing to the actual screen,
+- The library implements only a **rendering back-end**, it doesn't perform any drawing to the actual screen,
   hence there is no dependency on any library such as OpenGL or SDL. It just calls your front-end function
   and tells you which pixels you should write. How you do it is up to you.
 - Before including the header, define `RCL_PIXEL_FUNCTION` to the name of a function you will use to
@@ -100,15 +98,6 @@ The basic philosophy is:
   an integer (`RCL_Unit` type). The space is considered to be a dense grid, where each world square
   has a side length of `RCL_UNITS_PER_SQUARE` units. Numbers are normalized by this constant, so e.g.
   the sin function returns a value from `-RCL_UNITS_PER_SQUARE` to `RCL_UNITS_PER_SQUARE`.
-
-TODO
-----
-
-- Transparency (conditional ray passing through).
-- Doors in the middle of squares.
-- Rolling doors for `RCL_renderComplex`.
-- Possibly merge all rendering functions into one.
-- Fix rendering bug that happens at the boundary of positive and negative square coords.
 
 license
 -------

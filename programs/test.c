@@ -1,5 +1,6 @@
 /**
-  Tests for raycastlib.
+  General tests for raycastlib, use to test new version, different platforms
+  etc.
 
   license: CC0
 */
@@ -477,7 +478,7 @@ int main()
     RCL_Unit scaled = RCL_perspectiveScaleHorizontal(size,distance);
     RCL_Unit distance2 = RCL_perspectiveScaleHorizontalInverse(size,scaled);
 
-    if (RCL_absVal(distance - distance2 > 2))
+    if (RCL_abs(distance - distance2 > 2))
       printf("ERROR: distance: %d, distance inverse: %d\n",distance,distance2);
   }
 
@@ -551,9 +552,6 @@ int main()
 
   t = measureTime(benchmarkRender);
   printf("render 100 times: %ld ms\n",t);
-
-  printf("\n"); 
-  printProfile();
 
   printf("\n===== all OK =====\n");
 
