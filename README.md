@@ -74,7 +74,7 @@ how to use
 
 **Don't forget to compile with -O3!** This drastically improves performance.
 
-For start take a look at the [helloWorld.c](https://gitlab.com/drummyfish/raycastlib/blob/master/programs/helloWorld.c) program and other examples.
+For start take a look at the [helloWorld.c](programs/helloWorld.c) program and other examples.
 For more examples see my [Pokitto demos](https://gitlab.com/drummyfish/Pokitto-Raycasting) repository.
 
 Also see **the library code itself**, it is meant to be self-documenting -- you'll find the description of a lot of things at the start of the file.
