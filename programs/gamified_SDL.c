@@ -612,13 +612,12 @@ int main()
 	SDL_Window *window = SDL_CreateWindow("raycasting", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN);
 	SDL_Renderer *renderer = SDL_CreateRenderer(window,-1,0);
 	SDL_Texture *texture = SDL_CreateTexture(renderer,SDL_PIXELFORMAT_RGBX8888, SDL_TEXTUREACCESS_STATIC, SCREEN_WIDTH, SCREEN_HEIGHT);
-	SDL_Surface *screenSurface = SDL_GetWindowSurface(window);
 	SDL_Event event;
 
 	int running = 1;
 	int fps = 0;
 
-	clock_t nextT;
+	clock_t nextT = clock();
 	c.maxHits = 32;
 	c.maxSteps = 32;
 
@@ -688,16 +687,17 @@ int main()
 
 		direction.x /= 10;
 		direction.y /= 10;
+		RCL_Vector2D newpos = {0};
 
 		if (keys[KEY_W])
 		{
-			camera.position.x += step * direction.x;
-			camera.position.y += step * direction.y;
+			newpos.x += step * direction.x;
+			newpos.y += step * direction.y;
 		}
 		else if (keys[KEY_S])
 		{
-			camera.position.x -= step * direction.x;
-			camera.position.y -= step * direction.y;
+			newpos.x -= step * direction.x;
+			newpos.y -= step * direction.y;
 		}
 
 		const int movdivisor = 8;
@@ -705,15 +705,16 @@ int main()
 		if (keys[KEY_D]){
 			RCL_Unit c_sin = RCL_sin(camera.direction) / movdivisor;
 			RCL_Unit c_cos = RCL_cos(camera.direction) / movdivisor;
-			camera.position.x -= step * c_sin;
-			camera.position.y -= step * c_cos;
+			newpos.x -= step * c_sin;
+			newpos.y -= step * c_cos;
 		}
 		if (keys[KEY_A]){
 			RCL_Unit c_sin = RCL_sin(camera.direction) / movdivisor;
 			RCL_Unit c_cos = RCL_cos(camera.direction) / movdivisor;
-			camera.position.x += step * c_sin;
-			camera.position.y += step * c_cos;
+			newpos.x += step * c_sin;
+			newpos.y += step * c_cos;
 		}
+		RCL_moveCameraWithCollision(&camera, newpos, 0, floorHeightAt, ceilingHeightAt, 1, 0);
 
 		SDL_RenderClear(renderer);
 		SDL_RenderCopy(renderer,texture,NULL,NULL);
