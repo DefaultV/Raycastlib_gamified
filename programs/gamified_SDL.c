@@ -12,7 +12,7 @@ license: CC0
 #define RCL_COMPUTE_FLOOR_TEXCOORDS 1
 #define RCL_HORIZONTAL_FOV (RCL_UNITS_PER_SQUARE / 5)
 #define RCL_VERTICAL_FOV RCL_UNITS_PER_SQUARE / 2 // redefine camera vertical FOV
-
+#define RCL_CAMERA_COLL_HEIGHT_BELOW RCL_UNITS_PER_SQUARE * 2
 #define RCL_TEXTURE_VERTICAL_STRETCH 1
 
 #define RCL_PIXEL_FUNCTION pixelFunc
@@ -71,8 +71,8 @@ const unsigned char levelTexture[] =
 	1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 1, 1, 1, 2, // 3   17
 	1, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 2, // 4   16
 	1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 1, 1, 1, 2, // 5   15
-	1, 0, 1, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, // 6   14
-	1, 0, 1, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 2, // 7   13
+	1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, // 6   14
+	1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 2, // 7   13
 	1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, // 8   12
 	1, 1, 1, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, // 9   11
 	1, 1, 1, 1, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, // 10  10
@@ -122,8 +122,8 @@ const signed char levelCeiling[] =
 {
 	// 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28
 	40,40,40,40,40,40,40,XX,XX,XX,XX,36,40,40,40,40,40,36,XX,XX,XX,XX,XX,XX,XX,XX,XX,XX,XX, // 0  20
-	40,50,50,50,45,40,20,XX,XX,XX,XX,36,40,30,30,30,XX,36,XX,XX,XX,XX,XX,XX,XX,XX,XX,XX,XX, // 1  19
-	40,50,50,50,45,40,20,XX,XX,XX,XX,36,40,30,30,30,XX,36,XX,XX,XX,XX,XX,XX,XX,XX,XX,XX,XX, // 2  18
+	40,50,50,50,45,40,40,XX,XX,XX,XX,36,40,30,30,30,XX,36,XX,XX,XX,XX,XX,XX,XX,XX,XX,XX,XX, // 1  19
+	40,50,50,50,45,40,40,XX,XX,XX,XX,36,40,30,30,30,XX,36,XX,XX,XX,XX,XX,XX,XX,XX,XX,XX,XX, // 2  18
 	40,50,50,50,45,40,48,XX,XX,XX,XX,36,24,24,24,24,24,36,XX,XX,XX,XX,XX,XX,XX,XX,XX,XX,XX, // 3  17
 	40,50,48,48,48,48,47,XX,XX,XX,XX,36,36,36,36,36,36,36,XX,XX,XX,XX,XX,XX,XX,XX,XX,XX,XX, // 4  16
 	40,50,48,XX,XX,XX,XX,XX,XX,XX,XX,XX,XX,XX,XX,XX,XX,XX,XX,XX,XX,XX,XX,XX,XX,XX,XX,XX,XX, // 5  15
@@ -715,7 +715,9 @@ int main()
 			newpos.y += step * c_cos;
 		}
 		RCL_moveCameraWithCollision(&camera, newpos, 0, floorHeightAt, ceilingHeightAt, 1, 0);
-
+		// Hackfix floor collision: TODO
+		RCL_Unit heighthere = floorHeightAt(RCL_divRoundDown(camera.position.x, RCL_UNITS_PER_SQUARE), RCL_divRoundDown(camera.position.y, RCL_UNITS_PER_SQUARE));
+		camera.height = heighthere + 1024 * 2.1;
 		SDL_RenderClear(renderer);
 		SDL_RenderCopy(renderer,texture,NULL,NULL);
 		SDL_RenderPresent(renderer);
