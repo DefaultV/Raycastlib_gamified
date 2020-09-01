@@ -1,1 +1,3 @@
-media
+programs/*
+!programs/make.sh
+!programs/gamified_SDL.c
