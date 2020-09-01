@@ -639,43 +639,43 @@ int main()
 
 			switch (event.type)
 			{
-				case SDL_MOUSEMOTION: ;
-									  if (event.motion.xrel > 0){
-										  camera.direction += mouse_sensitivity[0];
-									  }
-									  if (event.motion.xrel < 0)
-										  camera.direction -= mouse_sensitivity[0];
+				case SDL_MOUSEMOTION:
+					if (event.motion.xrel > 0){
+						camera.direction += mouse_sensitivity[0];
+					}
+					if (event.motion.xrel < 0)
+						camera.direction -= mouse_sensitivity[0];
 
-									  if (event.motion.yrel < 0)
-										  camera.shear = camera.shear + mouse_sensitivity[1] <= SCREEN_HEIGHT ? camera.shear + mouse_sensitivity[1] : SCREEN_HEIGHT;
-									  if (event.motion.yrel > 0)
-										  camera.shear = camera.shear - mouse_sensitivity[1] >= -1 * SCREEN_HEIGHT ? camera.shear - mouse_sensitivity[1] : -1 * SCREEN_HEIGHT;
-									  break;
+					if (event.motion.yrel < 0)
+						camera.shear = camera.shear + mouse_sensitivity[1] <= SCREEN_HEIGHT ? camera.shear + mouse_sensitivity[1] : SCREEN_HEIGHT;
+					if (event.motion.yrel > 0)
+						camera.shear = camera.shear - mouse_sensitivity[1] >= -1 * SCREEN_HEIGHT ? camera.shear - mouse_sensitivity[1] : -1 * SCREEN_HEIGHT;
+					break;
 				case SDL_KEYDOWN:
-									  newState = 1;
+					newState = 1;
 				case SDL_KEYUP:
-									  switch (event.key.keysym.scancode)
-									  {
-										  case SDL_SCANCODE_ESCAPE: running = 0; break;
-										  case SDL_SCANCODE_UP: keyIndex = KEY_UP; break;
-										  case SDL_SCANCODE_RIGHT: keyIndex = KEY_RIGHT; break;
-										  case SDL_SCANCODE_DOWN: keyIndex = KEY_DOWN; break;
-										  case SDL_SCANCODE_LEFT: keyIndex = KEY_LEFT; break;
-										  case SDL_SCANCODE_Q: keyIndex = KEY_Q; break;
-										  case SDL_SCANCODE_W: keyIndex = KEY_W; break;
-										  case SDL_SCANCODE_A: keyIndex = KEY_A; break;
-										  case SDL_SCANCODE_S: keyIndex = KEY_S; break;
-										  case SDL_SCANCODE_D: keyIndex = KEY_D; break;
-										  default: break;
-									  }
-									  break;
+					switch (event.key.keysym.scancode)
+					{
+						case SDL_SCANCODE_ESCAPE: running = 0; break;
+						case SDL_SCANCODE_UP: keyIndex = KEY_UP; break;
+						case SDL_SCANCODE_RIGHT: keyIndex = KEY_RIGHT; break;
+						case SDL_SCANCODE_DOWN: keyIndex = KEY_DOWN; break;
+						case SDL_SCANCODE_LEFT: keyIndex = KEY_LEFT; break;
+						case SDL_SCANCODE_Q: keyIndex = KEY_Q; break;
+						case SDL_SCANCODE_W: keyIndex = KEY_W; break;
+						case SDL_SCANCODE_A: keyIndex = KEY_A; break;
+						case SDL_SCANCODE_S: keyIndex = KEY_S; break;
+						case SDL_SCANCODE_D: keyIndex = KEY_D; break;
+						default: break;
+					}
+					break;
 
 				case SDL_QUIT:
-									  running = 0;
-									  break;
+					running = 0;
+					break;
 
 				default:
-									  break;
+					break;
 			}
 
 			if (keyIndex >= 0)
