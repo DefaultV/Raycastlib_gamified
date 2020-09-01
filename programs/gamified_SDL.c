@@ -11,7 +11,7 @@
 
 #define RCL_COMPUTE_FLOOR_TEXCOORDS 1
 #define RCL_HORIZONTAL_FOV (RCL_UNITS_PER_SQUARE / 5)
-#define RCL_VERTICAL_FOV RCL_UNITS_PER_SQUARE // redefine camera vertical FOV
+#define RCL_VERTICAL_FOV RCL_UNITS_PER_SQUARE / 2 // redefine camera vertical FOV
 
 #define RCL_TEXTURE_VERTICAL_STRETCH 1
 
@@ -28,7 +28,7 @@
 
 #define max(a,b) ((a) > (b) ? (a) : (b))
 
-#define KEYS 8
+#define KEYS 9
 #define KEY_UP 0
 #define KEY_RIGHT 1
 #define KEY_DOWN 2
@@ -37,6 +37,7 @@
 #define KEY_W 5
 #define KEY_A 6
 #define KEY_S 7
+#define KEY_D 8
 
 int keys[KEYS];
 
@@ -526,13 +527,13 @@ RCL_Unit textureAt(int16_t x, int16_t y)
 RCL_Unit floorHeightAt(int16_t x, int16_t y)
 {
   if (x == 6 && (y == 13 || y == 14)) // moving lift
-    return ((RCL_absVal(-1 * (frame % 64) + 32)) * RCL_UNITS_PER_SQUARE) / 8; 
+    return ((RCL_abs(-1 * (frame % 64) + 32)) * RCL_UNITS_PER_SQUARE) / 8; 
 
   if (x >= 0 && x < LEVEL_X_RES && y >= 0 && y < LEVEL_Y_RES)
     return (levelFloor[(LEVEL_Y_RES - y -1) * LEVEL_X_RES + x] * RCL_UNITS_PER_SQUARE) / 8; 
 
-  int a = RCL_absVal(x - LEVEL_X_RES / 2) - LEVEL_X_RES / 2;
-  int b = RCL_absVal(y - LEVEL_Y_RES / 2) - LEVEL_Y_RES / 2;
+  int a = RCL_abs(x - LEVEL_X_RES / 2) - LEVEL_X_RES / 2;
+  int b = RCL_abs(y - LEVEL_Y_RES / 2) - LEVEL_Y_RES / 2;
 
   return (a > b ? a : b) * RCL_UNITS_PER_SQUARE;
 }
@@ -585,13 +586,11 @@ void pixelFunc(RCL_PixelInfo *pixel)
   pixelCounter[index]++;
 }
 
+RCL_RayConstraints c;
+
+
 void draw()
 {
-  RCL_RayConstraints c;
-
-  c.maxHits = 32;
-  c.maxSteps = 32;
-
   RCL_renderComplex(camera,floorHeightAt,ceilingHeightAt,textureAt,c);
 }
 
@@ -606,7 +605,7 @@ int main()
   camera.position.y = 12392;
   camera.shear = -50;
   camera.direction = -415;
-  camera.height = 4648;
+  camera.height = 2500;
   camera.resolution.x = SCREEN_WIDTH;
   camera.resolution.y = SCREEN_HEIGHT;
 
@@ -620,7 +619,12 @@ int main()
   int fps = 0;
 
   clock_t nextT;
+  c.maxHits = 32;
+  c.maxSteps = 32;
 
+  //hide mouse
+  SDL_SetRelativeMouseMode(SDL_TRUE);
+  const int mouse_sensitivity[] = {1, 2};
   while (running)
   {
     draw();
@@ -635,6 +639,18 @@ int main()
 
       switch (event.type)
       {
+		case SDL_MOUSEMOTION: ;
+			if (event.motion.xrel > 0){
+				camera.direction += mouse_sensitivity[0];
+			}
+			if (event.motion.xrel < 0)
+				camera.direction -= mouse_sensitivity[0];
+
+			if (event.motion.yrel < 0)
+	      		camera.shear = camera.shear + mouse_sensitivity[1] <= SCREEN_HEIGHT ? camera.shear + mouse_sensitivity[1] : SCREEN_HEIGHT;
+			if (event.motion.yrel > 0)
+				camera.shear = camera.shear - mouse_sensitivity[1] >= -1 * SCREEN_HEIGHT ? camera.shear - mouse_sensitivity[1] : -1 * SCREEN_HEIGHT;
+			break;
         case SDL_KEYDOWN:
           newState = 1;
         case SDL_KEYUP:
@@ -649,6 +665,7 @@ int main()
             case SDL_SCANCODE_W: keyIndex = KEY_W; break;
             case SDL_SCANCODE_A: keyIndex = KEY_A; break;
             case SDL_SCANCODE_S: keyIndex = KEY_S; break;
+            case SDL_SCANCODE_D: keyIndex = KEY_D; break;
             default: break;
           }
           break;
@@ -666,40 +683,37 @@ int main()
     }
 
     int step = 1;
-    int step2 = 5;
 
     RCL_Vector2D direction = RCL_angleToDirection(camera.direction);
 
     direction.x /= 10;
     direction.y /= 10;
 
-    if (keys[KEY_UP])
+    if (keys[KEY_W])
     {
       camera.position.x += step * direction.x;
       camera.position.y += step * direction.y;
     }
-    else if (keys[KEY_DOWN])
+    else if (keys[KEY_S])
     {
       camera.position.x -= step * direction.x;
       camera.position.y -= step * direction.y;
     }
 
-    if (keys[KEY_Q])
-      camera.height += step * 100;
-    else if (keys[KEY_W])
-      camera.height -= step * 100;
+	const int movdivisor = 8;
 
-    if (keys[KEY_RIGHT])
-      camera.direction += step2;
-    else if (keys[KEY_LEFT])
-      camera.direction -= step2;
-
-    const int shearAdd = 10;
-
-    if (keys[KEY_A])
-      camera.shear = camera.shear + shearAdd <= SCREEN_HEIGHT ? camera.shear + shearAdd : SCREEN_HEIGHT;
-    else if (keys[KEY_S])
-      camera.shear = camera.shear - shearAdd >= -1 * SCREEN_HEIGHT ? camera.shear - shearAdd : -1 * SCREEN_HEIGHT;
+	if (keys[KEY_D]){
+		RCL_Unit c_sin = RCL_sin(camera.direction) / movdivisor;
+		RCL_Unit c_cos = RCL_cos(camera.direction) / movdivisor;
+		camera.position.x -= step * c_sin;
+		camera.position.y -= step * c_cos;
+	}
+	if (keys[KEY_A]){
+		RCL_Unit c_sin = RCL_sin(camera.direction) / movdivisor;
+		RCL_Unit c_cos = RCL_cos(camera.direction) / movdivisor;
+		camera.position.x += step * c_sin;
+		camera.position.y += step * c_cos;
+	}
 
     SDL_RenderClear(renderer);
     SDL_RenderCopy(renderer,texture,NULL,NULL);

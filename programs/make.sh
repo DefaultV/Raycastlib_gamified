@@ -11,7 +11,7 @@ fi
 
 link=""
 
-if [ "$1" = "testSDL" ]; then
+if [ "$1" = "testSDL" ] || [ "$1" = "gamified_SDL" ]; then
   link="-lSDL2"
 fi
 
